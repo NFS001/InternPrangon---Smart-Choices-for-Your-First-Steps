@@ -1,4 +1,11 @@
 const User = require('../models/User');
+const jwt = require('jsonwebtoken');
+
+const generateToken = (userId) => {
+    return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+        expiresIn: '7d'
+    });
+};
 
 // Register API
 const registerUser = async (req, res) => {
@@ -19,6 +26,7 @@ const registerUser = async (req, res) => {
 
         res.status(201).json({
             message: 'User registered successfully!',
+            token: generateToken(user._id),
             user: {
                 id: user._id,
                 name: user.name,
@@ -42,14 +50,14 @@ const loginUser = async (req, res) => {
             return res.status(400).json({ message: 'User not found!' });
         }
 
-        // Check if password matches
-        if (user.password !== password) {
+        const isMatch = await user.matchPassword(password);
+        if (!isMatch) {
             return res.status(400).json({ message: 'Invalid email or password!' });
         }
 
-        // Send success response
         res.status(200).json({
             message: 'Login successful!',
+            token: generateToken(user._id),
             user: {
                 id: user._id,
                 name: user.name,
@@ -62,5 +70,11 @@ const loginUser = async (req, res) => {
     }
 };
 
+const getCurrentUser = async (req, res) => {
+    res.status(200).json({
+        user: req.user
+    });
+};
+
 // Exporting both functions
-module.exports = { registerUser, loginUser };
+module.exports = { registerUser, loginUser, getCurrentUser };

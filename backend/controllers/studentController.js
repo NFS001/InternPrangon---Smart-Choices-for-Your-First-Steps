@@ -3,7 +3,8 @@ const StudentProfile = require('../models/StudentProfile');
 // Create or Update Student Profile (Feature 3)
 const updateStudentProfile = async (req, res) => {
     try {
-        const { user, bio, skills } = req.body; // Points and Badges will be automatically assigned initially
+        const { bio, skills } = req.body; // Points and Badges will be automatically assigned initially
+        const user = req.user._id;
 
         // Check if profile exists, if yes, update it. If not, create a new one.
         let profile = await StudentProfile.findOne({ user });

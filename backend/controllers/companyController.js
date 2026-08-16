@@ -3,7 +3,8 @@ const CompanyProfile = require('../models/CompanyProfile');
 // HR Submitting Document (Feature 1)
 const submitCompanyProfile = async (req, res) => {
     try {
-        const { user, companyName, industry, description, website, verificationDocument } = req.body;
+        const { companyName, industry, description, website, verificationDocument } = req.body;
+        const user = req.user._id;
 
         // Check if profile already exists
         const existingProfile = await CompanyProfile.findOne({ user });
@@ -36,6 +37,10 @@ const verifyCompany = async (req, res) => {
     try {
         const { status } = req.body; // 'Approved' or 'Rejected'
         const companyId = req.params.id; // Company Profile ID from URL
+
+        if (!['Approved', 'Rejected'].includes(status)) {
+            return res.status(400).json({ message: 'Status must be Approved or Rejected' });
+        }
 
         // Find company and update status
         const updatedCompany = await CompanyProfile.findByIdAndUpdate(

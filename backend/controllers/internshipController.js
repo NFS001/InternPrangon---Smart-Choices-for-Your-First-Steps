@@ -4,7 +4,21 @@ const CompanyProfile = require('../models/CompanyProfile');
 // Post a new Internship (Feature 4)
 const postInternship = async (req, res) => {
     try {
-        const { companyId, title, description, type, mode, deadline } = req.body;
+        const { title, description, type, mode, deadline } = req.body;
+        const companyId = req.user._id;
+        const parsedDeadline = new Date(deadline);
+
+        if (!['Paid', 'Unpaid'].includes(type)) {
+            return res.status(400).json({ message: 'Type must be Paid or Unpaid' });
+        }
+
+        if (!['Remote', 'On-site'].includes(mode)) {
+            return res.status(400).json({ message: 'Mode must be Remote or On-site' });
+        }
+
+        if (Number.isNaN(parsedDeadline.getTime())) {
+            return res.status(400).json({ message: 'Deadline must be a valid date' });
+        }
 
         // Step 1: Check company profile and its verification status
         const companyProfile = await CompanyProfile.findOne({ user: companyId });
@@ -24,7 +38,7 @@ const postInternship = async (req, res) => {
             description,
             type,
             mode,
-            deadline
+            deadline: parsedDeadline
         });
 
         res.status(201).json({
@@ -57,7 +71,7 @@ const searchInternships = async (req, res) => {
             query.type = type;
         }
 
-        // 3. Filter by Mode (Remote/On-site/Hybrid)
+        // 3. Filter by Mode (Remote/On-site)
         if (mode) {
             query.mode = mode;
         }

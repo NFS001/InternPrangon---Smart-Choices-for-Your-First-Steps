@@ -16,16 +16,16 @@ const internshipSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['Paid', 'Unpaid'], // তোমার রিকয়ারমেন্ট অনুযায়ী
+        enum: ['Paid', 'Unpaid'],
         required: true
     },
     mode: {
         type: String,
-        enum: ['Remote', 'On-site', 'Hybrid'], // তোমার রিকয়ারমেন্ট অনুযায়ী
+        enum: ['Remote', 'On-site'],
         required: true
     },
     deadline: {
-        type: String, // উদাহরণ: "20 August"
+        type: Date,
         required: true
     }
 }, { timestamps: true });
