@@ -10,6 +10,7 @@ const studentRoutes = require('./routes/studentRoutes');
 const internshipRoutes = require('./routes/internshipRoutes'); // Internship Route Import
 const resumeRoutes = require('./routes/resumeRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/api/student', studentRoutes);
 app.use('/api/internship', internshipRoutes); // Internship Route Apply
 app.use('/api/resume', resumeRoutes);
 app.use('/api/applications', applicationRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 app.get('/', (req, res) => {
     res.send('InternPrangon API is running...');
