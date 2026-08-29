@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 const Application = require('../models/Application');
 const Internship = require('../models/Internship');
 const Resume = require('../models/Resume');
-const { createNotification } = require('./notificationController');
 
 const resumeDirectory = path.resolve(__dirname, '..', 'uploads', 'resumes');
 
@@ -70,13 +69,6 @@ const applyToInternship = async (req, res) => {
             resume: resume._id,
             status: 'Applied',
             appliedDate: new Date()
-        });
-
-        // Feature 18: notify the company that a new application came in
-        await createNotification({
-            recipient: internship.companyId,
-            type: 'ApplicationStatus',
-            message: `A new applicant applied to your internship "${internship.title}".`
         });
 
         res.status(201).json({
@@ -233,13 +225,6 @@ const updateApplicationStatus = async (req, res) => {
 
         application.status = status;
         await application.save();
-
-        // Feature 18: notify the student their application status changed
-        await createNotification({
-            recipient: application.student,
-            type: 'ApplicationStatus',
-            message: `Your application for "${internship.title}" is now ${status}.`
-        });
 
         res.status(200).json({
             message: 'Application status updated successfully!',

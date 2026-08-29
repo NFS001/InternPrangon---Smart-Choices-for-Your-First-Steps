@@ -28,31 +28,4 @@ const updateStudentProfile = async (req, res) => {
     }
 };
 
-// Feature 17: Contributor Leaderboard
-// Public ranking of students by contributor points (highest first).
-const getLeaderboard = async (req, res) => {
-    try {
-        const limit = Math.min(Number(req.query.limit) || 20, 100);
-
-        const topContributors = await StudentProfile.find({ points: { $gt: 0 } })
-            .sort({ points: -1 })
-            .limit(limit)
-            .populate({ path: 'user', select: 'name' });
-
-        const leaderboard = topContributors.map((profile, index) => ({
-            rank: index + 1,
-            name: profile.user ? profile.user.name : 'Unknown',
-            points: profile.points,
-            badge: profile.badge
-        }));
-
-        res.status(200).json({
-            message: 'Leaderboard fetched successfully!',
-            leaderboard
-        });
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
-    }
-};
-
-module.exports = { updateStudentProfile, getLeaderboard };
+module.exports = { updateStudentProfile };

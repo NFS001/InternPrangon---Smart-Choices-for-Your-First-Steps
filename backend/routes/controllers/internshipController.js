@@ -1,6 +1,5 @@
 const Internship = require('../models/Internship');
 const CompanyProfile = require('../models/CompanyProfile');
-const { isDeadlineSoon, DEADLINE_REMINDER_WINDOW_MS } = require('../utils/deadlineHelper');
 
 // Post a new Internship (Feature 4)
 const postInternship = async (req, res) => {
@@ -133,37 +132,11 @@ const searchInternships = async (req, res) => {
             page: pageNumber,
             limit: limitNumber,
             totalPages: Math.ceil(totalResults / limitNumber),
-            internships: internships.map((internship) => ({
-                ...internship.toObject(),
-                deadlineSoon: isDeadlineSoon(internship.deadline)
-            }))
-        });
-
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
-    }
-};
-
-// Feature 20: Internship Deadline Reminder
-// Returns active internships whose deadline falls within the next 3 days,
-// soonest first, so the frontend can render a "closing soon" reminder list.
-const getUpcomingDeadlines = async (req, res) => {
-    try {
-        const now = new Date();
-        const reminderCutoff = new Date(now.getTime() + DEADLINE_REMINDER_WINDOW_MS);
-
-        const internships = await Internship.find({
-            deadline: { $gte: now, $lte: reminderCutoff }
-        }).sort({ deadline: 1 });
-
-        res.status(200).json({
-            message: 'Internships closing soon fetched successfully!',
-            resultsFound: internships.length,
             internships
         });
+
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
-
-module.exports = { postInternship, searchInternships, getUpcomingDeadlines };
+module.exports = { postInternship, searchInternships };

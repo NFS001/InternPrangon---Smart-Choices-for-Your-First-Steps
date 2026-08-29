@@ -1,5 +1,4 @@
 const CompanyProfile = require('../models/CompanyProfile');
-const { createNotification } = require('./notificationController');
 
 // HR Submitting Document (Feature 1)
 const submitCompanyProfile = async (req, res) => {
@@ -53,13 +52,6 @@ const verifyCompany = async (req, res) => {
         if (!updatedCompany) {
             return res.status(404).json({ message: 'Company not found!' });
         }
-
-        // Feature 18: notify the company's account of the approval/rejection
-        await createNotification({
-            recipient: updatedCompany.user,
-            type: 'CompanyVerification',
-            message: `Your company profile "${updatedCompany.companyName}" was ${status.toLowerCase()}.`
-        });
 
         res.status(200).json({
             message: `Company successfully ${status}!`,
