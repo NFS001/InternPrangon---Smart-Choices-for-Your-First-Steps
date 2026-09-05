@@ -91,5 +91,132 @@ const deleteCompany = async (req, res) => {
     }
 };
 
+// Public: Company Directory with dynamic rating and stipend aggregation (Feature 13)
+const getCompanyDirectory = async (req, res) => {
+    const { sortBy, sortOrder = 'desc', page = 1, limit = 10 } = req.query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+
+    if (!Number.isInteger(pageNumber) || pageNumber < 1) {
+        return res.status(400).json({ message: 'Page must be a positive integer' });
+    }
+
+    if (!Number.isInteger(limitNumber) || limitNumber < 1 || limitNumber > 100) {
+        return res.status(400).json({ message: 'Limit must be an integer between 1 and 100' });
+    }
+
+    if (sortBy !== undefined && !['rating', 'averageStipend'].includes(sortBy)) {
+        return res.status(400).json({ message: "sortBy must be 'rating' or 'averageStipend'" });
+    }
+
+    if (!['asc', 'desc'].includes(sortOrder)) {
+        return res.status(400).json({ message: "sortOrder must be 'asc' or 'desc'" });
+    }
+
+    const sortDirection = sortOrder === 'asc' ? 1 : -1;
+    let sortStage = {};
+
+    if (sortBy === 'rating') {
+        sortStage = { averageRating: sortDirection, _id: 1 };
+    } else if (sortBy === 'averageStipend') {
+        sortStage = { averageStipend: sortDirection, _id: 1 };
+    } else {
+        sortStage = { _id: sortDirection };
+    }
+
+    const skip = (pageNumber - 1) * limitNumber;
+
+    try {
+        const pipeline = [
+            {
+                $match: { verificationStatus: 'Approved' }
+            },
+            {
+                $lookup: {
+                    from: 'reviews',
+                    localField: '_id',
+                    foreignField: 'company',
+                    as: 'reviews'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'stipendreports',
+                    localField: '_id',
+                    foreignField: 'company',
+                    as: 'stipendReports'
+                }
+            },
+            {
+                $addFields: {
+                    reviewCount: { $size: '$reviews' },
+                    averageRating: {
+                        $cond: [
+                            { $gt: [{ $size: '$reviews' }, 0] },
+                            { $round: [{ $avg: '$reviews.rating' }, 1] },
+                            0
+                        ]
+                    },
+                    stipendReportCount: { $size: '$stipendReports' },
+                    averageStipend: {
+                        $cond: [
+                            { $gt: [{ $size: '$stipendReports' }, 0] },
+                            { $round: [{ $avg: '$stipendReports.amount' }, 2] },
+                            0
+                        ]
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    companyName: 1,
+                    industry: 1,
+                    description: 1,
+                    website: 1,
+                    verificationStatus: 1,
+                    averageRating: 1,
+                    reviewCount: 1,
+                    averageStipend: 1,
+                    stipendReportCount: 1,
+                    createdAt: 1,
+                    updatedAt: 1
+                }
+            },
+            {
+                $sort: sortStage
+            },
+            {
+                $facet: {
+                    metadata: [{ $count: 'total' }],
+                    data: [{ $skip: skip }, { $limit: limitNumber }]
+                }
+            }
+        ];
+
+        const results = await CompanyProfile.aggregate(pipeline);
+        const totalCompanies = results[0]?.metadata[0]?.total || 0;
+        const totalPages = Math.ceil(totalCompanies / limitNumber) || 1;
+        const companies = results[0]?.data || [];
+
+        res.status(200).json({
+            totalCompanies,
+            totalPages,
+            currentPage: pageNumber,
+            limit: limitNumber,
+            companies
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
 // Update the exports at the bottom
-module.exports = { submitCompanyProfile, verifyCompany, getAllCompanies, deleteCompany };
+module.exports = {
+    submitCompanyProfile,
+    verifyCompany,
+    getAllCompanies,
+    deleteCompany,
+    getCompanyDirectory
+};

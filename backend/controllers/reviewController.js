@@ -2,6 +2,10 @@ const mongoose = require('mongoose');
 const CompanyProfile = require('../models/CompanyProfile');
 const Review = require('../models/Review');
 
+const StudentProfile = require('../models/StudentProfile');
+
+const REVIEW_POINTS = 5;
+
 const formatAnonymousReview = (review) => ({
     rating: review.rating,
     comment: review.comment,
@@ -67,6 +71,13 @@ const createReview = async (req, res) => {
             createdAt: new Date()
         });
 
+        // Award points atomically to author upon successful review creation
+        await StudentProfile.findOneAndUpdate(
+            { user: req.user._id },
+            { $inc: { points: REVIEW_POINTS } },
+            { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+        );
+
         res.status(201).json({
             message: 'Review submitted successfully!',
             review: formatAnonymousReview(review)
@@ -109,4 +120,4 @@ const getCompanyReviews = async (req, res) => {
     }
 };
 
-module.exports = { createReview, getCompanyReviews };
+module.exports = { REVIEW_POINTS, createReview, getCompanyReviews };

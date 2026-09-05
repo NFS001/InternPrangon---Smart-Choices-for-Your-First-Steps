@@ -3,11 +3,15 @@ const {
     submitCompanyProfile, 
     verifyCompany, 
     getAllCompanies, 
-    deleteCompany 
+    deleteCompany,
+    getCompanyDirectory
 } = require('../controllers/companyController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 const router = express.Router();
+
+// Feature 13: Public Company Directory
+router.get('/directory', getCompanyDirectory);
 
 // Feature 1: HR submits profile (Status: Pending)
 router.post('/submit', protect, authorize('company'), submitCompanyProfile);
