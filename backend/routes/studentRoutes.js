@@ -1,10 +1,11 @@
 const express = require('express');
-const { updateStudentProfile, getLeaderboard } = require('../controllers/studentController');
+const { updateStudentProfile, getLeaderboard, getStudentProfile } = require('../controllers/studentController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
 // Route: http://localhost:5000/api/student/profile
+router.get('/profile', protect, authorize('student'), getStudentProfile);
 router.post('/profile', protect, authorize('student'), updateStudentProfile);
 
 // Feature 17: Public contributor leaderboard

@@ -20,7 +20,7 @@ const studentProfileSchema = new mongoose.Schema({
     },
     badge: {
         type: String,
-        default: 'Beginner' // Starting badge
+        default: 'Newbie' // Starting badge (UML BadgeTier: Newbie)
     }
 }, { timestamps: true });
 

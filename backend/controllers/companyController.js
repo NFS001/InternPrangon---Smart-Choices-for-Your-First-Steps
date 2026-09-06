@@ -72,10 +72,36 @@ const verifyCompany = async (req, res) => {
 // Admin: Get all companies (Feature 2)
 const getAllCompanies = async (req, res) => {
     try {
-        const companies = await CompanyProfile.find();
+        const companies = await CompanyProfile.find().populate('user', 'name email role');
         res.status(200).json({
             message: 'Successfully fetched all companies',
             companies
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// Admin: Add a company directly
+const addCompanyByAdmin = async (req, res) => {
+    try {
+        const { companyName, industry, description, website, verificationStatus = 'Pending', verificationDocument = 'trade_license.pdf' } = req.body;
+        if (!companyName) {
+            return res.status(400).json({ message: 'Company name is required' });
+        }
+        const newProfile = await CompanyProfile.create({
+            user: req.user._id,
+            companyName,
+            industry: industry || 'Technology',
+            description: description || 'Enterprise partner in Bangladesh.',
+            website: website || 'https://example.com',
+            verificationDocument: verificationDocument || 'trade_license.pdf',
+            verificationStatus: verificationStatus || 'Pending'
+        });
+
+        res.status(201).json({
+            message: 'Company added successfully by admin',
+            company: newProfile
         });
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
@@ -220,11 +246,31 @@ const getCompanyDirectory = async (req, res) => {
     }
 };
 
-// Update the exports at the bottom
+// Feature 3: Get logged in Company Profile
+const getMyCompanyProfile = async (req, res) => {
+    try {
+        const companyProfile = await CompanyProfile.findOne({ user: req.user._id });
+        res.status(200).json({
+            message: 'Company profile fetched successfully',
+            user: {
+                id: req.user._id,
+                name: req.user.name,
+                email: req.user.email,
+                role: req.user.role
+            },
+            profile: companyProfile || null
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
 module.exports = {
     submitCompanyProfile,
     verifyCompany,
     getAllCompanies,
+    addCompanyByAdmin,
     deleteCompany,
-    getCompanyDirectory
+    getCompanyDirectory,
+    getMyCompanyProfile
 };

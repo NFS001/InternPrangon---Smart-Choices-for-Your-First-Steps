@@ -55,4 +55,37 @@ const getLeaderboard = async (req, res) => {
     }
 };
 
-module.exports = { updateStudentProfile, getLeaderboard };
+// Feature 3: Get logged in Student Profile
+const getStudentProfile = async (req, res) => {
+    try {
+        let profile = await StudentProfile.findOne({ user: req.user._id });
+        if (!profile) {
+            profile = await StudentProfile.create({
+                user: req.user._id,
+                bio: '',
+                skills: [],
+                points: 0,
+                badge: 'Newbie'
+            });
+        }
+        res.status(200).json({
+            message: 'Student profile fetched successfully',
+            user: {
+                id: req.user._id,
+                name: req.user.name,
+                email: req.user.email,
+                role: req.user.role
+            },
+            profile: {
+                bio: profile.bio,
+                skills: profile.skills,
+                points: profile.points,
+                badge: profile.badge
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+module.exports = { updateStudentProfile, getLeaderboard, getStudentProfile };

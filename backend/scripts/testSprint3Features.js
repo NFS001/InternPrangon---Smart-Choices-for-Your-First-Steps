@@ -371,7 +371,7 @@ const runTests = async () => {
     if (s1Profile.points !== 11) {
         throw new Error(`F15: Expected student 1 to have 11 points (6 + 5), got ${s1Profile.points}`);
     }
-    if (s1Profile.badge !== 'Beginner') {
+    if (s1Profile.badge !== 'Newbie') {
         throw new Error(`F15: Student badge must remain untouched, found: ${s1Profile.badge}`);
     }
 

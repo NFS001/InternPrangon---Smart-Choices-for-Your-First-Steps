@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node scripts/testResumeFeature.js && node scripts/testApplicationFeature.js && node scripts/testHrApplicantFeature.js && node scripts/testReviewFeature.js && node scripts/testSprint3Features.js",
     "test:sprint3": "node scripts/testSprint3Features.js"
   },
   "keywords": [],

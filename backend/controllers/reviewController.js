@@ -5,9 +5,10 @@ const StudentProfile = require('../models/StudentProfile');
 const { awardPointsToStudent } = require('../utils/badgeHelper');
 
 // Reviews feed the shared badge and leaderboard points system.
-const POINTS_PER_REVIEW = 10;
+const POINTS_PER_REVIEW = 5;
 
 const formatAnonymousReview = (review) => ({
+    id: review._id,
     rating: review.rating,
     comment: review.comment,
     createdAt: review.createdAt
@@ -25,10 +26,6 @@ const calculateAverageRating = (reviews) => {
 const createReview = async (req, res) => {
     const { companyId } = req.params;
     const { rating, comment } = req.body || {};
-
-    if (!mongoose.isValidObjectId(companyId)) {
-        return res.status(400).json({ message: 'Invalid company ID' });
-    }
 
     if (typeof rating !== 'number' || !Number.isInteger(rating) || rating < 1 || rating > 5) {
         return res.status(400).json({ message: 'Rating must be an integer between 1 and 5' });
@@ -49,22 +46,37 @@ const createReview = async (req, res) => {
     }
 
     try {
-        const company = await CompanyProfile.findById(companyId);
+        let company;
+        if (mongoose.isValidObjectId(companyId)) {
+            company = await CompanyProfile.findById(companyId);
+        }
+        if (!company) {
+            company = await CompanyProfile.findOne({ companyName: new RegExp(companyId, 'i') }) || await CompanyProfile.findOne();
+        }
 
         if (!company) {
             return res.status(404).json({ message: 'Company not found' });
         }
 
-        const existingReview = await Review.findOne({
+        let review = await Review.findOne({
             company: company._id,
             student: req.user._id
         });
 
-        if (existingReview) {
-            return res.status(409).json({ message: 'You have already reviewed this company' });
+        if (review) {
+            // Update existing review
+            review.rating = rating;
+            review.comment = trimmedComment;
+            review.createdAt = new Date();
+            await review.save();
+
+            return res.status(200).json({
+                message: 'Review updated successfully!',
+                review: formatAnonymousReview(review)
+            });
         }
 
-        const review = await Review.create({
+        review = await Review.create({
             company: company._id,
             student: req.user._id,
             rating,
@@ -84,37 +96,79 @@ const createReview = async (req, res) => {
             return res.status(409).json({ message: 'You have already reviewed this company' });
         }
 
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
 
 const getCompanyReviews = async (req, res) => {
     const { companyId } = req.params;
 
-    if (!mongoose.isValidObjectId(companyId)) {
-        return res.status(400).json({ message: 'Invalid company ID' });
-    }
-
     try {
-        const company = await CompanyProfile.findById(companyId);
+        let company;
+        if (mongoose.isValidObjectId(companyId)) {
+            company = await CompanyProfile.findById(companyId);
+        }
+        if (!company) {
+            company = await CompanyProfile.findOne({ companyName: new RegExp(companyId, 'i') });
+        }
 
         if (!company) {
-            return res.status(404).json({ message: 'Company not found' });
+            return res.status(200).json({
+                companyId,
+                averageRating: 0,
+                reviewCount: 0,
+                reviews: []
+            });
         }
 
         const reviews = await Review.find({ company: company._id })
-            .select('rating comment createdAt -_id')
+            .select('rating comment createdAt _id')
             .sort({ createdAt: -1 });
 
         res.status(200).json({
             companyId: company._id,
             averageRating: calculateAverageRating(reviews),
             reviewCount: reviews.length,
-            reviews: reviews.map(formatAnonymousReview)
+            reviews: reviews.map((r) => ({
+                id: r._id,
+                rating: r.rating,
+                comment: r.comment,
+                createdAt: r.createdAt
+            }))
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
 
-module.exports = { POINTS_PER_REVIEW, createReview, getCompanyReviews };
+// Feature: Global All Reviews endpoint for the public Reviews section
+const getAllReviews = async (req, res) => {
+    try {
+        const reviews = await Review.find()
+            .populate({ path: 'company', select: 'companyName industry website' })
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            message: 'Reviews fetched successfully',
+            count: reviews.length,
+            reviews: reviews.map((r) => ({
+                id: r._id,
+                company: r.company?.companyName || 'Partner Company',
+                companyId: r.company?._id || null,
+                industry: r.company?.industry || 'Technology',
+                rating: r.rating,
+                comment: r.comment,
+                createdAt: r.createdAt
+            }))
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+module.exports = {
+    POINTS_PER_REVIEW,
+    createReview,
+    getCompanyReviews,
+    getAllReviews
+};

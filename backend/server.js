@@ -29,6 +29,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/internship', internshipRoutes); // Internship Route Apply
+app.use('/api/internships', internshipRoutes); // Alias for plural usage
 app.use('/api/resume', resumeRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/reviews', reviewRoutes);
