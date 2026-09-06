@@ -4,11 +4,8 @@ const Review = require('../models/Review');
 const StudentProfile = require('../models/StudentProfile');
 const { awardPointsToStudent } = require('../utils/badgeHelper');
 
-// Full contributor points system (stipend reports, interview experiences, etc.)
-// is Sprint 3 / Feature 15 and isn't built yet. Reviews are the only
-// contribution type that currently exists, so they're what feeds points into
-// the Feature 16 badge system and the Feature 17 leaderboard for now.
-const POINTS_PER_REVIEW = 5;
+// Reviews feed the shared badge and leaderboard points system.
+const POINTS_PER_REVIEW = 10;
 
 const formatAnonymousReview = (review) => ({
     rating: review.rating,
@@ -75,7 +72,7 @@ const createReview = async (req, res) => {
             createdAt: new Date()
         });
 
-        // Feature 16: award points for the contribution and refresh the badge
+        // Award points for the contribution and refresh the badge.
         await awardPointsToStudent(StudentProfile, req.user._id, POINTS_PER_REVIEW);
 
         res.status(201).json({
@@ -120,4 +117,4 @@ const getCompanyReviews = async (req, res) => {
     }
 };
 
-module.exports = { createReview, getCompanyReviews };
+module.exports = { POINTS_PER_REVIEW, createReview, getCompanyReviews };
