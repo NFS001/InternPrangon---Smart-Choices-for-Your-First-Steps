@@ -13,6 +13,9 @@ const applicationRoutes = require('./routes/applicationRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const bookmarkRoutes = require('./routes/bookmarkRoutes');
+const stipendRoutes = require('./routes/stipendRoutes');
+const interviewExperienceRoutes = require('./routes/interviewExperienceRoutes');
+const flagRoutes = require('./routes/flagRoutes');
 
 const app = express();
 
@@ -31,6 +34,9 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/bookmarks', bookmarkRoutes);
+app.use('/api/stipends', stipendRoutes);
+app.use('/api/interview-experiences', interviewExperienceRoutes);
+app.use('/api/flags', flagRoutes);
 
 app.get('/', (req, res) => {
     res.send('InternPrangon API is running...');
