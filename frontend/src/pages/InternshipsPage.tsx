@@ -6,6 +6,8 @@ import { getMyBookmarks, addBookmark, removeBookmark, searchInternships } from "
 
 interface Props {
   navigate: Navigate;
+  initialSearch?: string;
+  initialCategory?: string;
 }
 
 interface DisplayInternship {
@@ -66,13 +68,19 @@ function UrgencyLabel({ daysLeft, deadline }: { daysLeft: number; deadline: stri
   );
 }
 
-export default function InternshipsPage({ navigate }: Props) {
-  const [search, setSearch] = useState("");
+export default function InternshipsPage({ navigate, initialSearch = "", initialCategory }: Props) {
+  const [search, setSearch] = useState(initialSearch || initialCategory || "");
   const [filter, setFilter] = useState<"all" | "paid" | "unpaid">("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "Remote" | "On-site" | "Hybrid">("all");
   const [sortBy, setSortBy] = useState<"deadline" | "recent">("recent");
   const [savedIds, setSavedIds] = useState<string[]>([]);
-  const [internshipsList, setInternshipsList] = useState<DisplayInternship[]>([]);
+  const [internshipsList, setInternshipsList] = useState<DisplayInternship[]>(INTERNSHIPS as DisplayInternship[]);
+
+  useEffect(() => {
+    if (initialSearch !== undefined || initialCategory !== undefined) {
+      setSearch(initialSearch || initialCategory || "");
+    }
+  }, [initialSearch, initialCategory]);
 
   // 1. Fetch live user bookmarks
   useEffect(() => {
@@ -88,7 +96,7 @@ export default function InternshipsPage({ navigate }: Props) {
       .catch(() => setSavedIds([]));
   }, []);
 
-  // 2. Fetch live internships from MongoDB Atlas
+  // 2. Fetch live internships from MongoDB Atlas & merge
   useEffect(() => {
     searchInternships({ limit: 50, sortBy: 'createdAt', sortOrder: 'desc' })
       .then((res) => {
@@ -138,7 +146,17 @@ export default function InternshipsPage({ navigate }: Props) {
               description: bi.description,
             };
           });
-          setInternshipsList(mapped);
+
+          // Merge backend entries with mock catalogue so all listed companies/roles stay discoverable
+          const combined = [...mapped];
+          const mappedTitles = new Set(mapped.map((m) => m.role.toLowerCase().trim()));
+          (INTERNSHIPS as DisplayInternship[]).forEach((mock) => {
+            if (!mappedTitles.has(mock.role.toLowerCase().trim())) {
+              combined.push(mock);
+            }
+          });
+
+          setInternshipsList(combined);
         } else {
           setInternshipsList(INTERNSHIPS as DisplayInternship[]);
         }
@@ -163,15 +181,18 @@ export default function InternshipsPage({ navigate }: Props) {
     }
   };
 
-  const q = search.toLowerCase();
+  const q = search.toLowerCase().trim();
   let results = internshipsList.filter((i) => {
-    if (
-      q &&
-      !i.role.toLowerCase().includes(q) &&
-      !i.company.toLowerCase().includes(q) &&
-      !i.tags.some((t) => t.toLowerCase().includes(q))
-    ) {
-      return false;
+    if (q) {
+      const matchRole = i.role.toLowerCase().includes(q);
+      const matchCompany = i.company.toLowerCase().includes(q);
+      const matchTags = i.tags.some((t) => t.toLowerCase().includes(q));
+      const matchDesc = i.description ? i.description.toLowerCase().includes(q) : false;
+      const matchLoc = i.location ? i.location.toLowerCase().includes(q) : false;
+
+      if (!matchRole && !matchCompany && !matchTags && !matchDesc && !matchLoc) {
+        return false;
+      }
     }
     if (filter === "paid" && !i.paid) return false;
     if (filter === "unpaid" && i.paid) return false;
@@ -276,16 +297,26 @@ export default function InternshipsPage({ navigate }: Props) {
             <p className="text-4xl mb-3">🔍</p>
             <p className="font-semibold text-neutral-600">No internships match your filters</p>
             <p className="text-sm mt-1">Try clearing your search or adjusting your criteria</p>
-            <button
-              onClick={() => {
-                setSearch("");
-                setFilter("all");
-                setTypeFilter("all");
-              }}
-              className="mt-4 px-4 py-2 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors"
-            >
-              Reset filters
-            </button>
+            <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilter("all");
+                  setTypeFilter("all");
+                }}
+                className="px-4 py-2 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors"
+              >
+                Reset filters
+              </button>
+              {search.trim() && (
+                <button
+                  onClick={() => navigate("companies", { search: search.trim() })}
+                  className="px-4 py-2 bg-white border border-neutral-300 text-neutral-700 text-sm font-semibold rounded-xl hover:bg-neutral-100 transition-colors"
+                >
+                  Search Companies Directory &rarr;
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">

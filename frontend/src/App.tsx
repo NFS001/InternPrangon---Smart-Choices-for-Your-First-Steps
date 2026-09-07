@@ -194,12 +194,12 @@ export default function App() {
       {isPublic && (
         <div style={{ opacity: transitioning ? 0 : 1, transform: transitioning ? 'translateY(6px)' : 'translateY(0)', transition: 'opacity 0.16s ease, transform 0.16s ease' }}>
           {page === 'home'              && <HomePage navigate={navigate} />}
-          {page === 'internships'       && <InternshipsPage navigate={navigate} />}
+          {page === 'internships'       && <InternshipsPage navigate={navigate} initialSearch={(pageData.search as string) || (pageData.category as string) || ''} initialCategory={pageData.category as string} />}
           {page === 'internship-detail' && <InternshipDetailPage navigate={navigate} id={Number(pageData.id ?? 1)} backendId={pageData.backendId as string | undefined} />}
-          {page === 'companies'         && <CompaniesPage navigate={navigate} />}
+          {page === 'companies'         && <CompaniesPage navigate={navigate} initialSearch={pageData.search as string} />}
           {page === 'company-detail'    && <CompanyDetailPage navigate={navigate} id={Number(pageData.id ?? 1)} backendId={pageData.backendId as string | undefined} companyName={pageData.companyName as string | undefined} />}
           {page === 'reviews'           && <ReviewsPage navigate={navigate} />}
-          {page === 'about'             && <AboutPage />}
+          {page === 'about'             && <AboutPage navigate={navigate} />}
         </div>
       )}
     </div>

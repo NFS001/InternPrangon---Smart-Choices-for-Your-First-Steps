@@ -1,4 +1,9 @@
 import React from 'react';
+import type { Navigate } from '../data/index';
+
+interface Props {
+  navigate?: Navigate;
+}
 
 /* ─── Team Member ───────────────────────────────────────────── */
 function TeamMember({ initials, name, role, color, bg }: { initials: string; name: string; role: string; color: string; bg: string }) {
@@ -42,7 +47,7 @@ function HowStep({ num, title, body, delay }: { num: string; title: string; body
 }
 
 /* ─── AboutPage ─────────────────────────────────────────────── */
-export default function AboutPage() {
+export default function AboutPage({ navigate }: Props) {
   return (
     <div className="animate-page-enter bg-white min-h-screen">
 
@@ -56,7 +61,7 @@ export default function AboutPage() {
               <span className="text-brand-600">for students.</span>
             </h1>
             <p className="text-xl text-neutral-500 leading-relaxed max-w-2xl animate-fade-up delay-300">
-              InternPrangon started in 2023 inside a software engineering classroom at BUET. A group of students frustrated by scattered job boards, fake listings, and zero transparency about what internships were actually like.
+              InternPrangon started in 2026 inside a software engineering classroom at BRAC. A group of students frustrated by scattered job boards, fake listings, and zero transparency about what internships were actually like.
             </p>
             <p className="text-xl text-neutral-500 leading-relaxed max-w-2xl mt-4 animate-fade-up delay-400">
               So we built what we wished existed.
@@ -73,7 +78,7 @@ export default function AboutPage() {
               { value: '1,200+', label: 'Active listings', sub: 'updated weekly' },
               { value: '380+',   label: 'Verified companies', sub: 'identity confirmed' },
               { value: '8,400+', label: 'Registered students', sub: 'across Bangladesh' },
-              { value: '2023',   label: 'Founded', sub: 'Dhaka, Bangladesh' },
+              { value: '2026',   label: 'Founded', sub: 'Dhaka, Bangladesh' },
             ].map((s, i) => (
               <div key={s.label} className={`text-center animate-fade-up`} style={{ animationDelay: `${i * 80}ms` }}>
                 <p className="text-4xl font-extrabold text-brand-950">{s.value}</p>
@@ -199,16 +204,15 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-8">
           <div className="text-center mb-12 animate-fade-up delay-100">
             <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-accent-500 mb-3">The Team</p>
-            <h2 className="text-4xl font-extrabold text-neutral-900">Made by BUET students</h2>
+            <h2 className="text-4xl font-extrabold text-neutral-900">Made by BRAC students</h2>
             <p className="text-neutral-500 mt-3 text-base">A software engineering capstone project that became a real platform.</p>
           </div>
-          <div className="flex justify-center gap-12 flex-wrap">
+          <div className="flex justify-center gap-8 lg:gap-12 flex-wrap">
             {[
-              { initials: 'AR', name: 'Arafat Rahman',    role: 'Project Lead & Backend',   color: '#2845e2', bg: '#eff4ff' },
-              { initials: 'NS', name: 'Nusrat Sultana',   role: 'UI/UX & Frontend',          color: '#f97316', bg: '#fff7ed' },
-              { initials: 'TI', name: 'Tanvir Islam',     role: 'Backend & Database',        color: '#059669', bg: '#f0fdf4' },
-              { initials: 'ZH', name: 'Zara Hossain',     role: 'Frontend & Testing',        color: '#7c3aed', bg: '#f5f3ff' },
-              { initials: 'MK', name: 'Mostafa Karim',    role: 'DevOps & Infrastructure',   color: '#0284c7', bg: '#eff6ff' },
+              { initials: 'NC', name: 'Nafis Uddin Chowdhury',      role: 'Project Lead & Full Stack',    color: '#2845e2', bg: '#eff4ff' },
+              { initials: 'FE', name: 'Farhana Tasnim Eva',         role: 'UI/UX & Frontend Lead',       color: '#f97316', bg: '#fff7ed' },
+              { initials: 'SB', name: 'Syed Kawnain Tahmid Billah', role: 'Backend & System Architect', color: '#059669', bg: '#f0fdf4' },
+              { initials: 'MF', name: 'Md. Muhtasim Fuad',          role: 'Database & QA Engineer',      color: '#7c3aed', bg: '#f5f3ff' },
             ].map((member, i) => (
               <div key={member.name} style={{ animationDelay: `${i * 80 + 200}ms` }}>
                 <TeamMember {...member} />
@@ -216,7 +220,7 @@ export default function AboutPage() {
             ))}
           </div>
           <p className="text-center text-xs text-neutral-400 mt-10">
-            Advised by faculty at the Department of Computer Science & Engineering, BUET.
+            Advised by faculty at the Department of Computer Science & Engineering, BRAC.
           </p>
         </div>
       </section>
@@ -234,10 +238,16 @@ export default function AboutPage() {
             <p className="text-brand-200 mt-3 text-base">Join 8,400+ students who found their opportunity on InternPrangon.</p>
           </div>
           <div className="relative shrink-0 flex gap-3">
-            <button className="h-12 px-8 bg-accent-500 hover:bg-accent-600 text-white font-bold text-sm rounded-xl transition-all duration-150 active:scale-95 shadow-lg shadow-accent-900/30">
+            <button
+              onClick={() => navigate?.('register', { as: 'student' })}
+              className="h-12 px-8 bg-accent-500 hover:bg-accent-600 text-white font-bold text-sm rounded-xl transition-all duration-150 active:scale-95 shadow-lg shadow-accent-900/30"
+            >
               Create Free Account
             </button>
-            <button className="h-12 px-8 bg-white/10 hover:bg-white/20 text-white font-semibold text-sm rounded-xl transition-all duration-150 border border-white/20">
+            <button
+              onClick={() => navigate?.('internships')}
+              className="h-12 px-8 bg-white/10 hover:bg-white/20 text-white font-semibold text-sm rounded-xl transition-all duration-150 border border-white/20"
+            >
               Browse Internships
             </button>
           </div>
@@ -252,7 +262,7 @@ export default function AboutPage() {
             <span className="font-extrabold text-brand-600">prangon</span>
             <span className="w-1.5 h-1.5 rounded-full bg-accent-500 ml-0.5 mb-1.5" />
           </div>
-          <p className="text-xs text-neutral-400">© 2024 InternPrangon · Smart Choices for Your First Steps</p>
+          <p className="text-xs text-neutral-400">© 2026 InternPrangon · Smart Choices for Your First Steps</p>
           <div className="flex gap-4 text-xs text-neutral-400">
             <a href="#" className="hover:text-neutral-700 transition-colors">Privacy</a>
             <a href="#" className="hover:text-neutral-700 transition-colors">Terms</a>

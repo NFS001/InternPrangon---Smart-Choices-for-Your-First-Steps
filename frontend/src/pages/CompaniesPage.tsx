@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import type { Navigate } from "../data/index";
+import { COMPANIES } from "../data/index";
 import { getCompanyDirectory } from "../api/client";
 
 interface Props {
   navigate: Navigate;
+  initialSearch?: string;
 }
 
 interface DisplayCompany {
   id: number;
-  backendId: string;
+  backendId?: string;
   name: string;
   industry: string;
   location: string;
@@ -47,11 +49,17 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-export default function CompaniesPage({ navigate }: Props) {
-  const [search, setSearch] = useState("");
+export default function CompaniesPage({ navigate, initialSearch = "" }: Props) {
+  const [search, setSearch] = useState(initialSearch);
   const [sortBy, setSortBy] = useState<"rating" | "stipend" | "openings">("rating");
-  const [companyList, setCompanyList] = useState<DisplayCompany[]>([]);
+  const [companyList, setCompanyList] = useState<DisplayCompany[]>(COMPANIES as unknown as DisplayCompany[]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (initialSearch !== undefined) {
+      setSearch(initialSearch);
+    }
+  }, [initialSearch]);
 
   useEffect(() => {
     setLoading(true);
@@ -79,15 +87,24 @@ export default function CompaniesPage({ navigate }: Props) {
             size: "10–200",
             about: c.description || "",
             tags: [c.industry || "Technology", c.verificationStatus === "Approved" ? "Verified" : "Pending"],
-            founded: c.createdAt ? new Date(c.createdAt).getFullYear().toString() : "2024",
+            founded: c.createdAt ? new Date(c.createdAt).getFullYear().toString() : "2026",
           }));
-          setCompanyList(mapped);
+
+          const combined = [...mapped];
+          const mappedNames = new Set(mapped.map((m) => m.name.toLowerCase().trim()));
+          (COMPANIES as unknown as DisplayCompany[]).forEach((mock) => {
+            if (!mappedNames.has(mock.name.toLowerCase().trim())) {
+              combined.push(mock);
+            }
+          });
+
+          setCompanyList(combined);
         } else {
-          setCompanyList([]);
+          setCompanyList(COMPANIES as unknown as DisplayCompany[]);
         }
       })
       .catch(() => {
-        setCompanyList([]);
+        setCompanyList(COMPANIES as unknown as DisplayCompany[]);
       })
       .finally(() => {
         setLoading(false);
@@ -100,7 +117,8 @@ export default function CompaniesPage({ navigate }: Props) {
     (c) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.industry.toLowerCase().includes(search.toLowerCase()) ||
-      c.location.toLowerCase().includes(search.toLowerCase())
+      c.location.toLowerCase().includes(search.toLowerCase()) ||
+      (c.tags && c.tags.some((t) => t.toLowerCase().includes(search.toLowerCase())))
   ).sort((a, b) => {
     if (sortBy === "rating") return b.rating - a.rating;
     if (sortBy === "openings") return b.activeInternships - a.activeInternships;
