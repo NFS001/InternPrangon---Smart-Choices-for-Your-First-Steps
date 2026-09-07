@@ -1,13 +1,36 @@
 import { useState, useEffect } from "react";
 import type { Navigate } from "../data/index";
-import { COMPANIES } from "../data/index";
 import { getCompanyDirectory } from "../api/client";
 
 interface Props {
   navigate: Navigate;
 }
 
+interface DisplayCompany {
+  id: number;
+  backendId: string;
+  name: string;
+  industry: string;
+  location: string;
+  verified: boolean;
+  verificationStatus: "Pending" | "Approved" | "Rejected";
+  rating: number;
+  reviewCount: number;
+  avgStipend: string;
+  activeInternships: number;
+  logo: string;
+  logoBg: string;
+  logoColor: string;
+  website: string;
+  description: string;
+  size: string;
+  about: string;
+  tags: string[];
+  founded: string;
+}
+
 function StarRating({ rating }: { rating: number }) {
+  if (rating <= 0) return null;
   return (
     <span className="inline-flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((n) => (
@@ -27,33 +50,48 @@ function StarRating({ rating }: { rating: number }) {
 export default function CompaniesPage({ navigate }: Props) {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"rating" | "stipend" | "openings">("rating");
-  const [companyList, setCompanyList] = useState(COMPANIES);
+  const [companyList, setCompanyList] = useState<DisplayCompany[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     const apiSort = sortBy === "stipend" ? "averageStipend" : (sortBy === "rating" ? "rating" : undefined);
-    getCompanyDirectory({ sortBy: apiSort, limit: 20 })
+    getCompanyDirectory({ sortBy: apiSort, limit: 50 })
       .then((res) => {
         if (res.companies && res.companies.length > 0) {
-          const mapped = res.companies.map((c, idx) => ({
-            id: idx + 100,
+          const mapped: DisplayCompany[] = res.companies.map((c, idx) => ({
+            id: idx + 1,
+            backendId: c._id,
             name: c.companyName,
-            industry: c.industry || "Technology",
+            industry: c.industry || "Software & Technology",
             location: "Dhaka, Bangladesh",
             verified: c.verificationStatus === "Approved",
-            rating: c.averageRating || 4.5,
+            verificationStatus: c.verificationStatus,
+            rating: c.averageRating || 0,
             reviewCount: c.reviewCount || 0,
-            avgStipend: c.averageStipend ? `BDT ${c.averageStipend.toLocaleString()}/mo` : "Not reported",
-            activeInternships: 1,
+            avgStipend: c.averageStipend > 0 ? `BDT ${c.averageStipend.toLocaleString()}/mo` : "Not reported",
+            activeInternships: 0,
             logo: c.companyName.slice(0, 2).toUpperCase(),
-            logoBg: "#eff6ff",
-            logoColor: "#2563eb",
-            website: c.website || "#",
-            description: c.description || "Verified company on InternPrangon.",
+            logoBg: "#f5f3ff",
+            logoColor: "#7c3aed",
+            website: c.website || "",
+            description: c.description || "Organization registered on InternPrangon.",
+            size: "10–200",
+            about: c.description || "",
+            tags: [c.industry || "Technology", c.verificationStatus === "Approved" ? "Verified" : "Pending"],
+            founded: c.createdAt ? new Date(c.createdAt).getFullYear().toString() : "2024",
           }));
           setCompanyList(mapped);
+        } else {
+          setCompanyList([]);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setCompanyList([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [sortBy]);
 
   const parseStipend = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
@@ -73,24 +111,26 @@ export default function CompaniesPage({ navigate }: Props) {
   return (
     <div className="min-h-screen bg-neutral-50">
       {/* Page Header */}
-      <div className="bg-white border-b border-neutral-100 px-8 py-10">
-        <h1
-          className="text-4xl font-bold italic text-brand-700 mb-1"
-          style={{ fontFamily: "Fraunces, serif" }}
-        >
-          380+ verified companies
-        </h1>
-        <p className="text-neutral-400 text-sm mt-1">
-          Discover internship opportunities at top companies across industries.
-        </p>
+      <div className="bg-white border-b border-neutral-100 px-6 py-8 lg:px-8 lg:py-10">
+        <div className="max-w-7xl mx-auto">
+          <h1
+            className="text-3xl lg:text-4xl font-bold italic text-neutral-900 mb-1"
+            style={{ fontFamily: "Fraunces, serif" }}
+          >
+            Company Directory
+          </h1>
+          <p className="text-neutral-500 text-sm mt-1">
+            Discover companies offering internships and read authentic verified reviews.
+          </p>
+        </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-8 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 lg:px-8">
         {/* Search + Sort */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
           <div className="relative flex-1">
             <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -106,7 +146,7 @@ export default function CompaniesPage({ navigate }: Props) {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search companies, industries, locations..."
+              placeholder="Search companies, industries, sectors..."
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm text-neutral-700 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-brand-400 transition"
             />
           </div>
@@ -114,114 +154,109 @@ export default function CompaniesPage({ navigate }: Props) {
           <div className="flex gap-2">
             {(
               [
-                { key: "rating", label: "Highest Rating" },
-                { key: "openings", label: "Most Openings" },
-                { key: "stipend", label: "Best Stipend" },
+                { id: "rating", label: "Top Rated" },
+                { id: "stipend", label: "Highest Stipend" },
               ] as const
-            ).map(({ key, label }) => (
+            ).map((opt) => (
               <button
-                key={key}
-                onClick={() => setSortBy(key)}
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition whitespace-nowrap ${
-                  sortBy === key
-                    ? "bg-brand-600 text-white border-violet-600 shadow-sm"
-                    : "bg-white text-neutral-600 border-neutral-200 hover:border-brand-300 hover:text-brand-600"
+                key={opt.id}
+                onClick={() => setSortBy(opt.id)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition border ${
+                  sortBy === opt.id
+                    ? "bg-brand-600 text-white border-brand-600 shadow-sm"
+                    : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300"
                 }`}
               >
-                {label}
+                {opt.label}
               </button>
             ))}
           </div>
         </div>
 
-        <p className="text-xs text-neutral-400 mb-5">
-          Showing {filtered.length} {filtered.length === 1 ? "company" : "companies"}
-        </p>
-
-        {/* Grid */}
-        <div className="grid grid-cols-4 gap-4">
-          {filtered.map((company) => (
-            <div
-              key={company.id}
-              onClick={() => navigate("company-detail", { id: company.id })}
-              className="bg-white border border-neutral-100 rounded-2xl p-5 cursor-pointer hover:shadow-lg hover:border-brand-200 transition-all duration-200 flex flex-col gap-3 group"
-            >
-              {/* Logo + Verified */}
-              <div className="flex items-start justify-between">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold flex-shrink-0"
-                  style={{ backgroundColor: company.logoBg, color: company.logoColor }}
-                >
-                  {company.logo}
+        {/* Company Cards Grid */}
+        {loading ? (
+          <div className="bg-white border border-neutral-200 rounded-3xl p-16 text-center text-neutral-400 shadow-sm">
+            Loading company directory...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map((company) => (
+              <div
+                key={company.backendId || company.id}
+                onClick={() =>
+                  navigate("company-detail", {
+                    id: company.id,
+                    backendId: company.backendId,
+                    companyName: company.name,
+                  })
+                }
+                className="bg-white border border-neutral-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 cursor-pointer flex flex-col gap-4 group"
+              >
+                {/* Top row: Logo + verified */}
+                <div className="flex items-start justify-between">
+                  <div
+                    className="w-13 h-13 rounded-2xl flex items-center justify-center text-sm font-extrabold flex-shrink-0 bg-brand-50 text-brand-700 border border-brand-100 p-3"
+                  >
+                    {company.logo}
+                  </div>
+                  {company.verified ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-success-700 bg-success-50 px-2.5 py-1 rounded-full border border-success-200">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Verified
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                      Pending Verification
+                    </span>
+                  )}
                 </div>
-                {company.verified && (
-                  <span className="flex items-center gap-1 text-xs text-brand-600 font-medium bg-brand-50 px-2 py-0.5 rounded-full border border-brand-100">
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Verified
-                  </span>
-                )}
-              </div>
 
-              {/* Name + meta */}
-              <div>
-                <h3 className="font-bold text-neutral-800 group-hover:text-brand-700 transition text-sm leading-tight">
-                  {company.name}
-                </h3>
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  <span className="text-xs text-neutral-400">{company.industry}</span>
-                  <span className="text-xs text-neutral-300">·</span>
-                  <span className="text-xs text-neutral-400">{company.size}</span>
-                  <span className="text-xs text-neutral-300">·</span>
-                  <span className="text-xs text-neutral-400">{company.location}</span>
+                {/* Name + meta */}
+                <div>
+                  <h3 className="font-bold text-neutral-900 group-hover:text-brand-700 transition text-base leading-tight mb-1">
+                    {company.name}
+                  </h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="text-xs text-neutral-500 font-medium">{company.industry}</span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <p className="text-xs text-neutral-600 line-clamp-2 leading-relaxed">
+                  {company.description}
+                </p>
+
+                {/* Rating */}
+                <div className="flex items-center gap-2 mt-auto pt-3 border-t border-neutral-100">
+                  {company.reviewCount > 0 ? (
+                    <>
+                      <StarRating rating={company.rating} />
+                      <span className="text-xs font-bold text-neutral-900">
+                        {company.rating.toFixed(1)}
+                      </span>
+                      <span className="text-xs text-neutral-400">({company.reviewCount} reviews)</span>
+                    </>
+                  ) : (
+                    <span className="text-xs text-neutral-400 font-medium italic">
+                      No reviews yet (0 ratings)
+                    </span>
+                  )}
                 </div>
               </div>
+            ))}
+          </div>
+        )}
 
-              {/* Rating */}
-              <div className="flex items-center gap-1.5">
-                <StarRating rating={company.rating} />
-                <span className="text-xs font-semibold text-neutral-700">
-                  {company.rating.toFixed(1)}
-                </span>
-                <span className="text-xs text-neutral-400">({company.reviewCount})</span>
-              </div>
-
-              {/* Bottom row */}
-              <div className="flex items-center justify-between mt-auto pt-2 border-t border-neutral-50">
-                <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                  {company.avgStipend}
-                </span>
-                <span className="text-xs text-neutral-500">
-                  <span className="font-semibold text-brand-600">{company.activeInternships}</span>{" "}
-                  {company.activeInternships === 1 ? "opening" : "openings"}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 text-neutral-400">
-            <svg
-              className="w-12 h-12 mb-4 opacity-30"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-              />
-            </svg>
-            <p className="text-sm font-medium">No companies match your search.</p>
-            <p className="text-xs mt-1">Try a different keyword or clear your search.</p>
+        {!loading && filtered.length === 0 && (
+          <div className="bg-white border border-dashed border-neutral-300 rounded-3xl p-16 text-center shadow-sm">
+            <h3 className="font-bold text-neutral-800 text-base mb-1">No companies found</h3>
+            <p className="text-xs text-neutral-500">Try changing your search terms.</p>
           </div>
         )}
       </div>

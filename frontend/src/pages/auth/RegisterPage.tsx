@@ -4,7 +4,13 @@ import { type Navigate } from "../../data/index";
 interface Props {
   navigate: Navigate;
   onLogin: (as: "student" | "company" | "admin") => void;
-  onSubmit: (name: string, email: string, password: string, role: "student" | "company") => Promise<void>;
+  onSubmit: (
+    name: string,
+    email: string,
+    password: string,
+    role: "student" | "company",
+    extra?: { industry?: string; university?: string; year?: string }
+  ) => Promise<void>;
   error?: string;
   loading?: boolean;
   as?: "student" | "company";
@@ -29,6 +35,7 @@ const companySizeOptions = ["1–10", "11–50", "51–200", "201–500", "500+"
 
 export default function RegisterPage({ navigate, onLogin, onSubmit, error, loading, as: defaultTab }: Props) {
   const [tab, setTab] = useState<"student" | "company">(defaultTab ?? "student");
+  const [localError, setLocalError] = useState("");
 
   // Student fields
   const [studentName, setStudentName] = useState("");
@@ -48,12 +55,27 @@ export default function RegisterPage({ navigate, onLogin, onSubmit, error, loadi
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const name = tab === "student" ? studentName : companyName;
-    const email = tab === "student" ? studentEmail : contactEmail;
+    setLocalError("");
+    const name = tab === "student" ? studentName.trim() : companyName.trim();
+    const email = tab === "student" ? studentEmail.trim() : contactEmail.trim();
     const password = tab === "student" ? studentPassword : companyPassword;
     const confirmation = tab === "student" ? studentConfirm : companyConfirm;
-    if (password !== confirmation) return;
-    await onSubmit(name, email, password, tab);
+
+    if (!name || !email || !password) {
+      setLocalError("Please fill in all required fields.");
+      return;
+    }
+
+    if (password !== confirmation) {
+      setLocalError("Passwords do not match");
+      return;
+    }
+
+    const extra = tab === "company"
+      ? { industry: industry.trim() || undefined }
+      : { university: university.trim() || undefined, year: year || undefined };
+
+    await onSubmit(name, email, password, tab, extra);
   }
 
   const inputClass =
@@ -106,7 +128,11 @@ export default function RegisterPage({ navigate, onLogin, onSubmit, error, loadi
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+            {(localError || error) && (
+              <p className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 font-medium">
+                {localError || error}
+              </p>
+            )}
             {tab === "student" ? (
               <>
                 <div className="flex flex-col gap-1.5">

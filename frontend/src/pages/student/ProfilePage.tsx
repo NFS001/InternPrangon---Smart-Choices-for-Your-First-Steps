@@ -6,6 +6,7 @@ import {
   updateStudentProfile,
   getMyResume,
   uploadResume,
+  getMyApplications,
   type ApiUser,
 } from "../../api/client";
 
@@ -30,11 +31,12 @@ export default function ProfilePage({ navigate, currentUser }: Props) {
   const [name] = useState(user?.name || "Student");
   const [email] = useState(user?.email || "student@example.com");
   const [bio, setBio] = useState("");
-  const [skills, setSkills] = useState<string[]>(["React", "TypeScript", "Node.js"]);
+  const [skills, setSkills] = useState<string[]>([]);
   const [points, setPoints] = useState(0);
   const [badge, setBadge] = useState("Newbie");
   const [resumeName, setResumeName] = useState<string | null>(null);
   const [resumeDate, setResumeDate] = useState<string | null>(null);
+  const [appliedCount, setAppliedCount] = useState(0);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editBio, setEditBio] = useState("");
@@ -47,10 +49,8 @@ export default function ProfilePage({ navigate, currentUser }: Props) {
     getStudentProfile()
       .then((res) => {
         if (res.profile) {
-          setBio(res.profile.bio || "Student at InternPrangon looking for great internship opportunities.");
-          if (res.profile.skills && res.profile.skills.length > 0) {
-            setSkills(res.profile.skills);
-          }
+          setBio(res.profile.bio || "");
+          setSkills(res.profile.skills || []);
           setPoints(res.profile.points ?? 0);
           setBadge(res.profile.badge ?? "Newbie");
           setEditBio(res.profile.bio || "");
@@ -62,13 +62,20 @@ export default function ProfilePage({ navigate, currentUser }: Props) {
     getMyResume()
       .then((res) => {
         if (res.resume && res.resume.filePath) {
-          const filename = res.resume.filePath.split(/[/\\]/).pop() || "resume.pdf";
+          const filename = res.resume.originalName || `${name.replace(/\s+/g, '_')}_Resume.pdf`;
           setResumeName(filename);
           setResumeDate(new Date(res.resume.uploadedDate).toLocaleDateString());
         }
       })
       .catch(() => {});
-  }, [user?.id]);
+
+    // Fetch applications
+    getMyApplications()
+      .then((res) => {
+        setAppliedCount(res.applications?.length || 0);
+      })
+      .catch(() => {});
+  }, [user?.id, name]);
 
   const initials = getInitials(name);
 
@@ -92,6 +99,7 @@ export default function ProfilePage({ navigate, currentUser }: Props) {
       setBio(editBio);
       setIsEditing(false);
       setMessage({ type: "success", text: "Profile updated successfully!" });
+      window.dispatchEvent(new CustomEvent('profile-updated'));
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to save profile." });
@@ -106,14 +114,18 @@ export default function ProfilePage({ navigate, currentUser }: Props) {
       const updated = [...skills, trimmed];
       setSkills(updated);
       setNewSkill("");
-      updateStudentProfile({ skills: updated }).catch(() => {});
+      updateStudentProfile({ skills: updated }).then(() => {
+        window.dispatchEvent(new CustomEvent('profile-updated'));
+      }).catch(() => {});
     }
   };
 
   const handleRemoveSkill = (toRemove: string) => {
     const updated = skills.filter((s) => s !== toRemove);
     setSkills(updated);
-    updateStudentProfile({ skills: updated }).catch(() => {});
+    updateStudentProfile({ skills: updated }).then(() => {
+      window.dispatchEvent(new CustomEvent('profile-updated'));
+    }).catch(() => {});
   };
 
   const handleResumeFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,10 +135,11 @@ export default function ProfilePage({ navigate, currentUser }: Props) {
     setMessage(null);
     try {
       const res = await uploadResume(file);
-      const filename = res.resume.filePath.split(/[/\\]/).pop() || file.name;
+      const filename = res.resume.originalName || file.name || `${name.replace(/\s+/g, '_')}_Resume.pdf`;
       setResumeName(filename);
       setResumeDate(new Date(res.resume.uploadedDate).toLocaleDateString());
       setMessage({ type: "success", text: "Resume uploaded successfully!" });
+      window.dispatchEvent(new CustomEvent('profile-updated'));
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to upload resume." });
@@ -306,6 +319,24 @@ export default function ProfilePage({ navigate, currentUser }: Props) {
             <p className="text-xs text-neutral-400 mt-1">Enables 1-click internship applications</p>
           </div>
         )}
+      </div>
+
+      {/* My Applications Section */}
+      <div className="bg-white border border-neutral-200 rounded-2xl p-5 mb-6 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="font-semibold text-neutral-800">My Applications</h2>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              {appliedCount === 0 ? "No active applications yet" : `${appliedCount} submitted application${appliedCount === 1 ? '' : 's'}`}
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("applications")}
+            className="text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3.5 py-2 rounded-xl transition-colors"
+          >
+            View All Applications →
+          </button>
+        </div>
       </div>
 
       {/* Contributor info (Feature 15 & 16) */}

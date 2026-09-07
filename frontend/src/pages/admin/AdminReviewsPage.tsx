@@ -19,6 +19,7 @@ export default function AdminReviewsPage({ navigate }: { navigate: Navigate }) {
         if (res.flags && res.flags.length > 0) {
           const mapped: Array<ReportedReview & { flagId?: string }> = res.flags.map((f: ApiFlagItem, idx: number) => ({
             id: idx + 1,
+            companyId: 1,
             flagId: f._id,
             companyName: 'Platform Partner',
             companyLogo: 'PP',

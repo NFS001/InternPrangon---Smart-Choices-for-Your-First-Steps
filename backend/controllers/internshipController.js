@@ -1,5 +1,6 @@
 const Internship = require('../models/Internship');
 const CompanyProfile = require('../models/CompanyProfile');
+const Application = require('../models/Application');
 const { isDeadlineSoon, DEADLINE_REMINDER_WINDOW_MS } = require('../utils/deadlineHelper');
 
 // Post a new Internship (Feature 4)
@@ -22,14 +23,23 @@ const postInternship = async (req, res) => {
         }
 
         // Step 1: Check company profile and its verification status
-        const companyProfile = await CompanyProfile.findOne({ user: companyId });
+        let companyProfile = await CompanyProfile.findOne({ user: companyId });
 
         if (!companyProfile) {
-            return res.status(404).json({ message: 'Company profile not found!' });
+            companyProfile = await CompanyProfile.create({
+                user: companyId,
+                companyName: req.user.name || 'Company',
+                industry: 'Software & Technology',
+                description: 'Technology partner providing internship opportunities.',
+                verificationStatus: 'Pending',
+                verificationDocument: 'company_reg_doc.pdf'
+            });
         }
 
         if (companyProfile.verificationStatus !== 'Approved') {
-            return res.status(403).json({ message: 'Only Approved companies can post internships!' });
+            return res.status(403).json({
+                message: 'Only Approved companies can post internships! Your verification status is currently ' + companyProfile.verificationStatus + '.'
+            });
         }
 
         // Step 2: If Approved, create the internship post
@@ -87,8 +97,11 @@ const searchInternships = async (req, res) => {
             return res.status(400).json({ message: 'Sort order must be asc or desc' });
         }
 
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
         const query = {};
-        query.deadline = { $gte: new Date() };
+        query.deadline = { $gte: startOfToday };
 
         // 1. Keyword Search (Title বা Description-এ খুঁজবে)
         if (keyword) {
@@ -126,6 +139,13 @@ const searchInternships = async (req, res) => {
                 .limit(limitNumber)
         ]);
 
+        const companyUserIds = [...new Set(internships.map((i) => i.companyId).filter(Boolean))];
+        const companyProfiles = await CompanyProfile.find({ user: { $in: companyUserIds } });
+        const profileMap = {};
+        companyProfiles.forEach((p) => {
+            profileMap[p.user.toString()] = p;
+        });
+
         res.status(200).json({
             message: 'Internships fetched successfully!',
             resultsFound: internships.length,
@@ -133,12 +153,51 @@ const searchInternships = async (req, res) => {
             page: pageNumber,
             limit: limitNumber,
             totalPages: Math.ceil(totalResults / limitNumber),
-            internships: internships.map((internship) => ({
-                ...internship.toObject(),
-                deadlineSoon: isDeadlineSoon(internship.deadline)
-            }))
+            internships: internships.map((internship) => {
+                const compProfile = profileMap[internship.companyId?.toString()];
+                return {
+                    ...internship.toObject(),
+                    company: compProfile?.companyName || 'Partner Company',
+                    companyProfileId: compProfile?._id,
+                    companyIndustry: compProfile?.industry || 'Software & Technology',
+                    deadlineSoon: isDeadlineSoon(internship.deadline)
+                };
+            })
         });
 
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// Public: Get specific internship details by ID
+const getInternshipById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const internship = await Internship.findById(id);
+        if (!internship) {
+            return res.status(404).json({ message: 'Internship not found' });
+        }
+
+        const companyProfile = await CompanyProfile.findOne({ user: internship.companyId });
+        const now = new Date();
+        const deadlineDate = new Date(internship.deadline);
+        const diffTime = deadlineDate.getTime() - now.getTime();
+        const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+
+        res.status(200).json({
+            message: 'Internship fetched successfully!',
+            internship: {
+                ...internship.toObject(),
+                company: companyProfile?.companyName || 'Partner Company',
+                companyProfileId: companyProfile?._id,
+                companyIndustry: companyProfile?.industry || 'Software & Technology',
+                companyWebsite: companyProfile?.website || '',
+                companyVerified: companyProfile?.verificationStatus === 'Approved',
+                daysLeft,
+                deadlineSoon: isDeadlineSoon(internship.deadline)
+            }
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
@@ -166,4 +225,76 @@ const getUpcomingDeadlines = async (req, res) => {
     }
 };
 
-module.exports = { postInternship, searchInternships, getUpcomingDeadlines };
+// Company: Get all internships posted by logged-in company with applicant statistics
+const getMyCompanyInternships = async (req, res) => {
+    try {
+        const companyId = req.user._id;
+        const internships = await Internship.find({ companyId }).sort({ createdAt: -1 });
+
+        const now = new Date();
+        const internshipsWithMetrics = await Promise.all(
+            internships.map(async (internship) => {
+                const applications = await Application.find({ internship: internship._id });
+                const totalApplicants = applications.length;
+                const shortlisted = applications.filter((a) => a.status === 'Shortlisted').length;
+                const interviewing = applications.filter((a) => a.status === 'Interviewing').length;
+                const applied = applications.filter((a) => a.status === 'Applied').length;
+                const rejected = applications.filter((a) => a.status === 'Rejected').length;
+
+                const deadlineDate = new Date(internship.deadline);
+                const diffTime = deadlineDate.getTime() - now.getTime();
+                const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                const isExpired = deadlineDate < now;
+
+                return {
+                    ...internship.toObject(),
+                    status: isExpired ? 'expired' : 'active',
+                    daysLeft,
+                    totalApplicants,
+                    shortlisted,
+                    interviewing,
+                    applied,
+                    rejected
+                };
+            })
+        );
+
+        res.status(200).json({
+            message: 'Company internships fetched successfully!',
+            count: internshipsWithMetrics.length,
+            internships: internshipsWithMetrics
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// Company: Delete an internship
+const deleteInternship = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const companyId = req.user._id;
+
+        const internship = await Internship.findOneAndDelete({ _id: id, companyId });
+        if (!internship) {
+            return res.status(404).json({ message: 'Internship not found or unauthorized' });
+        }
+
+        await Application.deleteMany({ internship: id });
+
+        res.status(200).json({
+            message: 'Internship and associated applications deleted successfully!'
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+module.exports = {
+    postInternship,
+    searchInternships,
+    getUpcomingDeadlines,
+    getMyCompanyInternships,
+    deleteInternship,
+    getInternshipById
+};

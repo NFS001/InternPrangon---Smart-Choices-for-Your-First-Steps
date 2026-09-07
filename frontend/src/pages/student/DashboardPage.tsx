@@ -8,6 +8,7 @@ import {
   getMyBookmarks,
   getMyApplications,
   getMyNotifications,
+  searchInternships,
   type ApiUser,
   type ApiApplicationItem,
   type ApiNotificationItem
@@ -31,7 +32,7 @@ const BADGE_INFO: Record<string, { icon: string; nextTier: string; nextPts: numb
   Explorer: { icon: "🔭", nextTier: "Insider", nextPts: 300, minPts: 100 },
   Insider: { icon: "💡", nextTier: "Veteran", nextPts: 600, minPts: 300 },
   Veteran: { icon: "⚡", nextTier: "Elite", nextPts: 1000, minPts: 600 },
-  Elite: { icon: "🏆", nextTier: "Elite", nextPts: 1000, minPts: 1000 },
+  Elite: { icon: "🏆", nextTier: "Max", nextPts: 1000, minPts: 1000 },
 };
 
 export default function DashboardPage({ navigate, currentUser }: Props) {
@@ -42,14 +43,14 @@ export default function DashboardPage({ navigate, currentUser }: Props) {
   const [badge, setBadge] = useState("Newbie");
   const [profileCompletion, setProfileCompletion] = useState(() => {
     const cached = localStorage.getItem("student_profile_completion");
-    return cached ? Number(cached) : 100;
+    return cached ? Number(cached) : 25;
   });
   const [savedCount, setSavedCount] = useState(0);
   const [applications, setApplications] = useState<ApiApplicationItem[]>([]);
   const [notifications, setNotifications] = useState<ApiNotificationItem[]>([]);
+  const [recommended, setRecommended] = useState<any[]>(INTERNSHIPS.slice(0, 3));
 
-  useEffect(() => {
-    // 1. Fetch Student Profile
+  const fetchProfileData = () => {
     getStudentProfile()
       .then((res) => {
         if (res.profile) {
@@ -63,7 +64,7 @@ export default function DashboardPage({ navigate, currentUser }: Props) {
           // Check resume to complete calculation
           getMyResume()
             .then((rRes) => {
-              if (rRes.resume) comp += 25;
+              if (rRes.resume && rRes.resume.filePath) comp += 25;
               setProfileCompletion(comp);
               localStorage.setItem("student_profile_completion", String(comp));
             })
@@ -77,6 +78,12 @@ export default function DashboardPage({ navigate, currentUser }: Props) {
         const cached = localStorage.getItem("student_profile_completion");
         if (cached) setProfileCompletion(Number(cached));
       });
+  };
+
+  useEffect(() => {
+    fetchProfileData();
+    const handleUpdate = () => fetchProfileData();
+    window.addEventListener('profile-updated', handleUpdate);
 
     // 2. Fetch Bookmarks
     getMyBookmarks()
@@ -98,9 +105,33 @@ export default function DashboardPage({ navigate, currentUser }: Props) {
         setNotifications(res.notifications || []);
       })
       .catch(() => setNotifications([]));
+
+    // 5. Fetch Live Recommended Internships
+    searchInternships({ limit: 50, sortBy: 'createdAt', sortOrder: 'desc' })
+      .then((res) => {
+        if (res.internships && res.internships.length > 0) {
+          const mapped = res.internships.slice(0, 3).map((bi, idx) => {
+            const companyName = bi.company || "Enterprise Partner";
+            const initials = companyName.trim().slice(0, 2).toUpperCase();
+            return {
+              id: idx + 1,
+              backendId: bi._id,
+              role: bi.title,
+              company: companyName,
+              logo: initials,
+              logoBg: "#eff6ff",
+              logoColor: "#2563eb",
+              type: bi.mode,
+            };
+          });
+          setRecommended(mapped);
+        }
+      })
+      .catch(() => {});
+
+    return () => window.removeEventListener('profile-updated', handleUpdate);
   }, []);
 
-  const recommended = INTERNSHIPS.slice(0, 3);
   const tierData = BADGE_INFO[badge] || BADGE_INFO.Newbie;
   const ptsToNext = Math.max(0, tierData.nextPts - points);
   const progressPercent = tierData.nextPts > tierData.minPts
@@ -177,7 +208,7 @@ export default function DashboardPage({ navigate, currentUser }: Props) {
                   </span>
                 </div>
                 <button
-                  onClick={() => navigate("internship-detail", { id: i.id })}
+                  onClick={() => navigate("internship-detail", { id: i.id, backendId: i.backendId })}
                   className="text-xs text-brand-600 font-medium hover:underline flex-shrink-0"
                 >
                   View
@@ -216,7 +247,9 @@ export default function DashboardPage({ navigate, currentUser }: Props) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-neutral-800 truncate">{title}</p>
-                      <p className="text-xs text-neutral-500 truncate">{internshipObj?.mode || "On-site"}</p>
+                      <p className="text-xs text-neutral-500 truncate">
+                        {(internshipObj as any)?.company || (internshipObj as any)?.companyName || "Enterprise"} • {internshipObj?.mode || "On-site"}
+                      </p>
                     </div>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${statusColor[app.status] || "bg-neutral-100 text-neutral-700"}`}>
                       {app.status}

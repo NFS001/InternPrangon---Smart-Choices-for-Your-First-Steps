@@ -128,6 +128,7 @@ export default function WriteReviewPage({ navigate }: Props) {
         await submitInterviewExperience(companyId, reviewText);
       }
 
+      window.dispatchEvent(new CustomEvent('profile-updated'));
       setSubmitted(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to submit review.";

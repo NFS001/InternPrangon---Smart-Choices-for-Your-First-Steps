@@ -24,9 +24,10 @@ const removeResumeFile = async (filePath) => {
     }
 };
 
-const formatResume = (resume) => ({
+const formatResume = (resume, defaultName = '') => ({
     resumeId: resume._id,
     filePath: resume.filePath,
+    originalName: resume.originalName || defaultName || (resume.filePath ? path.basename(resume.filePath) : 'Resume.pdf'),
     uploadedDate: resume.uploadedDate
 });
 
@@ -37,6 +38,7 @@ const uploadOrUpdateResume = async (req, res) => {
 
     const studentId = req.user._id;
     const newFilePath = path.posix.join('uploads', 'resumes', req.file.filename);
+    const originalName = req.file.originalname || `${(req.user.name || 'Student').replace(/\s+/g, '_')}_Resume.pdf`;
 
     try {
         let resume = await Resume.findOne({ studentId });
@@ -45,17 +47,19 @@ const uploadOrUpdateResume = async (req, res) => {
             resume = await Resume.create({
                 studentId,
                 filePath: newFilePath,
+                originalName,
                 uploadedDate: new Date()
             });
 
             return res.status(201).json({
                 message: 'Resume uploaded successfully!',
-                resume: formatResume(resume)
+                resume: formatResume(resume, originalName)
             });
         }
 
         const oldFilePath = resume.filePath;
         resume.filePath = newFilePath;
+        resume.originalName = originalName;
         resume.uploadedDate = new Date();
         await resume.save();
 
@@ -63,7 +67,7 @@ const uploadOrUpdateResume = async (req, res) => {
 
         res.status(200).json({
             message: 'Resume updated successfully!',
-            resume: formatResume(resume)
+            resume: formatResume(resume, originalName)
         });
     } catch (error) {
         await removeResumeFile(newFilePath);
@@ -79,9 +83,10 @@ const getCurrentResume = async (req, res) => {
             return res.status(404).json({ message: 'Resume not found' });
         }
 
+        const defaultName = `${(req.user.name || 'Student').replace(/\s+/g, '_')}_Resume.pdf`;
         res.status(200).json({
             message: 'Resume fetched successfully!',
-            resume: formatResume(resume)
+            resume: formatResume(resume, defaultName)
         });
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });

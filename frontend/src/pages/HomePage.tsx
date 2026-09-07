@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { type Navigate, INTERNSHIPS, COMPANIES } from "../data/index";
+import { searchInternships } from "../api/client";
 
 interface Props {
   navigate: Navigate;
@@ -24,8 +26,8 @@ const reviews = [
   {
     name: "Tahmina Akter",
     university: "BUET, CSE 3rd Year",
-    text: "InternPrangon made it incredibly easy to find a paid remote internship. I applied to 4 companies and heard back from 3 within a week. Landed my dream role at CloudBase.",
-    badge: "Explorer",
+    text: "InternPrangon made finding a real engineering internship so much easier. The interview experiences shared by seniors were gold.",
+    badge: "Elite",
     initials: "TA",
   },
   {
@@ -53,9 +55,43 @@ const badges = [
 ];
 
 export default function HomePage({ navigate }: Props) {
-  const heroCards = INTERNSHIPS.slice(0, 4);
-  const featuredInternships = INTERNSHIPS.filter((i) => i.featured === true);
+  const [heroCards, setHeroCards] = useState<any[]>(INTERNSHIPS.slice(0, 4));
+  const [featuredInternships, setFeaturedInternships] = useState<any[]>(INTERNSHIPS.filter((i) => i.featured === true));
   const companyTeaser = COMPANIES.slice(0, 8);
+
+  useEffect(() => {
+    searchInternships({ limit: 50, sortBy: 'createdAt', sortOrder: 'desc' })
+      .then((res) => {
+        if (res.internships && res.internships.length > 0) {
+          const mapped = res.internships.map((bi: any, idx: number) => {
+            const companyName = bi.company || "Enterprise Partner";
+            const initials = companyName.trim().slice(0, 2).toUpperCase();
+            let parsedStipend = bi.type === "Paid" ? "Paid" : "Unpaid";
+            const stipendMatch = bi.description?.match(/Stipend:\s*([^\n]+)/i);
+            if (stipendMatch) parsedStipend = stipendMatch[1].trim();
+
+            return {
+              id: idx + 1,
+              backendId: bi._id,
+              role: bi.title,
+              company: companyName,
+              logo: initials,
+              logoBg: "#eff6ff",
+              logoColor: "#2563eb",
+              type: bi.mode,
+              paid: bi.type === "Paid",
+              stipend: parsedStipend,
+              tags: [bi.type, bi.mode],
+              featured: idx < 3,
+            };
+          });
+
+          setHeroCards(mapped.slice(0, 4));
+          setFeaturedInternships(mapped.slice(0, 6));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -126,8 +162,8 @@ export default function HomePage({ navigate }: Props) {
         <div className="hidden lg:grid grid-cols-2 gap-4">
           {heroCards.map((internship) => (
             <button
-              key={internship.id}
-              onClick={() => navigate("internship-detail", { id: internship.id })}
+              key={internship.backendId || internship.id}
+              onClick={() => navigate("internship-detail", { id: internship.id, backendId: internship.backendId })}
               className="bg-white rounded-2xl border border-neutral-200 p-4 text-left hover:shadow-md hover:border-brand-200 transition-all"
             >
               <div
@@ -173,8 +209,8 @@ export default function HomePage({ navigate }: Props) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {featuredInternships.map((internship) => (
             <button
-              key={internship.id}
-              onClick={() => navigate("internship-detail", { id: internship.id })}
+              key={internship.backendId || internship.id}
+              onClick={() => navigate("internship-detail", { id: internship.id, backendId: internship.backendId })}
               className="bg-white rounded-2xl border border-neutral-200 p-6 text-left hover:shadow-lg hover:border-brand-200 transition-all flex flex-col gap-4"
             >
               <div className="flex items-start justify-between">
@@ -191,7 +227,7 @@ export default function HomePage({ navigate }: Props) {
                 <p className="text-sm text-neutral-500 mt-0.5">{internship.company}</p>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {internship.tags.slice(0, 3).map((tag) => (
+                {internship.tags?.slice(0, 3).map((tag: string) => (
                   <span key={tag} className="text-xs bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full">{tag}</span>
                 ))}
               </div>
@@ -244,7 +280,7 @@ export default function HomePage({ navigate }: Props) {
           {companyTeaser.map((company) => (
             <button
               key={company.id}
-              onClick={() => navigate("company-detail", { id: company.id })}
+              onClick={() => navigate("company-detail", { id: company.id, companyName: company.name })}
               className="bg-white rounded-2xl border border-neutral-200 p-5 text-left hover:shadow-md hover:border-brand-200 transition-all"
             >
               <div

@@ -19,7 +19,14 @@ function getInitials(name?: string) {
   return name.slice(0, 2).toUpperCase();
 }
 
-const NAV_ITEMS = [
+interface NavItem {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  badge?: string;
+}
+
+const NAV_ITEMS: NavItem[] = [
   {
     id: 'dashboard',
     label: 'Overview',
@@ -86,7 +93,7 @@ const NAV_ITEMS = [
   },
 ];
 
-const BOTTOM_ITEMS = [
+const BOTTOM_ITEMS: NavItem[] = [
   {
     id: 'profile',
     label: 'Profile',
@@ -156,7 +163,7 @@ export default function StudentSidebar({ currentPage, navigate, onLogout, curren
     badge: 'Newbie'
   });
 
-  useEffect(() => {
+  const fetchProfile = () => {
     getStudentProfile()
       .then((res) => {
         if (res.profile) {
@@ -167,7 +174,14 @@ export default function StudentSidebar({ currentPage, navigate, onLogout, curren
         }
       })
       .catch(() => {});
-  }, [user?.id]);
+  };
+
+  useEffect(() => {
+    fetchProfile();
+    const handleUpdate = () => fetchProfile();
+    window.addEventListener('profile-updated', handleUpdate);
+    return () => window.removeEventListener('profile-updated', handleUpdate);
+  }, [user?.id, currentPage]);
 
   const displayName = user?.name || 'Student';
   const displayEmail = user?.email || 'student@internprangon.com';

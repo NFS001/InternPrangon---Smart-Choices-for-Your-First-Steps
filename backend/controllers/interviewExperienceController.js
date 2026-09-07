@@ -36,7 +36,7 @@ const createInterviewExperience = async (req, res) => {
             company = await CompanyProfile.findById(companyId);
         }
         if (!company) {
-            company = await CompanyProfile.findOne({ companyName: new RegExp(companyId, 'i') }) || await CompanyProfile.findOne();
+            company = await CompanyProfile.findOne({ companyName: new RegExp('^' + companyId + '$', 'i') });
         }
 
         if (!company) {

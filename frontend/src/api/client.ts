@@ -21,6 +21,12 @@ export interface ApiInternship {
   mode: "Remote" | "On-site";
   deadline: string;
   deadlineSoon?: boolean;
+  company?: string;
+  companyProfileId?: string;
+  companyIndustry?: string;
+  companyWebsite?: string;
+  companyVerified?: boolean;
+  daysLeft?: number;
   createdAt: string;
 }
 
@@ -56,6 +62,13 @@ export interface ApiCompanyDirectoryItem {
   description?: string;
   website?: string;
   verificationStatus: "Pending" | "Approved" | "Rejected";
+  verificationDocument?: string;
+  user?: {
+    _id?: string;
+    name?: string;
+    email?: string;
+    role?: string;
+  };
   averageRating: number;
   reviewCount: number;
   averageStipend: number;
@@ -101,7 +114,13 @@ export interface ApiFlagItem {
 export interface ApiApplicationItem {
   applicationId: string;
   internship: string | ApiInternship;
-  resume: string;
+  resume?: string | {
+    id?: string;
+    _id?: string;
+    filePath: string;
+    originalName?: string;
+    uploadedDate: string;
+  };
   status: "Applied" | "Shortlisted" | "Interviewing" | "Rejected";
   appliedDate: string;
   student?: {
@@ -138,10 +157,16 @@ export const login = (email: string, password: string) =>
     body: JSON.stringify({ email, password }),
   });
 
-export const register = (name: string, email: string, password: string, role: "student" | "company") =>
+export const register = (
+  name: string,
+  email: string,
+  password: string,
+  role: "student" | "company",
+  extra?: { industry?: string; university?: string; year?: string }
+) =>
   request<AuthResponse>("/users/register", {
     method: "POST",
-    body: JSON.stringify({ name, email, password, role }),
+    body: JSON.stringify({ name, email, password, role, ...extra }),
   });
 
 export const getCurrentUser = () =>
@@ -184,6 +209,9 @@ export const searchInternships = (params: {
   return request<SearchInternshipsResponse>(`/internship/search${qStr ? `?${qStr}` : ""}`);
 };
 
+export const getInternshipById = (id: string) =>
+  request<{ message: string; internship: ApiInternship }>(`/internship/${id}`);
+
 export const getClosingSoonInternships = () =>
   request<{ message: string; resultsFound: number; internships: ApiInternship[] }>("/internship/deadlines/soon");
 
@@ -197,6 +225,60 @@ export const postInternship = (data: {
   request<{ message: string; internship: ApiInternship }>("/internship/post", {
     method: "POST",
     body: JSON.stringify(data),
+  });
+
+export interface ApiCompanyInternship {
+  _id: string;
+  companyId: string;
+  title: string;
+  description: string;
+  type: "Paid" | "Unpaid";
+  mode: "Remote" | "On-site";
+  deadline: string;
+  status: "active" | "expired" | "draft";
+  daysLeft: number;
+  totalApplicants: number;
+  shortlisted: number;
+  interviewing: number;
+  applied: number;
+  rejected: number;
+  createdAt: string;
+}
+
+export interface ApiCompanyApplicantItem {
+  applicationId: string;
+  status: "Applied" | "Shortlisted" | "Interviewing" | "Rejected";
+  appliedDate: string;
+  internship: {
+    id: string;
+    title: string;
+    type: "Paid" | "Unpaid";
+    mode: "Remote" | "On-site";
+    deadline: string;
+  } | null;
+  student: {
+    id: string;
+    name: string;
+    email: string;
+    bio: string;
+    skills: string[];
+    points: number;
+    badge: string;
+  } | null;
+  resume: {
+    id: string;
+    filePath: string;
+    uploadedDate: string;
+  } | null;
+  resumeAvailable: boolean;
+}
+
+export const getMyCompanyInternships = () =>
+  request<{ message: string; count: number; internships: ApiCompanyInternship[] }>("/internship/company/my");
+
+export const deleteCompanyInternship = (internshipId: string) =>
+  request<{ message: string }>(`/internship/${internshipId}`, {
+    method: "DELETE",
   });
 
 /* ---------------- BOOKMARKS (Sprint 4: Feature 19) ---------------- */
@@ -217,14 +299,14 @@ export const removeBookmark = (internshipId: string) =>
 export const uploadResume = (file: File) => {
   const formData = new FormData();
   formData.append("resume", file);
-  return request<{ message: string; resume: { filePath: string; uploadedDate: string } }>("/resume", {
+  return request<{ message: string; resume: { filePath: string; originalName?: string; uploadedDate: string } }>("/resume", {
     method: "POST",
     body: formData,
   });
 };
 
 export const getMyResume = () =>
-  request<{ message: string; resume: { filePath: string; uploadedDate: string } | null }>("/resume/me");
+  request<{ message: string; resume: { filePath: string; originalName?: string; uploadedDate: string } | null }>("/resume/me");
 
 export const applyToInternship = (internshipId: string) =>
   request<{ message: string; application: ApiApplicationItem }>(`/applications/${internshipId}`, {
@@ -236,9 +318,14 @@ export const getApplicantsForInternship = (internshipId: string) =>
     `/applications/internship/${internshipId}`
   );
 
+export const getAllCompanyApplicants = () =>
+  request<{ message: string; totalApplicants: number; applicants: ApiCompanyApplicantItem[] }>(
+    "/applications/company/all"
+  );
+
 export const updateApplicationStatus = (
   applicationId: string,
-  status: "Shortlisted" | "Interviewing" | "Rejected"
+  status: "Applied" | "Shortlisted" | "Interviewing" | "Rejected"
 ) =>
   request<{ message: string; application: Partial<ApiApplicationItem> }>(
     `/applications/${applicationId}/status`,
@@ -273,6 +360,37 @@ export const getCompanyDirectory = (params: {
     companies: ApiCompanyDirectoryItem[];
   }>(`/company/directory${qStr ? `?${qStr}` : ""}`);
 };
+
+export interface ApiCompanyDetailItem {
+  _id: string;
+  companyName: string;
+  industry: string;
+  description: string;
+  website: string;
+  verificationStatus: "Pending" | "Approved" | "Rejected";
+  averageRating: number;
+  reviewCount: number;
+  averageStipend: number;
+  stipendReportCount: number;
+  internshipsCount: number;
+  internships: Array<{
+    _id: string;
+    title: string;
+    type: "Paid" | "Unpaid";
+    mode: "Remote" | "On-site";
+    deadline: string;
+  }>;
+  reviews: Array<{
+    _id: string;
+    rating: number;
+    comment: string;
+    createdAt: string;
+  }>;
+  createdAt: string;
+}
+
+export const getCompanyDetails = (companyId: string) =>
+  request<{ message: string; company: ApiCompanyDetailItem }>(`/company/details/${encodeURIComponent(companyId)}`);
 
 export const submitCompanyProfile = (data: {
   companyName: string;

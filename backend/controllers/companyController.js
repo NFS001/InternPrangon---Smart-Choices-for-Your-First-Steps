@@ -1,27 +1,37 @@
 const CompanyProfile = require('../models/CompanyProfile');
 const { createNotification } = require('./notificationController');
 
-// HR Submitting Document (Feature 1)
+// HR Submitting/Updating Document (Feature 1)
 const submitCompanyProfile = async (req, res) => {
     try {
         const { companyName, industry, description, website, verificationDocument } = req.body;
         const user = req.user._id;
 
         // Check if profile already exists
-        const existingProfile = await CompanyProfile.findOne({ user });
-        if (existingProfile) {
-            return res.status(400).json({ message: 'Company profile already exists!' });
+        let profile = await CompanyProfile.findOne({ user });
+        if (profile) {
+            if (companyName) profile.companyName = companyName;
+            if (industry) profile.industry = industry;
+            if (description) profile.description = description;
+            if (website) profile.website = website;
+            if (verificationDocument) profile.verificationDocument = verificationDocument;
+            await profile.save();
+
+            return res.status(200).json({
+                message: 'Company profile updated successfully!',
+                profile
+            });
         }
 
         // Create new company profile
         const newProfile = await CompanyProfile.create({
             user, 
             companyName,
-            industry,
-            description,
-            website,
-            verificationDocument
-            // verificationStatus will automatically be 'Pending' by default
+            industry: industry || 'Software & Technology',
+            description: description || 'Innovative company providing internship opportunities.',
+            website: website || '',
+            verificationDocument: verificationDocument || 'trade_license.pdf',
+            verificationStatus: 'Pending'
         });
 
         res.status(201).json({
@@ -125,9 +135,14 @@ const deleteCompany = async (req, res) => {
     }
 };
 
+const mongoose = require('mongoose');
+const Review = require('../models/Review');
+const StipendReport = require('../models/StipendReport');
+const Internship = require('../models/Internship');
+
 // Public: Company Directory with dynamic rating and stipend aggregation (Feature 13)
 const getCompanyDirectory = async (req, res) => {
-    const { sortBy, sortOrder = 'desc', page = 1, limit = 10 } = req.query;
+    const { sortBy, sortOrder = 'desc', page = 1, limit = 20, verifiedOnly } = req.query;
 
     const pageNumber = Number(page);
     const limitNumber = Number(limit);
@@ -162,10 +177,9 @@ const getCompanyDirectory = async (req, res) => {
     const skip = (pageNumber - 1) * limitNumber;
 
     try {
+        const matchStage = verifiedOnly === 'true' ? { verificationStatus: 'Approved' } : {};
         const pipeline = [
-            {
-                $match: { verificationStatus: 'Approved' }
-            },
+            ...(Object.keys(matchStage).length > 0 ? [{ $match: matchStage }] : []),
             {
                 $lookup: {
                     from: 'reviews',
@@ -246,6 +260,87 @@ const getCompanyDirectory = async (req, res) => {
     }
 };
 
+// Public: Get specific company details by ID
+const getCompanyById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        let company = null;
+
+        if (mongoose.isValidObjectId(id)) {
+            company = await CompanyProfile.findById(id).populate('user', 'name email');
+            if (!company) {
+                company = await CompanyProfile.findOne({ user: id }).populate('user', 'name email');
+            }
+        }
+
+        if (!company) {
+            company = await CompanyProfile.findOne({ companyName: new RegExp('^' + id + '$', 'i') }).populate('user', 'name email');
+        }
+
+        if (!company) {
+            return res.status(404).json({ message: 'Company not found' });
+        }
+
+        const companyUserTarget = company.user?._id || company.user;
+        const [reviews, stipends, internships] = await Promise.all([
+            Review.find({ company: company._id }).sort({ createdAt: -1 }),
+            StipendReport.find({ company: company._id }),
+            Internship.find({
+                $or: [
+                    ...(companyUserTarget ? [{ companyId: companyUserTarget }] : []),
+                    { companyId: company._id }
+                ]
+            }).sort({ createdAt: -1 })
+        ]);
+
+        const reviewCount = reviews.length;
+        const averageRating = reviewCount > 0
+            ? Number((reviews.reduce((acc, r) => acc + r.rating, 0) / reviewCount).toFixed(1))
+            : 0;
+
+        const stipendReportCount = stipends.length;
+        const averageStipend = stipendReportCount > 0
+            ? Math.round(stipends.reduce((acc, s) => acc + s.amount, 0) / stipendReportCount)
+            : 0;
+
+        res.status(200).json({
+            message: 'Company details fetched successfully',
+            company: {
+                _id: company._id,
+                companyName: company.companyName,
+                industry: company.industry || 'Software & Technology',
+                description: company.description || 'Verified organization on InternPrangon.',
+                website: company.website || '',
+                verificationStatus: company.verificationStatus,
+                averageRating,
+                reviewCount,
+                averageStipend,
+                stipendReportCount,
+                internshipsCount: internships.length,
+                internships: internships.map((i) => ({
+                    _id: i._id,
+                    id: i._id,
+                    title: i.title,
+                    description: i.description,
+                    type: i.type,
+                    mode: i.mode,
+                    deadline: i.deadline,
+                    createdAt: i.createdAt
+                })),
+                reviews: reviews.map((r) => ({
+                    _id: r._id,
+                    rating: r.rating,
+                    comment: r.comment,
+                    createdAt: r.createdAt
+                })),
+                createdAt: company.createdAt
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
 // Feature 3: Get logged in Company Profile
 const getMyCompanyProfile = async (req, res) => {
     try {
@@ -272,5 +367,6 @@ module.exports = {
     addCompanyByAdmin,
     deleteCompany,
     getCompanyDirectory,
+    getCompanyById,
     getMyCompanyProfile
 };

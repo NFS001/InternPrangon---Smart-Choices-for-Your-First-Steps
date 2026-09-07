@@ -6,6 +6,8 @@ const router = express.Router();
 
 router.get('/', getAllReviews);
 router.post('/company/:companyId', protect, authorize('student'), createReview);
+router.post('/:companyId', protect, authorize('student'), createReview);
 router.get('/company/:companyId', getCompanyReviews);
+router.get('/:companyId', getCompanyReviews);
 
 module.exports = router;

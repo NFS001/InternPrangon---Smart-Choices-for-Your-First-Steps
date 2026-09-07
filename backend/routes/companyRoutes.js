@@ -6,6 +6,7 @@ const {
     addCompanyByAdmin,
     deleteCompany,
     getCompanyDirectory,
+    getCompanyById,
     getMyCompanyProfile
 } = require('../controllers/companyController');
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -14,6 +15,9 @@ const router = express.Router();
 
 // Feature 13: Public Company Directory
 router.get('/directory', getCompanyDirectory);
+
+// Public: Get specific company details
+router.get('/details/:id', getCompanyById);
 
 // Feature 3: HR gets their company profile
 router.get('/profile', protect, authorize('company'), getMyCompanyProfile);
@@ -33,4 +37,8 @@ router.post('/admin-add', protect, authorize('admin'), addCompanyByAdmin);
 // Feature 2: Admin deletes a fake/rejected company
 router.delete('/:id', protect, authorize('admin'), deleteCompany);
 
+// Public: Get specific company details by ID (must be at the end)
+router.get('/:id', getCompanyById);
+
 module.exports = router;
+

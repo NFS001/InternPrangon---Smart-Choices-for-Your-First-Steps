@@ -1,11 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Navigate } from '../../data/index';
-import { CURRENT_COMPANY } from '../../data/index';
 import type { VerificationStatus } from '../../data/index';
+import { getMyCompanyProfile, submitCompanyProfile, getSavedUser } from '../../api/client';
 
 export default function CoVerificationPage({ navigate }: { navigate: Navigate }) {
-  const [status, setStatus] = useState<VerificationStatus>(CURRENT_COMPANY.verificationStatus);
+  const user = getSavedUser();
+  const [companyName, setCompanyName] = useState(user?.name || 'Your Company');
+  const [status, setStatus] = useState<VerificationStatus>('pending');
   const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  useEffect(() => {
+    getMyCompanyProfile()
+      .then((res) => {
+        if (res.profile) {
+          setCompanyName(res.profile.companyName || user?.name || 'Your Company');
+          const st = (res.profile.verificationStatus || 'Pending').toLowerCase() as VerificationStatus;
+          setStatus(st);
+        }
+      })
+      .catch(() => {});
+  }, [user?.name]);
 
   // Step 1 form state
   const [regNumber, setRegNumber] = useState('');
@@ -65,7 +79,7 @@ export default function CoVerificationPage({ navigate }: { navigate: Navigate })
               <path d="M14 25l7 7 13-14" stroke="#16a34a" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold italic text-success-700 mb-3">ByteForge Solutions is verified</h1>
+          <h1 className="text-2xl font-bold italic text-success-700 mb-3">{companyName} is verified</h1>
           <p className="text-neutral-600 mb-8 leading-relaxed">
             Your company identity has been verified by the InternPrangon team. You can now post internships
             and your profile displays the verified badge.
@@ -182,6 +196,7 @@ export default function CoVerificationPage({ navigate }: { navigate: Navigate })
 
           {/* Resubmit form — same as unverified */}
           <ResubmitForm
+            companyName={companyName}
             step={step}
             setStep={setStep}
             regNumber={regNumber} setRegNumber={setRegNumber}
@@ -192,7 +207,18 @@ export default function CoVerificationPage({ navigate }: { navigate: Navigate })
             tradeLicense={tradeLicense} setTradeLicense={setTradeLicense}
             regCert={regCert} setRegCert={setRegCert}
             nid={nid} setNid={setNid}
-            onSubmit={() => setStatus('pending')}
+            onSubmit={async () => {
+              try {
+                await submitCompanyProfile({
+                  companyName,
+                  industry: industry || 'Software & Technology',
+                  website: website || '',
+                  description: 'Enterprise partner in Bangladesh.',
+                  verificationDocument: 'trade_license.pdf',
+                });
+              } catch {}
+              setStatus('pending');
+            }}
             submitLabel="Resubmit for verification"
           />
         </div>
@@ -206,6 +232,7 @@ export default function CoVerificationPage({ navigate }: { navigate: Navigate })
             <p className="text-neutral-500 text-sm">Complete the steps below to get your company verified.</p>
           </div>
           <ResubmitForm
+            companyName={companyName}
             step={step}
             setStep={setStep}
             regNumber={regNumber} setRegNumber={setRegNumber}
@@ -216,7 +243,18 @@ export default function CoVerificationPage({ navigate }: { navigate: Navigate })
             tradeLicense={tradeLicense} setTradeLicense={setTradeLicense}
             regCert={regCert} setRegCert={setRegCert}
             nid={nid} setNid={setNid}
-            onSubmit={() => setStatus('pending')}
+            onSubmit={async () => {
+              try {
+                await submitCompanyProfile({
+                  companyName,
+                  industry: industry || 'Software & Technology',
+                  website: website || '',
+                  description: 'Enterprise partner in Bangladesh.',
+                  verificationDocument: 'trade_license.pdf',
+                });
+              } catch {}
+              setStatus('pending');
+            }}
             submitLabel="Submit for verification"
           />
         </div>
@@ -229,6 +267,7 @@ export default function CoVerificationPage({ navigate }: { navigate: Navigate })
 /* Shared multi-step form used by unverified + rejected states   */
 /* ────────────────────────────────────────────────────────────── */
 interface ResubmitFormProps {
+  companyName: string;
   step: 1 | 2 | 3;
   setStep: (s: 1 | 2 | 3) => void;
   regNumber: string; setRegNumber: (v: string) => void;
@@ -244,6 +283,7 @@ interface ResubmitFormProps {
 }
 
 function ResubmitForm({
+  companyName,
   step, setStep,
   regNumber, setRegNumber,
   industry, setIndustry,
@@ -294,7 +334,7 @@ function ResubmitForm({
               <label className="block text-sm font-medium text-neutral-700 mb-1">Company Name</label>
               <input
                 type="text"
-                value={CURRENT_COMPANY.name}
+                value={companyName}
                 readOnly
                 className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 text-sm bg-neutral-100 text-neutral-500 cursor-not-allowed"
               />
@@ -432,7 +472,7 @@ function ResubmitForm({
             <h2 className="font-semibold text-neutral-800 text-lg mb-4">Review & Submit</h2>
 
             <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-5 space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-neutral-500">Company Name</span><span className="font-medium">{CURRENT_COMPANY.name}</span></div>
+              <div className="flex justify-between"><span className="text-neutral-500">Company Name</span><span className="font-medium">{companyName}</span></div>
               <div className="flex justify-between"><span className="text-neutral-500">Registration No.</span><span className="font-medium">{regNumber || '—'}</span></div>
               <div className="flex justify-between"><span className="text-neutral-500">Industry</span><span className="font-medium">{industry || '—'}</span></div>
               <div className="flex justify-between"><span className="text-neutral-500">Contact Person</span><span className="font-medium">{contactName || '—'}</span></div>

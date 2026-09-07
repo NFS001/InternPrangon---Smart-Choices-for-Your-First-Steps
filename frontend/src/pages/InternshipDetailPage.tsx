@@ -9,7 +9,9 @@ import {
   applyToInternship,
   getMyApplications,
   searchInternships,
-  getSavedUser
+  getInternshipById,
+  getSavedUser,
+  type ApiInternship
 } from "../api/client";
 
 interface Props {
@@ -72,9 +74,104 @@ function BulletList({ items }: { items?: string[] }) {
   );
 }
 
+function parseInternshipDetails(data: ApiInternship) {
+  const rawDescription = data.description || "";
+  let aboutText = rawDescription;
+  let stipendText = data.type === "Paid" ? "Paid" : "Unpaid";
+  let durationText = "3 months";
+  let departmentText = "";
+  let responsibilities: string[] = [];
+  let qualifications: string[] = [];
+
+  // Extract Department
+  const deptMatch = rawDescription.match(/Department:\s*([^\n]+)/i);
+  if (deptMatch) {
+    departmentText = deptMatch[1].trim();
+  }
+
+  // Extract Stipend
+  const stipendMatch = rawDescription.match(/Stipend:\s*([^\n]+)/i);
+  if (stipendMatch) {
+    stipendText = stipendMatch[1].trim();
+  }
+
+  // Extract Duration
+  const durMatch = rawDescription.match(/Duration:\s*([^\n]+)/i);
+  if (durMatch) {
+    durationText = durMatch[1].trim();
+  }
+
+  // Extract Responsibilities
+  const respMatch = rawDescription.match(/Responsibilities:\s*\n([\s\S]*?)(?=\n\nQualifications:|$)/i);
+  if (respMatch) {
+    responsibilities = respMatch[1]
+      .split("\n")
+      .map((s) => s.trim().replace(/^[-•*]\s*/, ""))
+      .filter(Boolean);
+  }
+
+  // Extract Qualifications / Requirements
+  const qualMatch = rawDescription.match(/Qualifications:\s*\n([\s\S]*?)$/i);
+  if (qualMatch) {
+    qualifications = qualMatch[1]
+      .split("\n")
+      .map((s) => s.trim().replace(/^[-•*]\s*/, ""))
+      .filter(Boolean);
+  }
+
+  // Clean aboutText to remove structured metadata tags
+  aboutText = rawDescription
+    .replace(/Department:\s*[^\n]+/gi, "")
+    .replace(/Stipend:\s*[^\n]+/gi, "")
+    .replace(/Duration:\s*[^\n]+/gi, "")
+    .replace(/Responsibilities:\s*\n[\s\S]*?(?=\n\nQualifications:|$)/gi, "")
+    .replace(/Qualifications:\s*\n[\s\S]*$/gi, "")
+    .trim();
+
+  if (!aboutText) {
+    aboutText = `Exciting ${data.mode} internship opportunity for ${data.title}.`;
+  }
+
+  const companyName = data.company || "Enterprise Partner";
+  const initials = companyName.trim().slice(0, 2).toUpperCase();
+
+  const deadlineDate = new Date(data.deadline);
+  const diffTime = deadlineDate.getTime() - Date.now();
+  const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+  const formattedDeadline = !isNaN(deadlineDate.getTime())
+    ? deadlineDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : "Ongoing";
+
+  const tags: string[] = [data.type, data.mode];
+  if (departmentText) tags.push(departmentText);
+
+  return {
+    id: 1,
+    companyId: 1,
+    backendCompanyId: data.companyProfileId || data.companyId,
+    role: data.title,
+    company: companyName,
+    logo: initials,
+    logoColor: "#2563eb",
+    logoBg: "#eff6ff",
+    paid: data.type === "Paid",
+    duration: durationText,
+    location: data.mode === "Remote" ? "Remote, Bangladesh" : "Dhaka, Bangladesh",
+    type: data.mode as "Remote" | "On-site" | "Hybrid",
+    tags,
+    posted: data.createdAt ? new Date(data.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "Recently",
+    deadline: formattedDeadline,
+    daysLeft,
+    description: aboutText,
+    qualifications: qualifications.length > 0 ? qualifications : ["Demonstrated interest and background in this field", "Good problem solving and analytical thinking", "Clear verbal and written communication skills"],
+    responsibilities: responsibilities.length > 0 ? responsibilities : ["Work closely with the team to deliver feature requirements", "Learn industry best practices and modern development standards", "Participate in regular team discussions and reviews"],
+    stipend: stipendText,
+  };
+}
+
 export default function InternshipDetailPage({ navigate, id, backendId: initialBackendId }: Props) {
   const staticIntern = INTERNSHIPS.find((i) => i.id === id) ?? INTERNSHIPS[0];
-  const [intern, setIntern] = useState(staticIntern);
+  const [intern, setIntern] = useState<any>(staticIntern);
   const [resolvedBackendId, setResolvedBackendId] = useState<string | undefined>(initialBackendId);
   const [saved, setSaved] = useState(false);
   const [applied, setApplied] = useState(false);
@@ -91,34 +188,49 @@ export default function InternshipDetailPage({ navigate, id, backendId: initialB
     setNotice(null);
   }, [id, initialBackendId]);
 
-  // 2. Resolve MongoDB internship ID and sync live status
+  // 2. Fetch live internship details from backend
   useEffect(() => {
-    searchInternships()
-      .then((res) => {
-        if (res.internships && res.internships.length > 0) {
-          const currentStatic = INTERNSHIPS.find((i) => i.id === id) ?? INTERNSHIPS[0];
-          const found = initialBackendId
-            ? res.internships.find((i) => i._id === initialBackendId)
-            : res.internships.find(
-                (i) => i.title.toLowerCase() === currentStatic.role.toLowerCase()
-              ) || res.internships[0];
-
-          if (found) {
-            setResolvedBackendId(found._id);
-            setIntern((prev) => ({
-              ...prev,
-              role: found.title || prev.role,
-              description: found.description || prev.description,
-              type: (found.mode as "Remote" | "On-site" | "Hybrid") || prev.type,
-              paid: found.type === "Paid",
-            }));
+    if (initialBackendId) {
+      getInternshipById(initialBackendId)
+        .then((res) => {
+          if (res.internship) {
+            setResolvedBackendId(res.internship._id);
+            setIntern(parseInternshipDetails(res.internship));
           }
-        }
-      })
-      .catch(() => {});
+        })
+        .catch(() => {
+          searchInternships()
+            .then((res) => {
+              if (res.internships) {
+                const found = res.internships.find((i) => i._id === initialBackendId);
+                if (found) {
+                  setResolvedBackendId(found._id);
+                  setIntern(parseInternshipDetails(found));
+                }
+              }
+            })
+            .catch(() => {});
+        });
+    } else {
+      searchInternships()
+        .then((res) => {
+          if (res.internships && res.internships.length > 0) {
+            const currentStatic = INTERNSHIPS.find((i) => i.id === id) ?? INTERNSHIPS[0];
+            const found = res.internships.find(
+              (i) => i.title.toLowerCase() === currentStatic.role.toLowerCase()
+            ) || res.internships[0];
+
+            if (found) {
+              setResolvedBackendId(found._id);
+              setIntern(parseInternshipDetails(found));
+            }
+          }
+        })
+        .catch(() => {});
+    }
   }, [id, initialBackendId]);
 
-  // 2. Sync bookmark and application status
+  // 3. Sync bookmark and application status
   useEffect(() => {
     if (!resolvedBackendId) return;
 
@@ -300,7 +412,7 @@ export default function InternshipDetailPage({ navigate, id, backendId: initialB
 
               {/* Tags */}
               <div className="flex overflow-x-auto gap-1.5 pb-1 mb-4 -mx-0">
-                {intern.tags.map((tag) => (
+                {intern.tags?.map((tag: string) => (
                   <span
                     key={tag}
                     className="px-2.5 py-0.5 rounded-full text-xs bg-brand-50 text-brand-700 border border-brand-100 whitespace-nowrap shrink-0"
@@ -440,7 +552,7 @@ export default function InternshipDetailPage({ navigate, id, backendId: initialB
                   <div>
                     <p className="text-sm font-medium text-neutral-800">{intern.company}</p>
                     <button
-                      onClick={() => navigate("company-detail", { id: intern.companyId })}
+                      onClick={() => navigate("company-detail", { id: intern.companyId, companyName: intern.company })}
                       className="text-xs text-brand-600 hover:text-brand-800 transition-colors"
                     >
                       View company &#8250;

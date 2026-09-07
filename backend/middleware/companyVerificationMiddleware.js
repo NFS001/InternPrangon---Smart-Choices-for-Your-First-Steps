@@ -2,19 +2,24 @@ const CompanyProfile = require('../models/CompanyProfile');
 
 const requireApprovedCompany = async (req, res, next) => {
     try {
-        const companyProfile = await CompanyProfile.findOne({
+        let companyProfile = await CompanyProfile.findOne({
             user: req.user._id
         });
 
         if (!companyProfile) {
-            return res.status(404).json({
-                message: 'Company profile not found'
+            companyProfile = await CompanyProfile.create({
+                user: req.user._id,
+                companyName: req.user.name || 'Company',
+                industry: 'Software & Technology',
+                description: 'Technology partner providing internship opportunities.',
+                verificationStatus: 'Pending',
+                verificationDocument: 'company_reg_doc.pdf'
             });
         }
 
         if (companyProfile.verificationStatus !== 'Approved') {
             return res.status(403).json({
-                message: 'Only approved companies can manage applicants'
+                message: 'Your company verification is currently Pending Admin approval. Please wait for an Admin to verify your account.'
             });
         }
 

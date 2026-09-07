@@ -90,36 +90,51 @@ export default function InternshipsPage({ navigate }: Props) {
 
   // 2. Fetch live internships from MongoDB Atlas
   useEffect(() => {
-    searchInternships()
+    searchInternships({ limit: 50, sortBy: 'createdAt', sortOrder: 'desc' })
       .then((res) => {
         if (res.internships && res.internships.length > 0) {
           const mapped: DisplayInternship[] = res.internships.map((bi, idx) => {
-            const matchStatic = INTERNSHIPS.find(
-              (s) => s.role.toLowerCase() === bi.title.toLowerCase()
-            );
             const daysLeft = Math.max(
               0,
               Math.ceil((new Date(bi.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
             );
+
+            // Extract stipend if formatted in description
+            let parsedStipend = bi.type === "Paid" ? "Paid" : undefined;
+            const stipendMatch = bi.description?.match(/Stipend:\s*([^\n]+)/i);
+            if (stipendMatch) {
+              parsedStipend = stipendMatch[1].trim();
+            }
+
+            // Extract duration if formatted in description
+            let parsedDuration = "3 months";
+            const durMatch = bi.description?.match(/Duration:\s*([^\n]+)/i);
+            if (durMatch) {
+              parsedDuration = durMatch[1].trim();
+            }
+
+            const companyName = bi.company || "Enterprise Partner";
+            const initials = companyName.trim().slice(0, 2).toUpperCase();
+
             return {
-              id: matchStatic?.id || (idx + 1),
+              id: idx + 1,
               backendId: bi._id,
               role: bi.title,
-              company: matchStatic?.company || "Partner Company",
-              companyId: matchStatic?.companyId || 1,
-              logo: matchStatic?.logo || bi.title.slice(0, 2).toUpperCase(),
-              logoBg: matchStatic?.logoBg || "#f5f3ff",
-              logoColor: matchStatic?.logoColor || "#7c3aed",
-              location: matchStatic?.location || (bi.mode === "Remote" ? "Remote, Bangladesh" : "Dhaka, Bangladesh"),
+              company: companyName,
+              companyId: idx + 1,
+              logo: initials,
+              logoBg: "#eff6ff",
+              logoColor: "#2563eb",
+              location: bi.mode === "Remote" ? "Remote, Bangladesh" : "Dhaka, Bangladesh",
               type: bi.mode as "Remote" | "On-site" | "Hybrid",
               paid: bi.type === "Paid",
-              stipend: matchStatic?.stipend || (bi.type === "Paid" ? "BDT 15,000/mo" : undefined),
-              deadline: new Date(bi.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+              stipend: parsedStipend,
+              deadline: new Date(bi.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
               daysLeft,
-              tags: matchStatic?.tags || [bi.type, bi.mode],
-              posted: bi.createdAt || "2026-09-01",
-              duration: matchStatic?.duration || "3 months",
-              featured: matchStatic?.featured || false,
+              tags: [bi.type, bi.mode],
+              posted: bi.createdAt ? new Date(bi.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "Recently",
+              duration: parsedDuration,
+              featured: false,
               description: bi.description,
             };
           });

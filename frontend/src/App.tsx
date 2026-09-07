@@ -77,11 +77,17 @@ export default function App() {
     }
   }
 
-  async function handleRegister(name: string, email: string, password: string, role: 'student' | 'company') {
+  async function handleRegister(
+    name: string,
+    email: string,
+    password: string,
+    role: 'student' | 'company',
+    extra?: { industry?: string; university?: string; year?: string }
+  ) {
     setAuthError('');
     setAuthLoading(true);
     try {
-      const auth = await register(name, email, password, role);
+      const auth = await register(name, email, password, role, extra);
       saveAuth(auth);
       setCurrentUser(auth.user);
       navigateForRole(auth.user.role);
@@ -160,7 +166,7 @@ export default function App() {
             style={{ opacity: transitioning ? 0 : 1, transition: 'opacity 0.16s ease' }}
           >
             {page === 'co-dashboard'    && <CoDashboardPage    navigate={navigate} />}
-            {page === 'co-applicants'   && <CoApplicantsPage   navigate={navigate} internshipId={pageData.internshipId as number | undefined} />}
+            {page === 'co-applicants'   && <CoApplicantsPage   navigate={navigate} internshipId={pageData.internshipId ? String(pageData.internshipId) : undefined} />}
             {page === 'co-internships'  && <CoInternshipsPage  navigate={navigate} />}
             {page === 'co-profile'      && <CoProfilePage      navigate={navigate} />}
             {page === 'co-verification' && <CoVerificationPage navigate={navigate} />}
@@ -191,7 +197,7 @@ export default function App() {
           {page === 'internships'       && <InternshipsPage navigate={navigate} />}
           {page === 'internship-detail' && <InternshipDetailPage navigate={navigate} id={Number(pageData.id ?? 1)} backendId={pageData.backendId as string | undefined} />}
           {page === 'companies'         && <CompaniesPage navigate={navigate} />}
-          {page === 'company-detail'    && <CompanyDetailPage navigate={navigate} id={Number(pageData.id ?? 1)} />}
+          {page === 'company-detail'    && <CompanyDetailPage navigate={navigate} id={Number(pageData.id ?? 1)} backendId={pageData.backendId as string | undefined} companyName={pageData.companyName as string | undefined} />}
           {page === 'reviews'           && <ReviewsPage navigate={navigate} />}
           {page === 'about'             && <AboutPage />}
         </div>

@@ -11,6 +11,10 @@ const resumeSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    originalName: {
+        type: String,
+        default: ''
+    },
     uploadedDate: {
         type: Date,
         required: true,

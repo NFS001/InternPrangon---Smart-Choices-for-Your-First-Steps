@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const CompanyProfile = require('../models/CompanyProfile');
+const StudentProfile = require('../models/StudentProfile');
 const jwt = require('jsonwebtoken');
 
 const generateToken = (userId) => {
@@ -10,7 +12,8 @@ const generateToken = (userId) => {
 // Register API
 const registerUser = async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
+        const { name, email, password, role, industry } = req.body;
+        const normalizedRole = (role || 'student').toLowerCase();
 
         const userExists = await User.findOne({ email });
         if (userExists) {
@@ -21,8 +24,27 @@ const registerUser = async (req, res) => {
             name,
             email,
             password,
-            role
+            role: normalizedRole
         });
+
+        if (normalizedRole === 'company') {
+            await CompanyProfile.create({
+                user: user._id,
+                companyName: name,
+                industry: industry || 'Software & Technology',
+                description: 'Innovative company providing internship opportunities.',
+                verificationStatus: 'Pending',
+                verificationDocument: 'registration_document.pdf'
+            }).catch(() => {});
+        } else if (normalizedRole === 'student') {
+            await StudentProfile.create({
+                user: user._id,
+                bio: '',
+                skills: [],
+                points: 0,
+                badge: 'Newbie'
+            }).catch(() => {});
+        }
 
         res.status(201).json({
             message: 'User registered successfully!',

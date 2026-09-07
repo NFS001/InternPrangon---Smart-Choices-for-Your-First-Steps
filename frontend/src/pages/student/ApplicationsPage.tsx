@@ -158,42 +158,74 @@ export default function ApplicationsPage({ navigate }: Props) {
         {filtered.map((app) => {
           const internshipObj = typeof app.internship === "object" ? app.internship : null;
           const roleTitle = internshipObj?.title || "Internship Role";
+          const companyName = (internshipObj as any)?.company || (internshipObj as any)?.companyName || "Enterprise Partner";
+          const industry = (internshipObj as any)?.companyIndustry;
           const formattedDate = new Date(app.appliedDate).toLocaleDateString(undefined, {
             month: "short",
             day: "numeric",
             year: "numeric",
           });
+          const deadlineStr = internshipObj?.deadline
+            ? new Date(internshipObj.deadline).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            : null;
+
+          const companyInitials = companyName.trim().slice(0, 2).toUpperCase();
 
           return (
             <div
               key={app.applicationId}
-              className="bg-white border border-neutral-200 rounded-2xl p-4 md:p-5 shadow-sm"
+              className="bg-white border border-neutral-200 rounded-2xl p-5 md:p-6 shadow-sm hover:shadow-md transition-shadow"
             >
-              {/* Top: role + status badge */}
-              <div className="flex items-start gap-3">
+              {/* Top: role + company + status badge */}
+              <div className="flex items-start gap-4">
                 <div
-                  className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-xs md:text-sm font-bold flex-shrink-0 bg-brand-50 text-brand-700"
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 bg-brand-50 text-brand-700 border border-brand-100"
                 >
-                  {roleTitle.slice(0, 2).toUpperCase()}
+                  {companyInitials}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="font-semibold text-neutral-800 text-base">{roleTitle}</h3>
-                      <p className="text-neutral-500 text-sm">
-                        {internshipObj?.mode || "On-site"} · {internshipObj?.type || "Paid"}
+                      <h3 className="font-bold text-neutral-900 text-lg leading-tight">{roleTitle}</h3>
+                      <p className="text-brand-700 font-medium text-sm mt-0.5">
+                        {companyName} {industry ? `• ${industry}` : ""}
                       </p>
                     </div>
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${statusBadge[app.status] || "bg-neutral-100 text-neutral-700"}`}>
+                    <span className={`text-xs px-3 py-1 rounded-full font-semibold flex-shrink-0 ${statusBadge[app.status] || "bg-neutral-100 text-neutral-700"}`}>
                       {app.status}
                     </span>
+                  </div>
+
+                  {/* Badges */}
+                  <div className="flex flex-wrap items-center gap-2 mt-3 text-xs">
+                    <span className="px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-700 font-medium">
+                      {internshipObj?.mode || "On-site"}
+                    </span>
+                    <span className={`px-2.5 py-0.5 rounded-full font-medium ${internshipObj?.type === "Paid" ? "bg-success-50 text-success-700 border border-success-200" : "bg-neutral-100 text-neutral-600"}`}>
+                      {internshipObj?.type || "Paid"}
+                    </span>
+                    {deadlineStr && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-neutral-50 text-neutral-500 border border-neutral-200">
+                        Deadline: {deadlineStr}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
 
               {/* Middle: dates */}
-              <div className="flex items-center gap-3 mt-2 text-xs text-neutral-400">
+              <div className="flex items-center gap-3 mt-4 pt-3 border-t border-neutral-100 text-xs text-neutral-400">
                 <span>Applied on {formattedDate}</span>
+                {typeof app.resume === "object" && app.resume?.originalName && (
+                  <>
+                    <span>•</span>
+                    <span className="truncate">Attached Resume: {app.resume.originalName}</span>
+                  </>
+                )}
               </div>
 
               {/* Timeline */}
@@ -202,12 +234,19 @@ export default function ApplicationsPage({ navigate }: Props) {
               </div>
 
               {/* Action button */}
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-xs text-neutral-400">Application ID: {app.applicationId.slice(-8)}</span>
                 <button
-                  onClick={() => navigate("internships")}
-                  className="text-xs text-brand-600 font-medium hover:underline border border-brand-200 rounded-lg px-3 py-1.5 hover:bg-brand-50 transition-colors"
+                  onClick={() => {
+                    if (internshipObj?._id) {
+                      navigate("internship-detail", { backendId: internshipObj._id });
+                    } else {
+                      navigate("internships");
+                    }
+                  }}
+                  className="text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-xl px-3.5 py-2 transition-colors"
                 >
-                  View opportunities →
+                  {internshipObj?._id ? "View Internship Details →" : "Browse Opportunities →"}
                 </button>
               </div>
             </div>
