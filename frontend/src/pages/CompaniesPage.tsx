@@ -5,6 +5,7 @@ import { getCompanyDirectory } from "../api/client";
 
 interface Props {
   navigate: Navigate;
+  initialSearch?: string;
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -24,10 +25,16 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-export default function CompaniesPage({ navigate }: Props) {
-  const [search, setSearch] = useState("");
+export default function CompaniesPage({ navigate, initialSearch = "" }: Props) {
+  const [search, setSearch] = useState(initialSearch || "");
   const [sortBy, setSortBy] = useState<"rating" | "stipend" | "openings">("rating");
   const [companyList, setCompanyList] = useState(COMPANIES);
+
+  useEffect(() => {
+    if (initialSearch !== undefined) {
+      setSearch(initialSearch || "");
+    }
+  }, [initialSearch]);
 
   useEffect(() => {
     const apiSort = sortBy === "stipend" ? "averageStipend" : (sortBy === "rating" ? "rating" : undefined);

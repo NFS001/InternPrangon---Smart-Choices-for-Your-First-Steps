@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { type Navigate, INTERNSHIPS, COMPANIES } from "../data/index";
 import { getSavedUser } from "../api/client";
 
@@ -56,9 +57,19 @@ const badges = [
 
 export default function HomePage({ navigate, loggedIn }: Props) {
   const isAuth = loggedIn ?? Boolean(getSavedUser());
+  const [searchQuery, setSearchQuery] = useState("");
   const heroCards = INTERNSHIPS.slice(0, 4);
   const featuredInternships = INTERNSHIPS.filter((i) => i.featured === true);
   const companyTeaser = COMPANIES.slice(0, 8);
+
+  const handleSearch = () => {
+    const term = searchQuery.trim();
+    if (term) {
+      navigate("internships", { search: term });
+    } else {
+      navigate("internships");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -87,10 +98,16 @@ export default function HomePage({ navigate, loggedIn }: Props) {
               <input
                 type="text"
                 placeholder="Search roles, companies, skills…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="flex-1 text-sm text-neutral-700 placeholder-neutral-400 outline-none bg-transparent py-2"
               />
             </div>
-            <button className="bg-brand-700 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-brand-800 transition-colors w-full sm:w-auto flex-shrink-0">
+            <button
+              onClick={handleSearch}
+              className="bg-brand-700 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-brand-800 transition-colors w-full sm:w-auto flex-shrink-0"
+            >
               Search
             </button>
           </div>
@@ -374,37 +391,40 @@ export default function HomePage({ navigate, loggedIn }: Props) {
               <span className="font-bold text-brand-400 text-lg">Prangon</span>
             </div>
             <p className="text-sm text-neutral-400 leading-relaxed max-w-xs">
-              The most trusted internship platform in Bangladesh, connecting talented students with verified employers since 2024.
+              The most trusted internship platform in Bangladesh, connecting talented students with verified employers since 2026.
             </p>
           </div>
           <div>
             <p className="text-sm font-semibold text-white mb-4">Platform</p>
             <ul className="space-y-2.5 text-sm text-neutral-400">
-              {["Browse internships", "Company directory", "Leaderboard", "How it works"].map((l) => (
-                <li key={l}><button className="hover:text-white transition-colors">{l}</button></li>
-              ))}
+              <li><button onClick={() => navigate("internships")} className="hover:text-white transition-colors">Browse internships</button></li>
+              <li><button onClick={() => navigate("companies")} className="hover:text-white transition-colors">Company directory</button></li>
+              <li><button onClick={() => navigate("contributors")} className="hover:text-white transition-colors">Leaderboard</button></li>
+              <li><button onClick={() => navigate("about")} className="hover:text-white transition-colors">How it works</button></li>
             </ul>
           </div>
           <div>
             <p className="text-sm font-semibold text-white mb-4">For Students</p>
             <ul className="space-y-2.5 text-sm text-neutral-400">
-              {["Create profile", "Track applications", "Contributor badges", "Interview tips"].map((l) => (
-                <li key={l}><button className="hover:text-white transition-colors">{l}</button></li>
-              ))}
+              <li><button onClick={() => navigate("register", { as: "student" })} className="hover:text-white transition-colors">Create profile</button></li>
+              <li><button onClick={() => navigate("applications")} className="hover:text-white transition-colors">Track applications</button></li>
+              <li><button onClick={() => navigate("contributors")} className="hover:text-white transition-colors">Contributor badges</button></li>
+              <li><button onClick={() => navigate("reviews")} className="hover:text-white transition-colors">Interview tips</button></li>
             </ul>
           </div>
           <div>
             <p className="text-sm font-semibold text-white mb-4">For Companies</p>
             <ul className="space-y-2.5 text-sm text-neutral-400">
-              {["Post internship", "Manage listings", "Find talent", "Verification"].map((l) => (
-                <li key={l}><button className="hover:text-white transition-colors">{l}</button></li>
-              ))}
+              <li><button onClick={() => navigate("register", { as: "company" })} className="hover:text-white transition-colors">Post internship</button></li>
+              <li><button onClick={() => navigate("co-internships")} className="hover:text-white transition-colors">Manage listings</button></li>
+              <li><button onClick={() => navigate("co-applicants")} className="hover:text-white transition-colors">Find talent</button></li>
+              <li><button onClick={() => navigate("co-verification")} className="hover:text-white transition-colors">Verification</button></li>
             </ul>
           </div>
         </div>
         <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-neutral-800">
           <p className="text-xs text-neutral-500 text-center">
-            &copy; 2024 InternPrangon. All rights reserved. Made with care for students of Bangladesh.
+            &copy; 2026 InternPrangon. All rights reserved. Built with care by students of BRAC.
           </p>
         </div>
       </footer>

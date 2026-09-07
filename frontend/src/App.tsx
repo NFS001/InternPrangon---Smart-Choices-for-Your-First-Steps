@@ -211,12 +211,12 @@ export default function App() {
       {isPublic && (
         <div style={{ opacity: transitioning ? 0 : 1, transform: transitioning ? 'translateY(6px)' : 'translateY(0)', transition: 'opacity 0.16s ease, transform 0.16s ease' }}>
           {page === 'home'              && <HomePage navigate={navigate} loggedIn={Boolean(currentUser)} />}
-          {page === 'internships'       && <InternshipsPage navigate={navigate} />}
+          {page === 'internships'       && <InternshipsPage navigate={navigate} initialSearch={(pageData.search as string) || (pageData.category as string) || ''} initialCategory={pageData.category as string} />}
           {page === 'internship-detail' && <InternshipDetailPage navigate={navigate} id={pageData.id as number | string | undefined} backendId={pageData.backendId as string | undefined} internshipData={pageData.internshipData as any} />}
-          {page === 'companies'         && <CompaniesPage navigate={navigate} />}
+          {page === 'companies'         && <CompaniesPage navigate={navigate} initialSearch={pageData.search as string} />}
           {page === 'company-detail'    && <CompanyDetailPage navigate={navigate} id={pageData.id as number | string | undefined} companyId={pageData.companyId as string | number | undefined} companyData={pageData.companyData as any} />}
           {page === 'reviews'           && <ReviewsPage navigate={navigate} />}
-          {page === 'about'             && <AboutPage />}
+          {page === 'about'             && <AboutPage navigate={navigate} />}
         </div>
       )}
     </div>

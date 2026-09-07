@@ -6,6 +6,8 @@ import { getMyBookmarks, addBookmark, removeBookmark, searchInternships } from "
 
 interface Props {
   navigate: Navigate;
+  initialSearch?: string;
+  initialCategory?: string;
 }
 
 interface DisplayInternship {
@@ -66,13 +68,19 @@ function UrgencyLabel({ daysLeft, deadline }: { daysLeft: number; deadline: stri
   );
 }
 
-export default function InternshipsPage({ navigate }: Props) {
-  const [search, setSearch] = useState("");
+export default function InternshipsPage({ navigate, initialSearch = "", initialCategory }: Props) {
+  const [search, setSearch] = useState(initialSearch || initialCategory || "");
   const [filter, setFilter] = useState<"all" | "paid" | "unpaid">("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "Remote" | "On-site" | "Hybrid">("all");
   const [sortBy, setSortBy] = useState<"deadline" | "recent">("recent");
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [internshipsList, setInternshipsList] = useState<DisplayInternship[]>([]);
+
+  useEffect(() => {
+    if (initialSearch !== undefined || initialCategory !== undefined) {
+      setSearch(initialSearch || initialCategory || "");
+    }
+  }, [initialSearch, initialCategory]);
 
   // 1. Fetch live user bookmarks
   useEffect(() => {

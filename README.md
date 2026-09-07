@@ -365,10 +365,18 @@ node scripts/testDeleteReviewAndModeration.js
 
 ## 👥 Team & Academic Context
 
-**InternPrangon** was conceived and developed as a Software Engineering Capstone Project under the **CSE470** curriculum.
+**InternPrangon** was conceived and developed as a Software Engineering Capstone Project under the **CSE470** curriculum at **BRAC University**.
 
-- **Institution**: Department of Computer Science and Engineering
+- **Institution**: BRAC University — Department of Computer Science and Engineering
 - **Focus**: Human-Centered Software Engineering, Clean Architecture, RESTful API Design, Role-Based Access Security, and Responsive UI/UX.
+
+### 🌟 Project Team
+| Member | Role |
+|---|---|
+| **Nafis Uddin Chowdhury** | Project Lead & Full Stack |
+| **Farhana Tasnim Eva** | UI/UX & Frontend Lead |
+| **Syed Kawnain Tahmid Billah** | Backend & System Architect |
+| **Md. Muhtasim Fuad** | Database & QA Engineer |
 
 ---
 
