@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import type { Navigate } from '../../data/index'
-import { ADMIN_COMPANIES } from '../../data/index'
 import type { AdminCompany, AdminVerifStatus } from '../../data/index'
-import { getAllCompaniesAdmin, addCompanyAdmin } from '../../api/client'
+import { getAllCompaniesAdmin, getCompanyDirectory, addCompanyAdmin } from '../../api/client'
 
 interface Props {
   navigate: Navigate
 }
 
 export default function AdminCompaniesPage({ navigate }: Props) {
-  const [companies, setCompanies] = useState<AdminCompany[]>(ADMIN_COMPANIES)
+  const [companies, setCompanies] = useState<AdminCompany[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<AdminVerifStatus | 'all'>('all')
   const [sortBy, setSortBy] = useState<'name' | 'submitted' | 'internships'>('submitted')
@@ -24,42 +24,72 @@ export default function AdminCompaniesPage({ navigate }: Props) {
   const [addStatus, setAddStatus] = useState<'Pending' | 'Approved'>('Pending')
   const [addLoading, setAddLoading] = useState(false)
 
-  const fetchLiveCompanies = () => {
-    getAllCompaniesAdmin()
-      .then((res) => {
-        if (res.companies && res.companies.length > 0) {
-          const mapped: AdminCompany[] = res.companies.map((c, idx) => {
-            const initials = c.companyName ? c.companyName.trim().slice(0, 2).toUpperCase() : 'CO';
-            return {
-              id: idx + 1,
-              name: c.companyName || 'Company',
-              logo: initials,
-              logoBg: '#eff6ff',
-              logoColor: '#2563eb',
-              slug: (c.companyName || 'company').toLowerCase().replace(/[^a-z0-9]/g, '-'),
-              email: (c.user && typeof c.user === 'object' && 'email' in c.user && (c.user as { email?: string }).email)
-                ? (c.user as { email: string }).email
-                : `${(c.companyName || 'company').toLowerCase().replace(/[^a-z0-9]/g, '')}@example.com`,
-              website: c.website || 'https://example.com',
-              industry: c.industry || 'Technology',
-              size: '51–200',
-              location: 'Dhaka, Bangladesh',
-              registrationNo: `REG-${(c._id || '1000').slice(-6).toUpperCase()}`,
-              internshipCount: 2,
-              reviewCount: 0,
-              documents: [c.verificationDocument || 'trade_license.pdf', 'registration_cert.pdf'],
-              verificationStatus: c.verificationStatus === 'Approved' ? 'approved' : c.verificationStatus === 'Rejected' ? 'rejected' : 'pending',
-              submittedDate: new Date(c.createdAt || Date.now()).toLocaleDateString(),
-            };
-          });
-          setCompanies(mapped);
+  const fetchLiveCompanies = async () => {
+    try {
+      setLoading(true)
+      const overrides: Record<string, string> = JSON.parse(
+        localStorage.getItem('internprangon_company_verifications') || '{}'
+      )
+      let rawList: any[] = []
+      try {
+        const res = await getAllCompaniesAdmin()
+        rawList = res.companies || []
+      } catch {
+        const dir = await getCompanyDirectory({ limit: 100 }).catch(() => ({ companies: [] }))
+        rawList = dir.companies || []
+      }
+
+      const mapped: AdminCompany[] = rawList.map((c, idx) => {
+        const initials = c.companyName ? c.companyName.trim().slice(0, 2).toUpperCase() : 'CO'
+        const override =
+          overrides[c._id] ||
+          overrides[String(idx + 1)] ||
+          overrides[(c.companyName || '').toLowerCase()]
+        const baseStatus: AdminVerifStatus =
+          c.verificationStatus === 'Approved'
+            ? 'approved'
+            : c.verificationStatus === 'Rejected'
+            ? 'rejected'
+            : 'pending'
+        const finalStatus = (override as AdminVerifStatus) || baseStatus
+
+        return {
+          id: idx + 1,
+          name: c.companyName || 'Company',
+          logo: initials,
+          logoBg: '#eff6ff',
+          logoColor: '#2563eb',
+          slug: (c.companyName || 'company').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+          email: (c.user && typeof c.user === 'object' && 'email' in c.user && (c.user as { email?: string }).email)
+            ? (c.user as { email: string }).email
+            : `${(c.companyName || 'company').toLowerCase().replace(/[^a-z0-9]/g, '')}@example.com`,
+          website: c.website || 'https://example.com',
+          industry: c.industry || 'Technology',
+          size: '51–200',
+          location: 'Dhaka, Bangladesh',
+          registrationNo: `REG-${(c._id || '1000').slice(-6).toUpperCase()}`,
+          internshipCount: c.internshipsCount ?? 2,
+          reviewCount: c.reviewCount ?? 0,
+          documents: [c.verificationDocument || 'trade_license.pdf', 'registration_cert.pdf'],
+          verificationStatus: finalStatus,
+          submittedDate: new Date(c.createdAt || Date.now()).toLocaleDateString(),
         }
       })
-      .catch(() => {})
+      setCompanies(mapped)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
     fetchLiveCompanies()
+    const handleSync = () => fetchLiveCompanies()
+    window.addEventListener('storage', handleSync)
+    window.addEventListener('internprangon_verifications_updated', handleSync)
+    return () => {
+      window.removeEventListener('storage', handleSync)
+      window.removeEventListener('internprangon_verifications_updated', handleSync)
+    }
   }, [])
 
   useEffect(() => {
@@ -222,7 +252,12 @@ export default function AdminCompaniesPage({ navigate }: Props) {
             <div className="flex-1 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 text-right">Actions</div>
           </div>
 
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="px-5 py-12 text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-600 border-t-transparent mb-3" />
+              <p className="text-xs text-neutral-500 font-medium">Loading companies...</p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="px-5 py-12 text-center">
               <p className="text-sm text-neutral-500 mb-3">No companies match your search.</p>
               <button

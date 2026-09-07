@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import type { Navigate } from '../data/index';
 import { getAllReviews, getAllInterviewExperiences, getSavedUser } from '../api/client';
+import ReportReviewModal, { type ReportTargetReview } from '../components/public/ReportReviewModal';
 
 /* ─── Data ──────────────────────────────────────────────────── */
 type ReviewType = 'experience' | 'interview';
 
 interface Review {
-  id: number;
+  id: number | string;
+  backendId?: string;
   type: ReviewType;
   company: string;
   companyLogo: string;
@@ -24,9 +26,14 @@ interface Review {
   pros?: string[];
   cons?: string[];
   wouldReturn?: boolean;
-  difficulty?: 'Easy' | 'Medium' | 'Hard';
-  outcome?: 'Accepted' | 'Rejected' | 'Pending' | 'Withdrew';
+  difficulty?: 'Easy' | 'Medium' | 'Hard' | string;
+  outcome?: string;
   rounds?: string[];
+  interviewType?: string;
+  interviewProcess?: string;
+  questionsAsked?: string;
+  tipsForCandidates?: string;
+  interviewDate?: string;
   anonymous: string;
   helpful: number;
   tags: string[];
@@ -133,14 +140,29 @@ const DIFFICULTY_COLORS: Record<string, { bg: string; text: string; border: stri
 };
 
 const OUTCOME_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  Accepted: { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' },
-  Rejected: { bg: '#fef2f2', text: '#b91c1c', border: '#fecaca' },
-  Pending:  { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' },
-  Withdrew: { bg: '#f8fafc', text: '#475569', border: '#e2e8f0' },
+  Selected:            { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' },
+  Accepted:            { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' },
+  Rejected:            { bg: '#fef2f2', text: '#b91c1c', border: '#fecaca' },
+  Waiting:             { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' },
+  Pending:             { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' },
+  'Prefer not to say': { bg: '#f8fafc', text: '#475569', border: '#e2e8f0' },
+  Withdrew:            { bg: '#f8fafc', text: '#475569', border: '#e2e8f0' },
 };
 
 /* ─── Experience Card ───────────────────────────────────────── */
-function ExperienceCard({ review, expanded, onToggle }: { review: Review; expanded: boolean; onToggle: () => void }) {
+function ExperienceCard({
+  review,
+  expanded,
+  onToggle,
+  onReport,
+  isReported,
+}: {
+  review: Review;
+  expanded: boolean;
+  onToggle: () => void;
+  onReport: (review: Review) => void;
+  isReported?: boolean;
+}) {
   return (
     <article className="bg-white border border-neutral-200 rounded-2xl overflow-hidden hover:border-neutral-300 hover:shadow-md transition-all duration-200 animate-fade-up">
       {/* Header */}
@@ -239,6 +261,23 @@ function ExperienceCard({ review, expanded, onToggle }: { review: Review; expand
             </svg>
             {review.helpful} helpful
           </button>
+          {isReported ? (
+            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-medium">
+              ✓ Reported
+            </span>
+          ) : (
+            <button
+              onClick={() => onReport(review)}
+              className="inline-flex items-center gap-1 text-[10px] text-neutral-400 hover:text-red-600 transition-colors font-medium px-1.5 py-0.5 rounded hover:bg-red-50"
+              title="Report suspicious review"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                <line x1="4" y1="22" x2="4" y2="15" />
+              </svg>
+              Report
+            </button>
+          )}
         </div>
       </div>
     </article>
@@ -246,9 +285,22 @@ function ExperienceCard({ review, expanded, onToggle }: { review: Review; expand
 }
 
 /* ─── Interview Card ────────────────────────────────────────── */
-function InterviewCard({ review, expanded, onToggle }: { review: Review; expanded: boolean; onToggle: () => void }) {
+function InterviewCard({
+  review,
+  expanded,
+  onToggle,
+  onReport,
+  isReported,
+}: {
+  review: Review;
+  expanded: boolean;
+  onToggle: () => void;
+  onReport: (review: Review) => void;
+  isReported?: boolean;
+}) {
   const diff = review.difficulty ? DIFFICULTY_COLORS[review.difficulty] : null;
   const out = review.outcome ? OUTCOME_COLORS[review.outcome] : null;
+  const mainText = review.interviewProcess || review.body || '';
 
   return (
     <article className="bg-white border border-neutral-200 rounded-2xl overflow-hidden hover:border-neutral-300 hover:shadow-md transition-all duration-200 animate-fade-up">
@@ -262,7 +314,10 @@ function InterviewCard({ review, expanded, onToggle }: { review: Review; expande
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-neutral-500">{review.company} · {review.role}</p>
-                <p className="text-xs text-neutral-400 mt-0.5">Interview experience · {review.date}</p>
+                <p className="text-xs text-neutral-400 mt-0.5">
+                  Interview experience · {review.date}
+                  {review.interviewType ? ` · ${review.interviewType}` : ''}
+                </p>
               </div>
               <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                 {diff && (
@@ -285,7 +340,7 @@ function InterviewCard({ review, expanded, onToggle }: { review: Review; expande
       <div className="px-6 py-5">
         <h3 className="text-base font-bold text-neutral-900 mb-3 leading-snug">{review.title}</h3>
 
-        {review.rounds && (
+        {review.rounds && review.rounds.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap mb-4">
             {review.rounds.map((r, i) => (
               <React.Fragment key={r}>
@@ -298,12 +353,33 @@ function InterviewCard({ review, expanded, onToggle }: { review: Review; expande
           </div>
         )}
 
-        <p className="text-sm text-neutral-600 leading-relaxed">
-          {expanded ? review.body : review.body.slice(0, 220) + (review.body.length > 220 ? '…' : '')}
-        </p>
-        {review.body.length > 220 && (
-          <button onClick={onToggle} className="mt-2 text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors">
-            {expanded ? 'Show less' : 'Read more'}
+        <div className="space-y-3">
+          <p className="text-sm text-neutral-600 leading-relaxed">
+            {expanded ? mainText : mainText.slice(0, 220) + (mainText.length > 220 ? '…' : '')}
+          </p>
+
+          {expanded && review.questionsAsked && (
+            <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-3.5 mt-3">
+              <p className="text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <span>💬 Questions Asked</span>
+              </p>
+              <p className="text-xs text-neutral-600 leading-relaxed whitespace-pre-line">{review.questionsAsked}</p>
+            </div>
+          )}
+
+          {expanded && review.tipsForCandidates && (
+            <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3.5 mt-3">
+              <p className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <span>💡 Preparation Tips</span>
+              </p>
+              <p className="text-xs text-amber-900/90 leading-relaxed whitespace-pre-line">{review.tipsForCandidates}</p>
+            </div>
+          )}
+        </div>
+
+        {(mainText.length > 220 || review.questionsAsked || review.tipsForCandidates) && (
+          <button onClick={onToggle} className="mt-3 text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors">
+            {expanded ? 'Show less' : 'Read more & view questions'}
           </button>
         )}
       </div>
@@ -324,18 +400,59 @@ function InterviewCard({ review, expanded, onToggle }: { review: Review; expande
             </svg>
             {review.helpful} helpful
           </button>
+          {isReported ? (
+            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-medium">
+              ✓ Reported
+            </span>
+          ) : (
+            <button
+              onClick={() => onReport(review)}
+              className="inline-flex items-center gap-1 text-[10px] text-neutral-400 hover:text-red-600 transition-colors font-medium px-1.5 py-0.5 rounded hover:bg-red-50"
+              title="Report suspicious review"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                <line x1="4" y1="22" x2="4" y2="15" />
+              </svg>
+              Report
+            </button>
+          )}
         </div>
       </div>
     </article>
   );
 }
 
-/* ─── ReviewsPage ───────────────────────────────────────────── */
 export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
   const [tab, setTab] = useState<'all' | 'experience' | 'interview'>('all');
   const [expanded, setExpanded] = useState<number | null>(null);
   const [search, setSearch] = useState('');
   const [allReviews, setAllReviews] = useState<Review[]>(REVIEWS);
+  const [reportingReview, setReportingReview] = useState<ReportTargetReview | null>(null);
+  const [reportedReviewIds, setReportedReviewIds] = useState<Set<string | number>>(new Set());
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
+  const handleReportClick = (review: Review) => {
+    setReportingReview({
+      id: review.backendId || review.id,
+      company: review.company,
+      rating: review.rating,
+      content: review.body,
+      anonymous: review.anonymous,
+    });
+  };
+
+  const handleReportSuccess = (targetId: string | number) => {
+    setReportedReviewIds((prev) => new Set([...prev, targetId]));
+    setToastMessage("Thank you. This review has been flagged for admin moderation.");
+  };
 
   useEffect(() => {
     Promise.all([
@@ -350,6 +467,7 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
         });
         return {
           id: 10000 + idx,
+          backendId: r.id,
           type: 'experience' as const,
           company: r.company || 'Partner Company',
           companyLogo: logo,
@@ -374,27 +492,51 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
 
       const liveInterviews: Review[] = (intRes.interviewExperiences || []).map((ie, idx) => {
         const logo = ie.company ? ie.company.slice(0, 2).toUpperCase() : 'CO';
-        const dateStr = new Date(ie.datePosted).toLocaleDateString(undefined, {
-          month: 'short',
-          year: 'numeric',
-        });
+        const dateStr = ie.interviewDate
+          ? ie.interviewDate
+          : new Date(ie.datePosted).toLocaleDateString(undefined, {
+              month: 'short',
+              year: 'numeric',
+            });
+
+        const roundsList: string[] = [];
+        if (ie.interviewType) roundsList.push(ie.interviewType);
+        if (ie.rounds) {
+          const rStr = ie.rounds.toLowerCase().includes('round')
+            ? ie.rounds
+            : `${ie.rounds} Round${ie.rounds === '1' ? '' : 's'}`;
+          roundsList.push(rStr);
+        }
+        if (roundsList.length === 0) {
+          roundsList.push('Interview Round');
+        }
+
+        const roleName = ie.role || 'Intern Applicant';
+        const headline = `${roleName} Interview`;
+        const bodyContent = ie.process || ie.questions || 'Interview experience shared by candidate.';
+
         return {
           id: 20000 + idx,
+          backendId: ie.id,
           type: 'interview' as const,
           company: ie.company || 'Partner Company',
           companyLogo: logo,
           companyLogoColor: '#7c3aed',
           companyLogoBg: '#f5f3ff',
-          role: 'Intern Applicant',
+          role: roleName,
           date: dateStr,
-          difficulty: 'Medium' as const,
-          outcome: 'Accepted' as const,
-          title: ie.questions.length > 70 ? `${ie.questions.slice(0, 70)}...` : ie.questions,
-          body: ie.questions,
-          rounds: ['Technical Interview', 'Behavioral Discussion'],
+          difficulty: (ie.difficulty as 'Easy' | 'Medium' | 'Hard') || 'Medium',
+          outcome: ie.outcome || 'Waiting',
+          title: headline,
+          body: bodyContent,
+          interviewProcess: ie.process || bodyContent,
+          questionsAsked: ie.questions && ie.questions !== ie.process ? ie.questions : undefined,
+          tipsForCandidates: ie.tips || undefined,
+          interviewType: ie.interviewType,
+          rounds: roundsList,
           helpful: 1,
           anonymous: 'Verified Student, InternPrangon',
-          tags: ['Interview', 'Questions'],
+          tags: [ie.interviewType || 'Interview', `${ie.difficulty || 'Medium'} Difficulty`, ie.outcome || 'Interview'].filter(Boolean),
         };
       });
 
@@ -402,7 +544,40 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
     });
   }, []);
 
-  const filtered = allReviews.filter((r) => {
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem('internprangon_deleted_reviews');
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch {
+      return new Set();
+    }
+  });
+
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const raw = localStorage.getItem('internprangon_deleted_reviews');
+        setDeletedIds(new Set(raw ? JSON.parse(raw) : []));
+      } catch {}
+    };
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('internprangon_reviews_updated', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('internprangon_reviews_updated', handleSync);
+    };
+  }, []);
+
+  const isReviewDeleted = (r: Review) => {
+    if (deletedIds.has(String(r.id))) return true;
+    if (r.backendId && deletedIds.has(String(r.backendId))) return true;
+    if (r.body && deletedIds.has(`txt:${r.body.trim().slice(0, 45)}`)) return true;
+    return false;
+  };
+
+  const activeReviews = allReviews.filter((r) => !isReviewDeleted(r));
+
+  const filtered = activeReviews.filter((r) => {
     const matchTab = tab === 'all' || r.type === tab;
     const matchSearch =
       !search ||
@@ -412,23 +587,24 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
     return matchTab && matchSearch;
   });
 
-  const ratingList = allReviews.filter((r) => r.rating);
-  const avgRating =
-    ratingList.length > 0
-      ? (ratingList.reduce((acc, r) => acc + (r.rating ?? 0), 0) / ratingList.length).toFixed(1)
-      : '4.8';
-  const experienceCount = allReviews.filter((r) => r.type === 'experience').length;
-  const interviewCount = allReviews.filter((r) => r.type === 'interview').length;
-  const outcomeList = allReviews.filter((r) => r.outcome);
-  const acceptRate =
-    outcomeList.length > 0
-      ? Math.round(
-          (allReviews.filter((r) => r.outcome === 'Accepted').length / outcomeList.length) * 100
-        )
-      : 85;
-
   return (
-    <div className="animate-page-enter bg-white min-h-screen">
+    <div className="animate-page-enter bg-white min-h-screen relative">
+      {/* Toast notification */}
+      {toastMessage && (
+        <div className="fixed top-6 right-6 z-50 bg-neutral-900/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-semibold flex items-center gap-2.5 border border-white/10 animate-fade-in">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Report Modal */}
+      <ReportReviewModal
+        review={reportingReview}
+        onClose={() => setReportingReview(null)}
+        onSuccess={handleReportSuccess}
+        onRequireAuth={() => navigate?.('login')}
+      />
+
       {/* ── Header ── */}
       <section className="border-b border-neutral-100">
         <div className="max-w-7xl mx-auto px-8 pt-14 pb-10">
@@ -442,20 +618,6 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
               <p className="text-neutral-500 text-base leading-relaxed">
                 Anonymous reviews from students who've interned. No filters, no spin — just what it's actually like.
               </p>
-            </div>
-
-            {/* Stats */}
-            <div className="hidden lg:grid grid-cols-3 gap-4 shrink-0 animate-fade-up delay-200">
-              {[
-                { value: avgRating, label: 'Avg. Rating' },
-                { value: `${experienceCount}`, label: 'Experiences' },
-                { value: `${acceptRate}%`, label: 'Accept Rate' },
-              ].map((s) => (
-                <div key={s.label} className="text-center px-6 py-4 bg-neutral-50 rounded-2xl border border-neutral-200 min-w-[90px]">
-                  <p className="text-2xl font-extrabold text-neutral-900">{s.value}</p>
-                  <p className="text-[11px] text-neutral-400 mt-0.5 font-medium">{s.label}</p>
-                </div>
-              ))}
             </div>
           </div>
 
@@ -520,12 +682,16 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                     review={review}
                     expanded={expanded === review.id}
                     onToggle={() => setExpanded(expanded === review.id ? null : review.id)}
+                    onReport={handleReportClick}
+                    isReported={reportedReviewIds.has(review.backendId || review.id) || reportedReviewIds.has(review.id)}
                   />
                 ) : (
                   <InterviewCard
                     review={review}
                     expanded={expanded === review.id}
                     onToggle={() => setExpanded(expanded === review.id ? null : review.id)}
+                    onReport={handleReportClick}
+                    isReported={reportedReviewIds.has(review.backendId || review.id) || reportedReviewIds.has(review.id)}
                   />
                 )}
               </div>

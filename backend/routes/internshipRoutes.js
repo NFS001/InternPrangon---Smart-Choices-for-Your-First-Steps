@@ -1,8 +1,19 @@
 const express = require('express');
-const { postInternship, searchInternships, getUpcomingDeadlines } = require('../controllers/internshipController');
+const {
+    postInternship,
+    searchInternships,
+    getUpcomingDeadlines,
+    getInternshipById,
+    getMyCompanyInternships,
+    deleteCompanyInternship
+} = require('../controllers/internshipController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 const router = express.Router();
+
+// HR: Get company's posted internships
+// URL: http://localhost:5000/api/internship/company/my
+router.get('/company/my', protect, authorize('company'), getMyCompanyInternships);
 
 // Feature 4: Post an internship
 // URL: http://localhost:5000/api/internship/post
@@ -16,4 +27,13 @@ router.get('/search', searchInternships);
 // URL: http://localhost:5000/api/internship/deadlines/soon
 router.get('/deadlines/soon', getUpcomingDeadlines);
 
+// Get single internship by ID
+// URL: http://localhost:5000/api/internship/:id
+router.get('/:id', getInternshipById);
+
+// HR: Delete an internship
+// URL: http://localhost:5000/api/internship/:id
+router.delete('/:id', protect, authorize('company'), deleteCompanyInternship);
+
 module.exports = router;
+

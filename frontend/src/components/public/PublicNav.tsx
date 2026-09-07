@@ -21,8 +21,9 @@ export default function PublicNav({ currentPage, onNavigate, loggedIn, onLogout 
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const savedUser = getSavedUser();
-  // Admin should never show a student/system profile on public site
-  const isAuthUser = Boolean(loggedIn && savedUser && savedUser.role !== 'admin');
+  const isAdmin = Boolean(loggedIn && savedUser && savedUser.role === 'admin');
+  const isCompany = Boolean(loggedIn && savedUser && savedUser.role === 'company');
+  const isStudent = Boolean(loggedIn && savedUser && savedUser.role === 'student');
   const initials = savedUser?.name
     ? savedUser.name
         .trim()
@@ -109,7 +110,39 @@ export default function PublicNav({ currentPage, onNavigate, loggedIn, onLogout 
 
         {/* Desktop auth */}
         <div className="hidden md:flex items-center shrink-0">
-          {isAuthUser ? (
+          {isAdmin ? (
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => go('admin-dashboard')}
+                className="flex items-center gap-2 h-9 px-4 text-sm font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-full transition-colors border border-purple-200"
+              >
+                <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center text-white text-[9px] font-bold">AD</div>
+                Admin Dashboard
+              </button>
+              <button
+                onClick={onLogout}
+                className="h-9 px-4 text-sm font-semibold text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-full transition-colors"
+              >
+                Log out
+              </button>
+            </div>
+          ) : isCompany ? (
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => go('co-dashboard')}
+                className="flex items-center gap-2 h-9 px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50 rounded-full transition-colors"
+              >
+                <div className="w-5 h-5 rounded-full bg-brand-600 flex items-center justify-center text-white text-[9px] font-bold">{initials}</div>
+                Company Portal
+              </button>
+              <button
+                onClick={onLogout}
+                className="h-9 px-4 text-sm font-semibold text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-full transition-colors"
+              >
+                Log out
+              </button>
+            </div>
+          ) : isStudent ? (
             <div className="flex items-center gap-2.5">
               <button
                 onClick={() => go('dashboard')}
@@ -194,7 +227,37 @@ export default function PublicNav({ currentPage, onNavigate, loggedIn, onLogout 
           </div>
 
           <div className="border-t border-neutral-100 px-4 py-3">
-            {isAuthUser ? (
+            {isAdmin ? (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => go('admin-dashboard')}
+                  className="flex-1 h-10 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition-colors"
+                >
+                  Admin Dashboard
+                </button>
+                <button
+                  onClick={() => { onLogout?.(); setMenuOpen(false); }}
+                  className="flex-1 h-10 text-sm font-semibold text-neutral-600 border border-neutral-200 hover:bg-neutral-50 rounded-xl transition-colors"
+                >
+                  Log out
+                </button>
+              </div>
+            ) : isCompany ? (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => go('co-dashboard')}
+                  className="flex-1 h-10 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-colors"
+                >
+                  Company Portal
+                </button>
+                <button
+                  onClick={() => { onLogout?.(); setMenuOpen(false); }}
+                  className="flex-1 h-10 text-sm font-semibold text-neutral-600 border border-neutral-200 hover:bg-neutral-50 rounded-xl transition-colors"
+                >
+                  Log out
+                </button>
+              </div>
+            ) : isStudent ? (
               <div className="flex gap-2">
                 <button
                   onClick={() => go('dashboard')}

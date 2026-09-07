@@ -4,30 +4,43 @@ const InterviewExperience = require('../models/InterviewExperience');
 const StudentProfile = require('../models/StudentProfile');
 const { awardPointsToStudent } = require('../utils/badgeHelper');
 
-const INTERVIEW_EXPERIENCE_POINTS = 3;
+const INTERVIEW_EXPERIENCE_POINTS = 5;
 
 const formatAnonymousInterviewExperience = (experience) => ({
     id: experience._id,
-    questions: experience.questions,
+    company: experience.company?.companyName || 'Partner Company',
+    companyId: experience.company?._id || experience.company,
+    role: experience.role || 'Intern Applicant',
+    interviewType: experience.interviewType || 'Online',
+    rounds: experience.rounds || '1',
+    difficulty: experience.difficulty || 'Medium',
+    process: experience.process || '',
+    questions: experience.questions || '',
+    tips: experience.tips || '',
+    outcome: experience.outcome || 'Waiting',
+    interviewDate: experience.interviewDate || '',
     datePosted: experience.datePosted
 });
 
 const createInterviewExperience = async (req, res) => {
     const { companyId } = req.params;
-    const { questions } = req.body || {};
+    const {
+        role,
+        interviewType,
+        rounds,
+        difficulty,
+        process,
+        questions,
+        tips,
+        outcome,
+        interviewDate
+    } = req.body || {};
 
-    if (typeof questions !== 'string') {
-        return res.status(400).json({ message: 'Questions are required and must be text' });
-    }
+    const effectiveProcess = typeof process === 'string' ? process.trim() : '';
+    const effectiveQuestions = typeof questions === 'string' ? questions.trim() : '';
 
-    const trimmedQuestions = questions.trim();
-
-    if (!trimmedQuestions) {
-        return res.status(400).json({ message: 'Questions cannot be empty' });
-    }
-
-    if (trimmedQuestions.length > 3000) {
-        return res.status(400).json({ message: 'Questions cannot exceed 3000 characters' });
+    if (!effectiveProcess && !effectiveQuestions) {
+        return res.status(400).json({ message: 'Interview process or questions are required' });
     }
 
     try {
@@ -46,7 +59,15 @@ const createInterviewExperience = async (req, res) => {
         const interviewExperience = await InterviewExperience.create({
             company: company._id,
             student: req.user._id,
-            questions: trimmedQuestions,
+            role: (typeof role === 'string' && role.trim()) ? role.trim() : 'Intern Applicant',
+            interviewType: typeof interviewType === 'string' && interviewType.trim() ? interviewType.trim() : 'Online',
+            rounds: String(rounds || '1'),
+            difficulty: ['Easy', 'Medium', 'Hard'].includes(difficulty) ? difficulty : 'Medium',
+            process: effectiveProcess,
+            questions: effectiveQuestions || effectiveProcess || 'General Interview Discussion',
+            tips: typeof tips === 'string' ? tips.trim() : '',
+            outcome: outcome || 'Waiting',
+            interviewDate: typeof interviewDate === 'string' ? interviewDate.trim() : '',
             datePosted: new Date()
         });
 
@@ -87,7 +108,7 @@ const getCompanyInterviewExperiences = async (req, res) => {
         }
 
         const experiences = await InterviewExperience.find({ company: company._id })
-            .select('questions datePosted _id')
+            .populate({ path: 'company', select: 'companyName industry website' })
             .sort({ datePosted: -1 });
 
         res.status(200).json({
@@ -115,7 +136,15 @@ const getAllInterviewExperiences = async (req, res) => {
                 company: e.company?.companyName || 'Partner Company',
                 companyId: e.company?._id || null,
                 industry: e.company?.industry || 'Technology',
-                questions: e.questions,
+                role: e.role || 'Intern Applicant',
+                interviewType: e.interviewType || 'Online',
+                rounds: e.rounds || '1',
+                difficulty: e.difficulty || 'Medium',
+                process: e.process || '',
+                questions: e.questions || '',
+                tips: e.tips || '',
+                outcome: e.outcome || 'Waiting',
+                interviewDate: e.interviewDate || '',
                 datePosted: e.datePosted
             }))
         });

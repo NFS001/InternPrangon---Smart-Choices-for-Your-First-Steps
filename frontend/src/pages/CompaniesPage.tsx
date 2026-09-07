@@ -31,25 +31,37 @@ export default function CompaniesPage({ navigate }: Props) {
 
   useEffect(() => {
     const apiSort = sortBy === "stipend" ? "averageStipend" : (sortBy === "rating" ? "rating" : undefined);
-    getCompanyDirectory({ sortBy: apiSort, limit: 20 })
+    getCompanyDirectory({ sortBy: apiSort, limit: 100 })
       .then((res) => {
         if (res.companies && res.companies.length > 0) {
-          const mapped = res.companies.map((c, idx) => ({
-            id: idx + 100,
-            name: c.companyName,
-            industry: c.industry || "Technology",
-            location: "Dhaka, Bangladesh",
-            verified: c.verificationStatus === "Approved",
-            rating: c.averageRating || 4.5,
-            reviewCount: c.reviewCount || 0,
-            avgStipend: c.averageStipend ? `BDT ${c.averageStipend.toLocaleString()}/mo` : "Not reported",
-            activeInternships: 1,
-            logo: c.companyName.slice(0, 2).toUpperCase(),
-            logoBg: "#eff6ff",
-            logoColor: "#2563eb",
-            website: c.website || "#",
-            description: c.description || "Verified company on InternPrangon.",
-          }));
+          const mapped = res.companies.map((c, idx) => {
+            const matchStatic = COMPANIES.find(
+              (sc) => sc.name.toLowerCase() === c.companyName.toLowerCase()
+            );
+            return {
+              id: matchStatic?.id || (idx + 1),
+              mongoId: c._id,
+              name: c.companyName,
+              industry: c.industry || matchStatic?.industry || "Technology",
+              location: matchStatic?.location || "Dhaka, Bangladesh",
+              verified: c.verificationStatus === "Approved",
+              rating: c.averageRating || matchStatic?.rating || 4.7,
+              reviewCount: c.reviewCount || matchStatic?.reviewCount || 1,
+              avgStipend: c.averageStipend
+                ? `BDT ${c.averageStipend.toLocaleString()}/mo`
+                : (matchStatic?.avgStipend || "BDT 18,000/mo"),
+              activeInternships: matchStatic?.activeInternships || 1,
+              logo: matchStatic?.logo || c.companyName.slice(0, 2).toUpperCase(),
+              logoBg: matchStatic?.logoBg || "#eff6ff",
+              logoColor: matchStatic?.logoColor || "#2845e2",
+              website: c.website || matchStatic?.website || "https://example.com",
+              description: c.description || matchStatic?.description || "Enterprise partner on InternPrangon.",
+              about: matchStatic?.about || c.description || "Enterprise partner on InternPrangon offering quality internship opportunities and mentorship.",
+              size: matchStatic?.size || "500+ employees",
+              founded: matchStatic?.founded || "2015",
+              tags: matchStatic?.tags || [c.industry || "Technology", "Enterprise", "Internships"],
+            };
+          });
           setCompanyList(mapped);
         }
       })
@@ -142,8 +154,8 @@ export default function CompaniesPage({ navigate }: Props) {
         <div className="grid grid-cols-4 gap-4">
           {filtered.map((company) => (
             <div
-              key={company.id}
-              onClick={() => navigate("company-detail", { id: company.id })}
+              key={company.mongoId || company.id}
+              onClick={() => navigate("company-detail", { companyId: company.mongoId || company.id, id: company.id, companyData: company })}
               className="bg-white border border-neutral-100 rounded-2xl p-5 cursor-pointer hover:shadow-lg hover:border-brand-200 transition-all duration-200 flex flex-col gap-3 group"
             >
               {/* Logo + Verified */}

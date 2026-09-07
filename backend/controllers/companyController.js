@@ -1,4 +1,8 @@
+const mongoose = require('mongoose');
 const CompanyProfile = require('../models/CompanyProfile');
+const Internship = require('../models/Internship');
+const Review = require('../models/Review');
+const StipendReport = require('../models/StipendReport');
 const { createNotification } = require('./notificationController');
 
 // HR Submitting Document (Feature 1)
@@ -265,6 +269,77 @@ const getMyCompanyProfile = async (req, res) => {
     }
 };
 
+// Public: Get company by ID or name with live statistics, internships, reviews, stipends
+const getCompanyById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        let company;
+        if (mongoose.isValidObjectId(id)) {
+            company = await CompanyProfile.findById(id);
+        }
+        if (!company) {
+            const numericMap = {
+                '1': 'Brain Station 23',
+                '2': 'Chaldal',
+                '3': 'Square',
+                '4': 'Pathao',
+                '5': 'bKash Limited',
+                '6': 'Optimizely',
+                '7': 'ShopUp',
+                '8': 'Daraz',
+                '9': 'Rokomari',
+                '10': '10 Minute School',
+                '11': 'Incepta Pharmaceuticals',
+                '12': 'BioPharma Group',
+                '13': 'Sheba.xyz',
+                '14': 'Uber'
+            };
+            const searchName = numericMap[String(id)] || String(id);
+            company = await CompanyProfile.findOne({ companyName: new RegExp(`^${searchName}$`, 'i') })
+                   || await CompanyProfile.findOne({ companyName: new RegExp(searchName, 'i') });
+        }
+        if (!company) {
+            return res.status(404).json({ message: 'Company not found' });
+        }
+
+        const [internships, reviews, stipends] = await Promise.all([
+            Internship.find({ companyId: company.user }).sort({ createdAt: -1 }),
+            Review.find({ company: company._id }).sort({ createdAt: -1 }),
+            StipendReport.find({ company: company._id }).sort({ createdAt: -1 })
+        ]);
+
+        const reviewCount = reviews.length;
+        const averageRating = reviewCount > 0
+            ? Number((reviews.reduce((acc, r) => acc + r.rating, 0) / reviewCount).toFixed(1))
+            : 5.0;
+
+        const stipendReportCount = stipends.length;
+        const averageStipend = stipendReportCount > 0
+            ? Math.round(stipends.reduce((acc, s) => acc + s.amount, 0) / stipendReportCount)
+            : 18000;
+
+        res.status(200).json({
+            message: 'Company fetched successfully',
+            company: {
+                ...company.toObject(),
+                reviewCount,
+                averageRating,
+                stipendReportCount,
+                averageStipend,
+                activeInternships: internships.length,
+                internships,
+                reviews,
+                stipends
+            },
+            internships,
+            reviews,
+            stipends
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
 module.exports = {
     submitCompanyProfile,
     verifyCompany,
@@ -272,5 +347,7 @@ module.exports = {
     addCompanyByAdmin,
     deleteCompany,
     getCompanyDirectory,
-    getMyCompanyProfile
+    getMyCompanyProfile,
+    getCompanyById
 };
+

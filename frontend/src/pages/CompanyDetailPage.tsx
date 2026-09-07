@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import type { Navigate } from "../data/index";
 import { COMPANIES, INTERNSHIPS } from "../data/index";
-import { getCompanyReviews, getCompanyDirectory } from "../api/client";
+import { getCompanyReviews, getCompanyDirectory, getCompanyById, getSavedUser } from "../api/client";
+import ReportReviewModal, { type ReportTargetReview } from "../components/public/ReportReviewModal";
 
 interface Props {
   navigate: Navigate;
-  id: number;
+  id?: number | string;
+  companyId?: number | string;
+  companyData?: any;
 }
 
 function StarRating({ rating, size = "md" }: { rating: number; size?: "sm" | "md" | "lg" }) {
@@ -50,10 +53,23 @@ const HARDCODED_REVIEWS = [
   },
 ];
 
-export default function CompanyDetailPage({ navigate, id }: Props) {
-  const company = COMPANIES.find((c) => c.id === id) ?? COMPANIES[0];
-  const companyInternships = INTERNSHIPS.filter((i) => i.companyId === id);
+export default function CompanyDetailPage({ navigate, id, companyId, companyData: initialData }: Props) {
+  const targetKey = companyId || id;
+  const initialCompany = initialData ||
+    (targetKey ? COMPANIES.find(c => (c.mongoId && c.mongoId === targetKey) || String(c.id) === String(targetKey) || (typeof targetKey === 'string' && c.name.toLowerCase() === targetKey.toLowerCase())) : null) ||
+    COMPANIES[0];
+
+  const [company, setCompany] = useState(initialCompany);
+  const [companyInternships, setCompanyInternships] = useState<any[]>(() => {
+    return INTERNSHIPS.filter(i =>
+      i.company.toLowerCase() === initialCompany.name.toLowerCase() ||
+      i.companyId === initialCompany.id
+    );
+  });
   const [tab, setTab] = useState<"about" | "internships" | "reviews">("about");
+  const [reportingReview, setReportingReview] = useState<ReportTargetReview | null>(null);
+  const [reportedReviewIds, setReportedReviewIds] = useState<Set<string | number>>(new Set());
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [liveReviews, setLiveReviews] = useState<Array<{
     id: string;
     rating: number;
@@ -61,33 +77,217 @@ export default function CompanyDetailPage({ navigate, id }: Props) {
     label: string;
   }>>([]);
 
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem('internprangon_deleted_reviews');
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch {
+      return new Set();
+    }
+  });
+
   useEffect(() => {
-    getCompanyDirectory({ limit: 100 })
+    const handleSync = () => {
+      try {
+        const raw = localStorage.getItem('internprangon_deleted_reviews');
+        setDeletedIds(new Set(raw ? JSON.parse(raw) : []));
+      } catch {}
+    };
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('internprangon_reviews_updated', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('internprangon_reviews_updated', handleSync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
+  const handleReportClick = (review: { id: string | number; rating: number; quote: string; label: string }) => {
+    setReportingReview({
+      id: review.id,
+      company: company.name,
+      rating: review.rating,
+      content: review.quote,
+      anonymous: review.label,
+    });
+  };
+
+  const handleReportSuccess = (targetId: string | number) => {
+    setReportedReviewIds((prev) => new Set([...prev, targetId]));
+    setToastMessage("Thank you. This review has been flagged for admin moderation.");
+  };
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    // Determine the exact company we are supposed to be viewing
+    const currentComp = initialData ||
+      (targetKey ? COMPANIES.find(c => (c.mongoId && c.mongoId === targetKey) || String(c.id) === String(targetKey) || (typeof targetKey === 'string' && c.name.toLowerCase() === targetKey.toLowerCase())) : null);
+
+    if (currentComp) {
+      setCompany(currentComp);
+      const matched = INTERNSHIPS.filter(
+        (i) => i.company.toLowerCase() === currentComp.name.toLowerCase()
+      );
+      if (matched.length > 0) setCompanyInternships(matched);
+    }
+
+    const lookupKey =
+      (initialData?.mongoId && typeof initialData.mongoId === 'string' && initialData.mongoId.length === 24 ? initialData.mongoId : null) ||
+      (typeof targetKey === 'string' && targetKey.length === 24 ? targetKey : null) ||
+      initialData?.name ||
+      currentComp?.name ||
+      targetKey;
+
+    if (!lookupKey) return;
+
+    getCompanyById(String(lookupKey))
       .then((res) => {
-        const match = res.companies?.find(
-          (c) => c.companyName.toLowerCase() === company.name.toLowerCase()
-        );
-        const backendCompanyId = match?._id || company.name;
-        getCompanyReviews(backendCompanyId)
-          .then((rRes) => {
-            if (rRes.reviews && rRes.reviews.length > 0) {
-              setLiveReviews(
-                rRes.reviews.map((r, idx) => ({
-                  id: (r as any).id || (r as any)._id || String(idx),
-                  rating: r.rating,
-                  quote: r.comment,
-                  label: `Verified Student · ${new Date(r.createdAt).toLocaleDateString(undefined, {
-                    month: "short",
-                    year: "numeric",
-                  })}`,
-                }))
+        if (!isCurrent) return;
+        if (res.company) {
+          const matchStatic = COMPANIES.find(
+            (sc) => sc.name.toLowerCase() === res.company.companyName.toLowerCase()
+          );
+          setCompany((prev: any) => ({
+            ...prev,
+            mongoId: res.company._id,
+            name: res.company.companyName,
+            industry: res.company.industry || prev.industry,
+            description: res.company.description || prev.description,
+            about: matchStatic?.about || res.company.description || prev.about,
+            website: res.company.website || prev.website,
+            verified: res.company.verificationStatus === "Approved",
+            rating: res.company.averageRating || prev.rating || 4.7,
+            reviewCount: res.company.reviewCount || prev.reviewCount || 1,
+            avgStipend: res.company.averageStipend
+              ? `BDT ${res.company.averageStipend.toLocaleString()}/mo`
+              : prev.avgStipend,
+            logo: matchStatic?.logo || res.company.companyName.slice(0, 2).toUpperCase(),
+            logoBg: matchStatic?.logoBg || prev.logoBg || "#eff6ff",
+            logoColor: matchStatic?.logoColor || prev.logoColor || "#2845e2",
+            size: matchStatic?.size || prev.size || "500+ employees",
+            founded: matchStatic?.founded || prev.founded || "2015",
+            location: matchStatic?.location || prev.location || "Dhaka, Bangladesh",
+            tags: matchStatic?.tags || [res.company.industry || "Technology", "Enterprise", "Internships"],
+          }));
+
+          if (res.internships && res.internships.length > 0) {
+            const mappedInt = res.internships.map((ri, idx) => ({
+              id: idx + 500,
+              backendId: ri._id,
+              role: ri.title,
+              company: res.company.companyName,
+              companyId: res.company._id,
+              paid: ri.type === "Paid",
+              duration: "3 months",
+              location: ri.mode === "Remote" ? "Remote, BD" : "Dhaka, BD",
+              type: ri.mode,
+              deadline: new Date(ri.deadline).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              }),
+              daysLeft: Math.max(
+                0,
+                Math.ceil((new Date(ri.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+              ),
+              stipend: ri.type === "Paid" ? "BDT 18,000/mo" : undefined,
+              description: ri.description,
+            }));
+            setCompanyInternships(mappedInt);
+          } else {
+            const staticMatch = INTERNSHIPS.filter(
+              (i) => i.company.toLowerCase() === res.company.companyName.toLowerCase()
+            );
+            if (staticMatch.length > 0) setCompanyInternships(staticMatch);
+          }
+
+          if (res.reviews && res.reviews.length > 0) {
+            setLiveReviews(
+              res.reviews.map((r, idx) => ({
+                id: (r as any)._id || String(idx),
+                rating: r.rating,
+                quote: r.comment,
+                label: `Verified Student · ${new Date(r.createdAt).toLocaleDateString(undefined, {
+                  month: "short",
+                  year: "numeric",
+                })}`,
+              }))
+            );
+          }
+        }
+      })
+      .catch(() => {
+        if (!isCurrent) return;
+        // Lookup ONLY this exact target company in directory fallback
+        const targetNameToFind = initialData?.name || currentComp?.name;
+        getCompanyDirectory({ limit: 100 })
+          .then((dRes) => {
+            if (!isCurrent) return;
+            const match = dRes.companies?.find(
+              (c) =>
+                (targetKey && c._id === targetKey) ||
+                (targetNameToFind && c.companyName.toLowerCase() === targetNameToFind.toLowerCase())
+            );
+            if (match) {
+              const matchStatic = COMPANIES.find(
+                (sc) => sc.name.toLowerCase() === match.companyName.toLowerCase()
               );
+              setCompany((prev: any) => ({
+                ...prev,
+                mongoId: match._id,
+                name: match.companyName,
+                industry: match.industry || prev.industry,
+                description: match.description || prev.description,
+                website: match.website || prev.website,
+                verified: match.verificationStatus === "Approved",
+                rating: match.averageRating || prev.rating,
+                reviewCount: match.reviewCount || prev.reviewCount,
+                avgStipend: match.averageStipend
+                  ? `BDT ${match.averageStipend.toLocaleString()}/mo`
+                  : prev.avgStipend,
+                logo: matchStatic?.logo || match.companyName.slice(0, 2).toUpperCase(),
+                logoBg: matchStatic?.logoBg || prev.logoBg || "#eff6ff",
+                logoColor: matchStatic?.logoColor || prev.logoColor || "#2845e2",
+                size: matchStatic?.size || prev.size || "500+ employees",
+                founded: matchStatic?.founded || prev.founded || "2015",
+                location: matchStatic?.location || prev.location || "Dhaka, Bangladesh",
+                about: matchStatic?.about || match.description || prev.about,
+              }));
+
+              getCompanyReviews(match._id)
+                .then((rRes) => {
+                  if (!isCurrent) return;
+                  if (rRes.reviews && rRes.reviews.length > 0) {
+                    setLiveReviews(
+                      rRes.reviews.map((r, idx) => ({
+                        id: (r as any).id || (r as any)._id || String(idx),
+                        rating: r.rating,
+                        quote: r.comment,
+                        label: `Verified Student · ${new Date(r.createdAt).toLocaleDateString(undefined, {
+                          month: "short",
+                          year: "numeric",
+                        })}`,
+                      }))
+                    );
+                  }
+                })
+                .catch(() => {});
             }
           })
           .catch(() => {});
-      })
-      .catch(() => {});
-  }, [company.name]);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [targetKey, initialData]);
 
   const urgencyColor = (daysLeft: number) => {
     if (daysLeft <= 3) return "text-red-600 bg-red-50 border-red-200";
@@ -96,7 +296,23 @@ export default function CompanyDetailPage({ navigate, id }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-neutral-50 relative">
+      {/* Toast notification */}
+      {toastMessage && (
+        <div className="fixed top-6 right-6 z-50 bg-neutral-900/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-semibold flex items-center gap-2.5 border border-white/10 animate-fade-in">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Report Modal */}
+      <ReportReviewModal
+        review={reportingReview}
+        onClose={() => setReportingReview(null)}
+        onSuccess={handleReportSuccess}
+        onRequireAuth={() => navigate("login")}
+      />
+
       <div className="max-w-5xl mx-auto px-8 py-12">
         {/* Back button */}
         <button
@@ -308,7 +524,7 @@ export default function CompanyDetailPage({ navigate, id }: Props) {
                         : `${internship.daysLeft}d left`}
                     </span>
                     <button
-                      onClick={() => navigate("internship-detail", { id: internship.id })}
+                      onClick={() => navigate("internship-detail", { id: internship.id, backendId: internship.backendId || internship._id, internshipData: internship })}
                       className="px-4 py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-700 transition"
                     >
                       View
@@ -335,26 +551,82 @@ export default function CompanyDetailPage({ navigate, id }: Props) {
               </button>
             </div>
 
-            {[...liveReviews, ...HARDCODED_REVIEWS].map((review) => (
-              <div
-                key={review.id}
-                className="bg-white border border-neutral-100 rounded-2xl p-6"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <StarRating rating={review.rating} />
-                  <span className="text-xs font-semibold text-neutral-700">
-                    {review.rating}.0
-                  </span>
-                </div>
-                <p className="text-neutral-700 text-sm leading-relaxed mb-4">
-                  "{review.quote}"
-                </p>
-                <p className="text-xs text-neutral-400 font-medium">{review.label}</p>
-              </div>
-            ))}
+            {(() => {
+              const activeCompanyReviews = [...liveReviews, ...HARDCODED_REVIEWS].filter((review) => {
+                if (deletedIds.has(String(review.id))) return false;
+                if (review.quote && deletedIds.has(`txt:${review.quote.trim().slice(0, 45)}`)) return false;
+                return true;
+              });
+
+              if (activeCompanyReviews.length === 0) {
+                return (
+                  <div className="bg-white border border-neutral-100 rounded-2xl p-8 text-center text-neutral-500 text-sm">
+                    No reviews yet for this company.
+                  </div>
+                );
+              }
+
+              return activeCompanyReviews.map((review) => {
+                const isReported = reportedReviewIds.has(review.id);
+                return (
+                  <div
+                    key={review.id}
+                    className="bg-white border border-neutral-100 rounded-2xl p-6 shadow-sm"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <StarRating rating={review.rating} />
+                      <span className="text-xs font-semibold text-neutral-700">
+                        {review.rating}.0
+                      </span>
+                    </div>
+                    <p className="text-neutral-700 text-sm leading-relaxed mb-4">
+                      "{review.quote}"
+                    </p>
+                    <div className="flex items-center justify-between pt-3 border-t border-neutral-100">
+                      <p className="text-xs text-neutral-400 font-medium">{review.label}</p>
+                      {isReported ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-medium bg-emerald-50 px-2.5 py-1 rounded-full">
+                          ✓ Reported
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleReportClick(review)}
+                          className="inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-red-600 transition font-medium px-2 py-1 rounded-lg hover:bg-red-50"
+                          title="Report this review"
+                        >
+                          <svg
+                            className="w-3.5 h-3.5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
+                            />
+                          </svg>
+                          Report
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
         )}
       </div>
+
+      {/* Report Review Modal */}
+      {reportingReview && (
+        <ReportReviewModal
+          review={reportingReview}
+          onClose={() => setReportingReview(null)}
+          onSuccess={handleReportSuccess}
+        />
+      )}
     </div>
   );
 }

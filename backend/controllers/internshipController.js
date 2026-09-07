@@ -126,6 +126,12 @@ const searchInternships = async (req, res) => {
                 .limit(limitNumber)
         ]);
 
+        // Lookup CompanyProfiles for the returned internships
+        const userIds = [...new Set(internships.map((i) => String(i.companyId)))];
+        const companyProfiles = await CompanyProfile.find({ user: { $in: userIds } }).lean();
+        const profileMap = new Map();
+        companyProfiles.forEach((cp) => profileMap.set(String(cp.user), cp));
+
         res.status(200).json({
             message: 'Internships fetched successfully!',
             resultsFound: internships.length,
@@ -133,10 +139,22 @@ const searchInternships = async (req, res) => {
             page: pageNumber,
             limit: limitNumber,
             totalPages: Math.ceil(totalResults / limitNumber),
-            internships: internships.map((internship) => ({
-                ...internship.toObject(),
-                deadlineSoon: isDeadlineSoon(internship.deadline)
-            }))
+            internships: internships.map((internship) => {
+                const cp = profileMap.get(String(internship.companyId));
+                const companyName = cp ? cp.companyName : 'Enterprise Partner';
+                return {
+                    ...internship.toObject(),
+                    company: companyName,
+                    companyProfileId: cp ? cp._id : null,
+                    companyLogo: companyName.slice(0, 2).toUpperCase(),
+                    companyLogoBg: '#eff6ff',
+                    companyLogoColor: '#2563eb',
+                    location: 'Dhaka, Bangladesh',
+                    industry: cp ? cp.industry : 'Technology',
+                    website: cp ? cp.website : '',
+                    deadlineSoon: isDeadlineSoon(internship.deadline)
+                };
+            })
         });
 
     } catch (error) {
@@ -166,4 +184,131 @@ const getUpcomingDeadlines = async (req, res) => {
     }
 };
 
-module.exports = { postInternship, searchInternships, getUpcomingDeadlines };
+// Get single internship by ID
+const getInternshipById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const internship = await Internship.findById(id);
+        if (!internship) {
+            return res.status(404).json({ message: 'Internship not found' });
+        }
+        const companyProfile = await CompanyProfile.findOne({ user: internship.companyId });
+        const companyName = companyProfile ? companyProfile.companyName : 'Enterprise Partner';
+        res.status(200).json({
+            message: 'Internship fetched successfully',
+            internship: {
+                ...internship.toObject(),
+                company: companyName,
+                companyProfileId: companyProfile ? companyProfile._id : null,
+                companyLogo: companyName.slice(0, 2).toUpperCase(),
+                companyLogoBg: '#eff6ff',
+                companyLogoColor: '#2563eb',
+                location: 'Dhaka, Bangladesh',
+                industry: companyProfile ? companyProfile.industry : 'Technology',
+                website: companyProfile ? companyProfile.website : '',
+                deadlineSoon: isDeadlineSoon(internship.deadline)
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// HR: Get logged-in company's posted internships with live statistics (active, applicants, etc.)
+const getMyCompanyInternships = async (req, res) => {
+    try {
+        const companyId = req.user._id;
+        const Application = require('../models/Application');
+
+        // Look up either by User ID or CompanyProfile ID
+        const profile = await CompanyProfile.findOne({ user: companyId });
+        const possibleIds = [companyId];
+        if (profile) possibleIds.push(profile._id);
+
+        const internships = await Internship.find({ companyId: { $in: possibleIds } }).sort({ createdAt: -1 });
+
+        const now = new Date();
+        const enrichedInternships = await Promise.all(
+            internships.map(async (internship) => {
+                const [totalApplicants, shortlisted, interviewing, applied, rejected] = await Promise.all([
+                    Application.countDocuments({ internship: internship._id }),
+                    Application.countDocuments({ internship: internship._id, status: 'Shortlisted' }),
+                    Application.countDocuments({ internship: internship._id, status: 'Interviewing' }),
+                    Application.countDocuments({ internship: internship._id, status: 'Applied' }),
+                    Application.countDocuments({ internship: internship._id, status: 'Rejected' })
+                ]);
+
+                const daysLeft = Math.max(
+                    0,
+                    Math.ceil((new Date(internship.deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                );
+
+                const status = new Date(internship.deadline) >= now ? 'active' : 'expired';
+
+                return {
+                    _id: internship._id,
+                    companyId: internship.companyId,
+                    title: internship.title,
+                    description: internship.description,
+                    type: internship.type,
+                    mode: internship.mode,
+                    deadline: internship.deadline,
+                    status,
+                    daysLeft,
+                    totalApplicants,
+                    shortlisted,
+                    interviewing,
+                    applied,
+                    rejected,
+                    createdAt: internship.createdAt
+                };
+            })
+        );
+
+        res.status(200).json({
+            message: 'Company internships fetched successfully',
+            count: enrichedInternships.length,
+            internships: enrichedInternships
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// HR: Delete company's internship post
+const deleteCompanyInternship = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const companyId = req.user._id;
+        const profile = await CompanyProfile.findOne({ user: companyId });
+        const allowedIds = [String(companyId)];
+        if (profile) allowedIds.push(String(profile._id));
+
+        const internship = await Internship.findById(id);
+        if (!internship) {
+            return res.status(404).json({ message: 'Internship not found' });
+        }
+
+        if (!allowedIds.includes(String(internship.companyId))) {
+            return res.status(403).json({ message: 'You are not authorized to delete this internship' });
+        }
+
+        const Application = require('../models/Application');
+        await Application.deleteMany({ internship: internship._id });
+        await Internship.deleteOne({ _id: internship._id });
+
+        res.status(200).json({ message: 'Internship deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+module.exports = {
+    postInternship,
+    searchInternships,
+    getUpcomingDeadlines,
+    getInternshipById,
+    getMyCompanyInternships,
+    deleteCompanyInternship
+};
+

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Navigate } from '../../data/index';
-import { CURRENT_COMPANY } from '../../data/index';
 import { LogoMark } from '../../pages/DesignSystemPage';
-import { getSavedUser, getMyCompanyProfile, type ApiUser } from '../../api/client';
+import { getSavedUser, getMyCompanyProfile, getAllCompanyApplicants, type ApiUser } from '../../api/client';
 
 interface Props {
   currentPage: string;
@@ -11,7 +10,13 @@ interface Props {
   currentUser?: ApiUser | null;
 }
 
-const NAV_ITEMS = [
+interface NavItem {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+}
+
+const NAV_ITEMS: NavItem[] = [
   {
     id: 'co-dashboard',
     label: 'Dashboard',
@@ -25,7 +30,6 @@ const NAV_ITEMS = [
   {
     id: 'co-applicants',
     label: 'Applicants',
-    badge: '73',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
@@ -66,26 +70,35 @@ const NAV_ITEMS = [
 export default function CompanySidebar({ currentPage, navigate, onLogout, currentUser }: Props) {
   const user = currentUser ?? getSavedUser();
   const [companyInfo, setCompanyInfo] = useState({
-    name: user?.name || CURRENT_COMPANY.name,
-    industry: CURRENT_COMPANY.industry,
-    verified: false,
+    name: user?.name || 'Company',
+    industry: 'Software & Technology',
+    status: 'Pending',
   });
+  const [applicantCount, setApplicantCount] = useState(0);
 
   useEffect(() => {
     getMyCompanyProfile()
       .then((res) => {
         if (res.profile) {
           setCompanyInfo({
-            name: res.profile.companyName || user?.name || CURRENT_COMPANY.name,
+            name: res.profile.companyName || user?.name || 'Company',
             industry: res.profile.industry || 'Technology',
-            verified: res.profile.verificationStatus === 'Approved',
+            status: res.profile.verificationStatus || 'Pending',
           });
         }
       })
       .catch(() => {});
-  }, [user?.id]);
 
-  const verified = companyInfo.verified;
+    getAllCompanyApplicants()
+      .then((res) => {
+        setApplicantCount(res.totalApplicants || 0);
+      })
+      .catch(() => {
+        setApplicantCount(0);
+      });
+  }, [user?.id, user?.name]);
+
+  const isVerified = companyInfo.status === 'Approved';
 
   return (
     <>
@@ -120,10 +133,10 @@ export default function CompanySidebar({ currentPage, navigate, onLogout, curren
 
         {/* Verification badge */}
         <div className="mx-3 mb-4">
-          {verified ? (
+          {isVerified ? (
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-xl">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-              <span className="text-[10px] font-bold text-green-700">Verified Company</span>
+              <span className="text-[10px] font-bold text-green-700">Verified Enterprise</span>
             </div>
           ) : (
             <button
@@ -131,7 +144,7 @@ export default function CompanySidebar({ currentPage, navigate, onLogout, curren
               className="w-full flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors"
             >
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              <span className="text-[10px] font-bold text-amber-700">Get verified →</span>
+              <span className="text-[10px] font-bold text-amber-700">Pending Verification</span>
             </button>
           )}
         </div>
@@ -140,31 +153,24 @@ export default function CompanySidebar({ currentPage, navigate, onLogout, curren
         <nav className="flex-1 px-3 space-y-0.5">
           {NAV_ITEMS.map((item) => {
             const active = currentPage === item.id;
-            const isLocked = !verified && item.id === 'co-internships';
+            const badgeValue = item.id === 'co-applicants' && applicantCount > 0 ? String(applicantCount) : null;
+
             return (
               <button
                 key={item.id}
-                onClick={() => !isLocked && navigate(item.id)}
-                disabled={isLocked}
+                onClick={() => navigate(item.id)}
                 className={[
                   'w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-xl transition-all duration-150 text-sm font-medium',
                   active
                     ? 'bg-brand-600 text-white shadow-sm'
-                    : isLocked
-                      ? 'text-neutral-300 cursor-not-allowed'
-                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900',
+                    : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900',
                 ].join(' ')}
               >
-                <span className={active ? 'text-white' : isLocked ? 'text-neutral-300' : 'text-neutral-400'}>{item.icon}</span>
+                <span className={active ? 'text-white' : 'text-neutral-400'}>{item.icon}</span>
                 <span className="flex-1">{item.label}</span>
-                {isLocked && (
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-300">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                  </svg>
-                )}
-                {item.badge && !isLocked && (
-                  <span className={`px-1.5 py-0.5 text-[9px] font-extrabold rounded-full ${active ? 'bg-white/20 text-white' : 'bg-neutral-200 text-neutral-600'}`}>
-                    {item.badge}
+                {badgeValue && (
+                  <span className={['px-2 py-0.5 text-[10px] font-extrabold rounded-full', active ? 'bg-white/20 text-white' : 'bg-brand-100 text-brand-700'].join(' ')}>
+                    {badgeValue}
                   </span>
                 )}
               </button>
@@ -172,85 +178,44 @@ export default function CompanySidebar({ currentPage, navigate, onLogout, curren
           })}
         </nav>
 
-        {/* Bottom */}
-        <div className="px-3 pb-4 pt-2 space-y-0.5 border-t border-neutral-100 mt-2">
+        {/* User profile & Logout */}
+        <div className="p-3 border-t border-neutral-100 mt-auto">
+          <div className="flex items-center gap-2.5 px-2 py-2 mb-1">
+            <div className="w-8 h-8 rounded-full bg-brand-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
+              {companyInfo.name.slice(0, 2).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-neutral-800 truncate">{user?.name || companyInfo.name}</p>
+              <p className="text-[10px] text-neutral-400 truncate">{user?.email || 'company@example.com'}</p>
+            </div>
+          </div>
           <button
             onClick={onLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-danger-600 hover:bg-danger-50 rounded-xl transition-colors"
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
-            Log out
+            Sign out
           </button>
         </div>
       </aside>
 
-      {/* ── Mobile bottom tab bar (hidden on desktop) ── */}
-      <nav className="flex md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-neutral-200 h-16">
-        {/* Home */}
-        {[
-          {
-            id: 'co-dashboard',
-            label: 'Home',
-            locked: false,
-            badge: false,
-            icon: (active: boolean) => (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-                <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-              </svg>
-            ),
-          },
-          {
-            id: 'co-applicants',
-            label: 'Applicants',
-            locked: false,
-            badge: true,
-            icon: (active: boolean) => (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-            ),
-          },
-          {
-            id: 'co-internships',
-            label: 'Listings',
-            locked: !verified,
-            badge: false,
-            icon: (active: boolean) => (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-              </svg>
-            ),
-          },
-          {
-            id: 'co-profile',
-            label: 'Profile',
-            locked: false,
-            badge: false,
-            icon: (active: boolean) => (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-              </svg>
-            ),
-          },
-        ].map((tab) => {
-          const active = currentPage === tab.id;
-          const color = tab.locked ? 'text-neutral-300' : active ? 'text-brand-600' : 'text-neutral-400';
+      {/* ── Mobile bottom bar ── */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-neutral-200 flex items-center justify-around px-2 py-1.5">
+        {NAV_ITEMS.map((item) => {
+          const active = currentPage === item.id;
           return (
             <button
-              key={tab.id}
-              onClick={() => !tab.locked && navigate(tab.id)}
-              disabled={tab.locked}
-              className={['flex-1 flex flex-col items-center justify-center gap-0.5 py-2 relative transition-colors', color].join(' ')}
+              key={item.id}
+              onClick={() => navigate(item.id)}
+              className={[
+                'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors text-[10px] font-medium',
+                active ? 'text-brand-600 font-bold' : 'text-neutral-500',
+              ].join(' ')}
             >
-              {tab.icon(active)}
-              {tab.badge && (
-                <span className="absolute top-1 right-1/4 w-1.5 h-1.5 rounded-full bg-red-500" />
-              )}
-              <span className="text-[10px] font-semibold leading-none">{tab.label}</span>
+              <span className={active ? 'text-brand-600' : 'text-neutral-400'}>{item.icon}</span>
+              <span>{item.label}</span>
             </button>
           );
         })}

@@ -422,7 +422,7 @@ const runTests = async () => {
     console.log('PASS F13: Directory returns approved companies only and excludes pending');
 
     // 2. Sort by rating desc
-    res = await fetch(`${rootUrl}/company/directory?sortBy=rating&sortOrder=desc`);
+    res = await fetch(`${rootUrl}/company/directory?sortBy=rating&sortOrder=desc&limit=100`);
     const dirRatingDesc = await expectJson(res, 200, 'F13: Sort by rating desc');
     const compAInDir = dirRatingDesc.companies.find((c) => c._id.toString() === companyA._id.toString());
     const compBInDir = dirRatingDesc.companies.find((c) => c._id.toString() === companyB._id.toString());
@@ -442,7 +442,7 @@ const runTests = async () => {
     console.log('PASS F13: Sorting by computed rating desc works correctly');
 
     // 3. Sort by averageStipend desc
-    res = await fetch(`${rootUrl}/company/directory?sortBy=averageStipend&sortOrder=desc`);
+    res = await fetch(`${rootUrl}/company/directory?sortBy=averageStipend&sortOrder=desc&limit=100`);
     const dirStipendDesc = await expectJson(res, 200, 'F13: Sort by averageStipend desc');
     const idxAStipend = dirStipendDesc.companies.findIndex((c) => c._id.toString() === companyA._id.toString());
     const idxBStipend = dirStipendDesc.companies.findIndex((c) => c._id.toString() === companyB._id.toString());

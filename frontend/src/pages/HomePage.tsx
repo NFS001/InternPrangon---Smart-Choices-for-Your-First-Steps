@@ -1,7 +1,9 @@
 import { type Navigate, INTERNSHIPS, COMPANIES } from "../data/index";
+import { getSavedUser } from "../api/client";
 
 interface Props {
   navigate: Navigate;
+  loggedIn?: boolean;
 }
 
 const categories = ["Engineering", "Design", "Marketing", "Finance", "Data & AI", "Operations"];
@@ -52,7 +54,8 @@ const badges = [
   { icon: "🏆", tier: "Elite", points: "1000+ pts", desc: "Top of the leaderboard. Recognized by companies and the community alike." },
 ];
 
-export default function HomePage({ navigate }: Props) {
+export default function HomePage({ navigate, loggedIn }: Props) {
+  const isAuth = loggedIn ?? Boolean(getSavedUser());
   const heroCards = INTERNSHIPS.slice(0, 4);
   const featuredInternships = INTERNSHIPS.filter((i) => i.featured === true);
   const companyTeaser = COMPANIES.slice(0, 8);
@@ -113,12 +116,14 @@ export default function HomePage({ navigate }: Props) {
             >
               Browse internships &rarr;
             </button>
-            <button
-              onClick={() => navigate("register")}
-              className="border border-neutral-300 text-neutral-700 font-medium px-6 py-3 rounded-xl hover:bg-neutral-100 transition-colors text-center"
-            >
-              Create free account
-            </button>
+            {!isAuth && (
+              <button
+                onClick={() => navigate("register")}
+                className="border border-neutral-300 text-neutral-700 font-medium px-6 py-3 rounded-xl hover:bg-neutral-100 transition-colors text-center"
+              >
+                Create free account
+              </button>
+            )}
           </div>
         </div>
 
@@ -345,10 +350,15 @@ export default function HomePage({ navigate }: Props) {
             Join over 8,400 students who have found meaningful internships through InternPrangon. Free forever for students.
           </p>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto justify-center">
-            <button onClick={() => navigate("register")} className="bg-amber-500 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-amber-600 transition-colors text-base text-center">
-              Create free account
-            </button>
-            <button onClick={() => navigate("internships")} className="border border-brand-600 text-brand-200 font-medium px-8 py-3.5 rounded-xl hover:bg-brand-900 transition-colors text-base text-center">
+            {!isAuth && (
+              <button onClick={() => navigate("register")} className="bg-amber-500 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-amber-600 transition-colors text-base text-center">
+                Create free account
+              </button>
+            )}
+            <button
+              onClick={() => navigate("internships")}
+              className={isAuth ? "bg-amber-500 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-amber-600 transition-colors text-base text-center" : "border border-brand-600 text-brand-200 font-medium px-8 py-3.5 rounded-xl hover:bg-brand-900 transition-colors text-base text-center"}
+            >
               Browse internships
             </button>
           </div>

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const CompanyProfile = require('../models/CompanyProfile');
 const Review = require('../models/Review');
 const StudentProfile = require('../models/StudentProfile');
+const Flag = require('../models/Flag');
 const { awardPointsToStudent } = require('../utils/badgeHelper');
 
 // Reviews feed the shared badge and leaderboard points system.
@@ -49,31 +50,23 @@ const createReview = async (req, res) => {
         let company;
         if (mongoose.isValidObjectId(companyId)) {
             company = await CompanyProfile.findById(companyId);
-        }
-        if (!company) {
-            company = await CompanyProfile.findOne({ companyName: new RegExp(companyId, 'i') }) || await CompanyProfile.findOne();
+            if (!company) {
+                return res.status(404).json({ message: 'Company not found' });
+            }
+        } else {
+            company = await CompanyProfile.findOne({ companyName: new RegExp(`^${companyId}$`, 'i') });
+            if (!company) {
+                return res.status(400).json({ message: 'Invalid company ID' });
+            }
         }
 
-        if (!company) {
-            return res.status(404).json({ message: 'Company not found' });
-        }
-
-        let review = await Review.findOne({
+        const existingReview = await Review.findOne({
             company: company._id,
             student: req.user._id
         });
 
-        if (review) {
-            // Update existing review
-            review.rating = rating;
-            review.comment = trimmedComment;
-            review.createdAt = new Date();
-            await review.save();
-
-            return res.status(200).json({
-                message: 'Review updated successfully!',
-                review: formatAnonymousReview(review)
-            });
+        if (existingReview) {
+            return res.status(409).json({ message: 'You have already reviewed this company' });
         }
 
         review = await Review.create({
@@ -166,9 +159,31 @@ const getAllReviews = async (req, res) => {
     }
 };
 
+const deleteReview = async (req, res) => {
+    const { reviewId } = req.params;
+
+    if (!mongoose.isValidObjectId(reviewId)) {
+        return res.status(400).json({ message: 'Invalid review ID' });
+    }
+
+    try {
+        const review = await Review.findByIdAndDelete(reviewId);
+        // Also mark any associated flags as Resolved
+        await Flag.updateMany({ review: reviewId }, { status: 'Resolved' });
+
+        res.status(200).json({
+            message: 'Review deleted successfully',
+            reviewId
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
 module.exports = {
     POINTS_PER_REVIEW,
     createReview,
     getCompanyReviews,
-    getAllReviews
+    getAllReviews,
+    deleteReview
 };

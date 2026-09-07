@@ -4,13 +4,15 @@ const {
     getApplicantsForInternship,
     downloadApplicantResume,
     updateApplicationStatus,
-    getMyApplications
+    getMyApplications,
+    getAllCompanyApplicants
 } = require('../controllers/applicationController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { requireApprovedCompany } = require('../middleware/companyVerificationMiddleware');
 
 const router = express.Router();
 
+router.get('/company/all', protect, authorize('company'), requireApprovedCompany, getAllCompanyApplicants);
 router.get('/my-applications', protect, authorize('student'), getMyApplications);
 router.get('/my', protect, authorize('student'), getMyApplications);
 router.post('/:internshipId', protect, authorize('student'), applyToInternship);

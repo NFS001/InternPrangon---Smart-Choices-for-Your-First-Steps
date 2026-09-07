@@ -290,11 +290,83 @@ const getMyApplications = async (req, res) => {
     }
 };
 
+// HR: Get all applicants across all internships for the logged-in company
+const getAllCompanyApplicants = async (req, res) => {
+    try {
+        const companyId = req.user._id;
+        const CompanyProfile = require('../models/CompanyProfile');
+        const StudentProfile = require('../models/StudentProfile');
+
+        const profile = await CompanyProfile.findOne({ user: companyId });
+        const allowedCompanyIds = [companyId];
+        if (profile) allowedCompanyIds.push(profile._id);
+
+        const companyInternships = await Internship.find({ companyId: { $in: allowedCompanyIds } });
+        const internshipIds = companyInternships.map(i => i._id);
+
+        const applications = await Application.find({ internship: { $in: internshipIds } })
+            .populate({ path: 'student', select: 'name email points badge' })
+            .populate('internship')
+            .populate('resume')
+            .sort({ appliedDate: -1 });
+
+        // Lookup StudentProfiles for bio and skills
+        const studentUserIds = [...new Set(applications.map(a => a.student?._id).filter(Boolean))];
+        const studentProfiles = await StudentProfile.find({ user: { $in: studentUserIds } }).lean();
+        const profileMap = new Map();
+        studentProfiles.forEach(sp => profileMap.set(String(sp.user), sp));
+
+        const formatted = applications.map((app) => {
+            const studentUser = app.student;
+            const sp = studentUser ? profileMap.get(String(studentUser._id)) : null;
+            const internshipDoc = app.internship;
+            const resumeDoc = app.resume;
+
+            return {
+                applicationId: String(app._id),
+                status: app.status,
+                appliedDate: app.appliedDate ? app.appliedDate.toISOString() : new Date().toISOString(),
+                internship: internshipDoc ? {
+                    id: String(internshipDoc._id),
+                    title: internshipDoc.title,
+                    type: internshipDoc.type,
+                    mode: internshipDoc.mode,
+                    deadline: internshipDoc.deadline ? internshipDoc.deadline.toISOString() : ''
+                } : null,
+                student: studentUser ? {
+                    id: String(studentUser._id),
+                    name: studentUser.name || 'Student Candidate',
+                    email: studentUser.email || '',
+                    bio: sp?.bio || 'Undergraduate student looking for internship opportunities.',
+                    skills: sp?.skills || ['React', 'JavaScript', 'Git'],
+                    points: studentUser.points || 100,
+                    badge: studentUser.badge || 'Explorer'
+                } : null,
+                resume: resumeDoc ? {
+                    id: String(resumeDoc._id),
+                    filePath: resumeDoc.filePath || '',
+                    uploadedDate: resumeDoc.uploadedDate ? resumeDoc.uploadedDate.toISOString() : new Date().toISOString()
+                } : null,
+                resumeAvailable: Boolean(resumeDoc)
+            };
+        });
+
+        res.status(200).json({
+            message: 'All company applicants fetched successfully',
+            totalApplicants: formatted.length,
+            applicants: formatted
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
 module.exports = {
     applyToInternship,
     getApplicantsForInternship,
     downloadApplicantResume,
     updateApplicationStatus,
-    getMyApplications
+    getMyApplications,
+    getAllCompanyApplicants
 };
 

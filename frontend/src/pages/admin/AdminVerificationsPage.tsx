@@ -1,23 +1,35 @@
 import React, { useState, useEffect } from 'react'
 import type { Navigate } from '../../data/index'
-import { ADMIN_COMPANIES } from '../../data/index'
 import type { AdminCompany, AdminVerifStatus } from '../../data/index'
-import { getAllCompaniesAdmin, verifyCompanyAdmin, deleteCompanyAdmin, addCompanyAdmin } from '../../api/client'
+import { getAllCompaniesAdmin, getCompanyDirectory, verifyCompanyAdmin, deleteCompanyAdmin, addCompanyAdmin } from '../../api/client'
 
 interface Props {
   navigate: Navigate
-  companyId?: number
+  companyId?: number | string
 }
 
 type QueueTab = 'pending' | 'all' | 'approved' | 'rejected'
 
 type LiveAdminCompany = AdminCompany & { mongoId?: string }
 
+const saveVerificationOverride = (
+  company: { id: number | string; mongoId?: string; name: string },
+  status: AdminVerifStatus
+) => {
+  try {
+    const raw = localStorage.getItem('internprangon_company_verifications');
+    const overrides = raw ? JSON.parse(raw) : {};
+    if (company.mongoId) overrides[String(company.mongoId)] = status;
+    overrides[String(company.id)] = status;
+    if (company.name) overrides[company.name.toLowerCase()] = status;
+    localStorage.setItem('internprangon_company_verifications', JSON.stringify(overrides));
+    window.dispatchEvent(new Event('internprangon_verifications_updated'));
+  } catch {}
+};
+
 export default function AdminVerificationsPage({ navigate, companyId }: Props) {
-  const [companies, setCompanies] = useState<LiveAdminCompany[]>(
-    ADMIN_COMPANIES.map((c) => ({ ...c }))
-  )
-  const [selectedId, setSelectedId] = useState<number | null>(companyId ?? null)
+  const [companies, setCompanies] = useState<LiveAdminCompany[]>([]);
+  const [selectedId, setSelectedId] = useState<number | string | null>(companyId ?? null)
   const [loading, setLoading] = useState(true)
   const [rejectReason, setRejectReason] = useState('')
   const [showRejectForm, setShowRejectForm] = useState(false)
@@ -36,58 +48,92 @@ export default function AdminVerificationsPage({ navigate, companyId }: Props) {
   const [addStatus, setAddStatus] = useState<'Pending' | 'Approved'>('Pending')
   const [addLoading, setAddLoading] = useState(false)
 
-  const fetchLiveCompanies = () => {
-    getAllCompaniesAdmin()
-      .then((res) => {
-        if (res.companies && res.companies.length > 0) {
-          const mapped: LiveAdminCompany[] = res.companies.map((c, idx) => {
-            const initials = c.companyName ? c.companyName.trim().slice(0, 2).toUpperCase() : 'CO';
-            return {
-              id: idx + 1,
-              mongoId: c._id,
-              name: c.companyName || 'Company',
-              logo: initials,
-              logoBg: '#eff6ff',
-              logoColor: '#2563eb',
-              slug: (c.companyName || 'company').toLowerCase().replace(/[^a-z0-9]/g, '-'),
-              email: (c.user && typeof c.user === 'object' && 'email' in c.user && (c.user as { email?: string }).email)
-                ? (c.user as { email: string }).email
-                : `${(c.companyName || 'company').toLowerCase().replace(/[^a-z0-9]/g, '')}@example.com`,
-              website: c.website || 'https://example.com',
-              industry: c.industry || 'Technology',
-              size: '51–200',
-              location: 'Dhaka, Bangladesh',
-              registrationNo: `REG-${(c._id || '1000').slice(-6).toUpperCase()}`,
-              internshipCount: 2,
-              reviewCount: 0,
-              documents: [c.verificationDocument || 'trade_license.pdf', 'registration_cert.pdf'],
-              verificationStatus: c.verificationStatus === 'Approved' ? 'approved' : c.verificationStatus === 'Rejected' ? 'rejected' : 'pending',
-              submittedDate: new Date(c.createdAt || Date.now()).toLocaleDateString(),
-              submittedAt: new Date(c.createdAt || Date.now()).toLocaleDateString(),
-              documentUrl: '#',
-              documentName: c.verificationDocument || 'trade_license.pdf',
-              verificationDocName: c.verificationDocument || 'trade_license.pdf',
-              description: c.description || 'Verified enterprise partner in Bangladesh.',
-              primaryContact: {
-                name: (c.user && typeof c.user === 'object' && 'name' in c.user && (c.user as { name?: string }).name)
-                  ? (c.user as { name: string }).name
-                  : 'HR Team',
-                role: 'Recruiter',
-                email: 'hr@example.com',
-                phone: '+880 1700-000000',
-              },
-            };
-          });
-          setCompanies(mapped);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+  const fetchLiveCompanies = async () => {
+    try {
+      setLoading(true);
+      const overrides: Record<string, string> = JSON.parse(
+        localStorage.getItem('internprangon_company_verifications') || '{}'
+      );
+      let rawList: any[] = [];
+      try {
+        const res = await getAllCompaniesAdmin();
+        rawList = res.companies || [];
+      } catch {
+        const dir = await getCompanyDirectory({ limit: 100 }).catch(() => ({ companies: [] }));
+        rawList = dir.companies || [];
+      }
+
+      const mapped: LiveAdminCompany[] = rawList.map((c, idx) => {
+        const initials = c.companyName ? c.companyName.trim().slice(0, 2).toUpperCase() : 'CO';
+        const override =
+          overrides[c._id] ||
+          overrides[String(idx + 1)] ||
+          overrides[(c.companyName || '').toLowerCase()];
+        const baseStatus: AdminVerifStatus =
+          c.verificationStatus === 'Approved'
+            ? 'approved'
+            : c.verificationStatus === 'Rejected'
+            ? 'rejected'
+            : 'pending';
+        const status = (override as AdminVerifStatus) || baseStatus;
+        return {
+          id: idx + 1,
+          mongoId: c._id,
+          name: c.companyName || 'Company',
+          logo: initials,
+          logoBg: '#eff6ff',
+          logoColor: '#2563eb',
+          slug: (c.companyName || 'company').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+          email: (c.user && typeof c.user === 'object' && 'email' in c.user && (c.user as { email?: string }).email)
+            ? (c.user as { email: string }).email
+            : `${(c.companyName || 'company').toLowerCase().replace(/[^a-z0-9]/g, '')}@example.com`,
+          website: c.website || 'https://example.com',
+          industry: c.industry || 'Technology',
+          size: '51–200',
+          location: 'Dhaka, Bangladesh',
+          registrationNo: `REG-${(c._id || '1000').slice(-6).toUpperCase()}`,
+          internshipCount: c.internshipsCount ?? 2,
+          reviewCount: c.reviewCount ?? 0,
+          documents: [c.verificationDocument || 'trade_license.pdf', 'registration_cert.pdf'],
+          verificationStatus: status,
+          submittedDate: new Date(c.createdAt || Date.now()).toLocaleDateString(),
+          submittedAt: new Date(c.createdAt || Date.now()).toLocaleDateString(),
+          documentUrl: '#',
+          documentName: c.verificationDocument || 'trade_license.pdf',
+          verificationDocName: c.verificationDocument || 'trade_license.pdf',
+          description: c.description || 'Verified enterprise partner in Bangladesh.',
+          primaryContact: {
+            name: (c.user && typeof c.user === 'object' && 'name' in c.user && (c.user as { name?: string }).name)
+              ? (c.user as { name: string }).name
+              : 'HR Team',
+            role: 'Recruiter',
+            email: 'hr@example.com',
+            phone: '+880 1700-000000',
+          },
+        };
+      });
+      setCompanies(mapped);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchLiveCompanies();
+    const handleSync = () => fetchLiveCompanies();
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('internprangon_verifications_updated', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('internprangon_verifications_updated', handleSync);
+    };
   }, []);
+
+  useEffect(() => {
+    if (companyId !== undefined && companyId !== null) {
+      setSelectedId(companyId);
+    }
+  }, [companyId]);
 
   useEffect(() => {
     if (successMessage) {
@@ -100,11 +146,11 @@ export default function AdminVerificationsPage({ navigate, companyId }: Props) {
     setSuccessMessage(msg)
   }
 
-  const updateCompany = (id: number, patch: Partial<LiveAdminCompany>) => {
-    setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)))
+  const updateCompany = (id: number | string, patch: Partial<LiveAdminCompany>) => {
+    setCompanies((prev) => prev.map((c) => (c.id === id || c.mongoId === String(id) ? { ...c, ...patch } : c)))
   }
 
-  const selected = companies.find((c) => c.id == selectedId || (c.mongoId && c.mongoId === String(selectedId))) ?? null
+  const selected = companies.find((c) => String(c.id) === String(selectedId) || (c.mongoId && c.mongoId === String(selectedId))) ?? null
 
   const pendingCount = companies.filter((c) => c.verificationStatus === 'pending').length
   const approvedCount = companies.filter((c) => c.verificationStatus === 'approved').length
@@ -142,6 +188,7 @@ export default function AdminVerificationsPage({ navigate, companyId }: Props) {
       setAddName('')
       setAddWebsite('')
       setAddDescription('')
+      window.dispatchEvent(new Event('internprangon_verifications_updated'))
       fetchLiveCompanies()
     } catch {
       showSuccess('Failed to add company.')
@@ -154,6 +201,7 @@ export default function AdminVerificationsPage({ navigate, companyId }: Props) {
     if (!selected) return
     const name = selected.name
     updateCompany(selected.id, { verificationStatus: 'approved' })
+    saveVerificationOverride(selected, 'approved')
     if (selected.mongoId) {
       await verifyCompanyAdmin(selected.mongoId, 'Approved').catch(() => {})
     }
@@ -165,6 +213,7 @@ export default function AdminVerificationsPage({ navigate, companyId }: Props) {
     if (!selected) return
     const name = selected.name
     updateCompany(selected.id, { verificationStatus: 'rejected', rejectionReason: rejectReason })
+    saveVerificationOverride(selected, 'rejected')
     if (selected.mongoId) {
       await verifyCompanyAdmin(selected.mongoId, 'Rejected').catch(() => {})
     }
@@ -177,12 +226,14 @@ export default function AdminVerificationsPage({ navigate, companyId }: Props) {
   const handleReevaluate = async () => {
     if (!selected) return
     updateCompany(selected.id, { verificationStatus: 'pending', rejectionReason: undefined })
+    saveVerificationOverride(selected, 'pending')
     setSelectedId(null)
   }
 
   const handleRevokeConfirm = async () => {
     if (!selected) return
     updateCompany(selected.id, { verificationStatus: 'pending' })
+    saveVerificationOverride(selected, 'pending')
     if (selected.mongoId) {
       await verifyCompanyAdmin(selected.mongoId, 'Rejected').catch(() => {})
     }
@@ -196,6 +247,7 @@ export default function AdminVerificationsPage({ navigate, companyId }: Props) {
     const targetMongoId = selected.mongoId
     const name = selected.name
     setCompanies((prev) => prev.filter((c) => c.id !== selected.id))
+    saveVerificationOverride(selected, 'rejected')
     if (targetMongoId) {
       await deleteCompanyAdmin(targetMongoId).catch(() => {})
     }

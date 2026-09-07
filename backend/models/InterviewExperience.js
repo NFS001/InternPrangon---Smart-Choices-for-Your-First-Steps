@@ -12,11 +12,49 @@ const interviewExperienceSchema = new mongoose.Schema({
         required: true,
         select: false
     },
+    role: {
+        type: String,
+        trim: true,
+        default: 'Intern Applicant'
+    },
+    interviewType: {
+        type: String,
+        default: 'Online'
+    },
+    rounds: {
+        type: String,
+        default: '1'
+    },
+    difficulty: {
+        type: String,
+        enum: ['Easy', 'Medium', 'Hard'],
+        default: 'Medium'
+    },
+    process: {
+        type: String,
+        trim: true,
+        default: '',
+        maxlength: [5000, 'Process cannot exceed 5000 characters']
+    },
     questions: {
         type: String,
         required: true,
         trim: true,
-        maxlength: [3000, 'Questions cannot exceed 3000 characters']
+        maxlength: [5000, 'Questions cannot exceed 5000 characters']
+    },
+    tips: {
+        type: String,
+        trim: true,
+        default: '',
+        maxlength: [3000, 'Tips cannot exceed 3000 characters']
+    },
+    outcome: {
+        type: String,
+        default: 'Waiting'
+    },
+    interviewDate: {
+        type: String,
+        default: ''
     },
     datePosted: {
         type: Date,

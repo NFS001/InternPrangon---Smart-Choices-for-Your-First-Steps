@@ -95,28 +95,33 @@ export default function InternshipsPage({ navigate }: Props) {
         if (res.internships && res.internships.length > 0) {
           const mapped: DisplayInternship[] = res.internships.map((bi, idx) => {
             const matchStatic = INTERNSHIPS.find(
-              (s) => s.role.toLowerCase() === bi.title.toLowerCase()
+              (s) =>
+                s.role.toLowerCase() === bi.title.toLowerCase() ||
+                (bi.company && s.company.toLowerCase() === bi.company.toLowerCase())
             );
             const daysLeft = Math.max(
               0,
               Math.ceil((new Date(bi.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
             );
+            const compName = bi.company || matchStatic?.company || "Brain Station 23";
+            const logo = bi.companyLogo || matchStatic?.logo || compName.slice(0, 2).toUpperCase();
+
             return {
               id: matchStatic?.id || (idx + 1),
               backendId: bi._id,
               role: bi.title,
-              company: matchStatic?.company || "Partner Company",
+              company: compName,
               companyId: matchStatic?.companyId || 1,
-              logo: matchStatic?.logo || bi.title.slice(0, 2).toUpperCase(),
-              logoBg: matchStatic?.logoBg || "#f5f3ff",
-              logoColor: matchStatic?.logoColor || "#7c3aed",
+              logo: logo,
+              logoBg: bi.companyLogoBg || matchStatic?.logoBg || "#eff6ff",
+              logoColor: bi.companyLogoColor || matchStatic?.logoColor || "#2845e2",
               location: matchStatic?.location || (bi.mode === "Remote" ? "Remote, Bangladesh" : "Dhaka, Bangladesh"),
               type: bi.mode as "Remote" | "On-site" | "Hybrid",
               paid: bi.type === "Paid",
-              stipend: matchStatic?.stipend || (bi.type === "Paid" ? "BDT 15,000/mo" : undefined),
+              stipend: matchStatic?.stipend || (bi.type === "Paid" ? "BDT 18,000/mo" : undefined),
               deadline: new Date(bi.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
               daysLeft,
-              tags: matchStatic?.tags || [bi.type, bi.mode],
+              tags: matchStatic?.tags || [bi.type, bi.mode, "Internship"],
               posted: bi.createdAt || "2026-09-01",
               duration: matchStatic?.duration || "3 months",
               featured: matchStatic?.featured || false,
@@ -367,7 +372,7 @@ export default function InternshipsPage({ navigate }: Props) {
                   <Button
                     fullWidth
                     size="sm"
-                    onClick={() => navigate("internship-detail", { id: intern.id, backendId: intern.backendId })}
+                    onClick={() => navigate("internship-detail", { id: intern.id, backendId: intern.backendId, internshipData: intern })}
                   >
                     View details
                   </Button>

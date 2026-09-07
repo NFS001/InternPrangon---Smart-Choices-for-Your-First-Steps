@@ -6,7 +6,8 @@ const {
     addCompanyByAdmin,
     deleteCompany,
     getCompanyDirectory,
-    getMyCompanyProfile
+    getMyCompanyProfile,
+    getCompanyById
 } = require('../controllers/companyController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -33,4 +34,8 @@ router.post('/admin-add', protect, authorize('admin'), addCompanyByAdmin);
 // Feature 2: Admin deletes a fake/rejected company
 router.delete('/:id', protect, authorize('admin'), deleteCompany);
 
+// Public: Get company by ID or name
+router.get('/:id', getCompanyById);
+
 module.exports = router;
+

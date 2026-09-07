@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Navigate } from '../../data/index';
-import { ADMIN_ACTIVITY } from '../../data/index';
+import { getStoredActivities, type AdminActivityItem } from '../../utils/adminActivity';
+import { getAllCompaniesAdmin } from '../../api/client';
 
 function ActivityIcon({ type }: { type: string }) {
   if (type === 'verification_approved') {
@@ -87,8 +88,51 @@ function matchesFilter(type: string, filter: FilterKey): boolean {
 
 export default function AdminActivityPage({ navigate: _navigate }: { navigate: Navigate }) {
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [activities, setActivities] = useState<AdminActivityItem[]>([]);
 
-  const filtered = ADMIN_ACTIVITY.filter((item) => matchesFilter(item.type, filter));
+  useEffect(() => {
+    const loadActivities = () => {
+      const stored = getStoredActivities();
+      if (stored.length > 0) {
+        setActivities(stored);
+      } else {
+        getAllCompaniesAdmin()
+          .then((res) => {
+            const synthesized: AdminActivityItem[] = (res.companies || []).map((c) => ({
+              id: `comp-${c._id}`,
+              type:
+                c.verificationStatus === 'Approved'
+                  ? 'verification_approved'
+                  : c.verificationStatus === 'Rejected'
+                  ? 'verification_rejected'
+                  : 'company_registered',
+              description:
+                c.verificationStatus === 'Approved'
+                  ? `Company ${c.companyName} verified`
+                  : c.verificationStatus === 'Rejected'
+                  ? `Verification rejected for ${c.companyName}`
+                  : `New company profile created: ${c.companyName}`,
+              target: c.industry || 'Technology',
+              adminName: 'Admin System',
+              timestamp: new Date(c.createdAt || Date.now()).toLocaleDateString(),
+              timeAgo: new Date(c.createdAt || Date.now()).toLocaleDateString(),
+            }));
+            setActivities(synthesized);
+          })
+          .catch(() => setActivities([]));
+      }
+    };
+
+    loadActivities();
+    window.addEventListener('storage', loadActivities);
+    window.addEventListener('internprangon_activity_updated', loadActivities);
+    return () => {
+      window.removeEventListener('storage', loadActivities);
+      window.removeEventListener('internprangon_activity_updated', loadActivities);
+    };
+  }, []);
+
+  const filtered = activities.filter((item) => matchesFilter(item.type, filter));
 
   return (
     <div className="px-8 py-8 min-h-full">

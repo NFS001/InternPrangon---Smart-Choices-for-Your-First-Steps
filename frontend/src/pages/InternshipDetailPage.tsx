@@ -9,13 +9,15 @@ import {
   applyToInternship,
   getMyApplications,
   searchInternships,
+  getInternshipById,
   getSavedUser
 } from "../api/client";
 
 interface Props {
   navigate: Navigate;
-  id?: number;
+  id?: number | string;
   backendId?: string;
+  internshipData?: any;
 }
 
 function UrgencyLabel({ daysLeft, deadline }: { daysLeft: number; deadline: string }) {
@@ -72,51 +74,122 @@ function BulletList({ items }: { items?: string[] }) {
   );
 }
 
-export default function InternshipDetailPage({ navigate, id, backendId: initialBackendId }: Props) {
-  const staticIntern = INTERNSHIPS.find((i) => i.id === id) ?? INTERNSHIPS[0];
-  const [intern, setIntern] = useState(staticIntern);
-  const [resolvedBackendId, setResolvedBackendId] = useState<string | undefined>(initialBackendId);
+export default function InternshipDetailPage({ navigate, id, backendId: initialBackendId, internshipData }: Props) {
+  const getInitialIntern = () => {
+    if (internshipData) {
+      const compName = internshipData.company || "Brain Station 23";
+      return {
+        id: internshipData.id || id || 1,
+        backendId: internshipData.backendId || internshipData._id || initialBackendId,
+        role: internshipData.role || internshipData.title || "Software Engineering Intern",
+        company: compName,
+        companyId: internshipData.companyId || internshipData.companyProfileId || 1,
+        location: internshipData.location || "Dhaka, Bangladesh",
+        type: (internshipData.type || internshipData.mode || "On-site") as "Remote" | "On-site" | "Hybrid",
+        paid: typeof internshipData.paid === "boolean" ? internshipData.paid : internshipData.type === "Paid",
+        stipend: internshipData.stipend || (internshipData.type === "Paid" ? "BDT 15,000/mo" : undefined),
+        duration: internshipData.duration || "3 months",
+        deadline: internshipData.deadline || "May 30, 2027",
+        daysLeft: typeof internshipData.daysLeft === "number" ? internshipData.daysLeft : 90,
+        logo: internshipData.logo || compName.slice(0, 2).toUpperCase(),
+        logoBg: internshipData.logoBg || "#eff6ff",
+        logoColor: internshipData.logoColor || "#2563eb",
+        tags: internshipData.tags || ["Internship", internshipData.mode || "On-site"],
+        description: internshipData.description || "Exciting internship opportunity with real project impact.",
+        responsibilities: internshipData.responsibilities || [
+          "Collaborate with experienced engineers to develop, test, and deploy features",
+          "Participate actively in team sprint standups, architecture reviews, and discussions",
+          "Gain hands-on industry experience building modern, production-grade systems"
+        ],
+        qualifications: internshipData.qualifications || [
+          "Enrolled in or recent graduate of Computer Science, Software Engineering, or related discipline",
+          "Foundational knowledge of modern programming languages, data structures, and algorithms",
+          "Strong willingness to learn and work cooperatively in a fast-paced environment"
+        ],
+      };
+    }
+    const matched = INTERNSHIPS.find((i) => String(i.id) === String(id)) ?? INTERNSHIPS[0];
+    return matched;
+  };
+
+  const [intern, setIntern] = useState(getInitialIntern);
+  const [resolvedBackendId, setResolvedBackendId] = useState<string | undefined>(
+    initialBackendId || internshipData?.backendId || internshipData?._id
+  );
   const [saved, setSaved] = useState(false);
   const [applied, setApplied] = useState(false);
   const [applying, setApplying] = useState(false);
   const [notice, setNotice] = useState<{ type: "success" | "error"; message: string; action?: () => void; actionLabel?: string } | null>(null);
 
-  // 1. Sync static intern whenever id or initialBackendId prop changes
+  // 1. Sync static intern whenever props change
   useEffect(() => {
-    const currentStatic = INTERNSHIPS.find((i) => i.id === id) ?? INTERNSHIPS[0];
-    setIntern(currentStatic);
-    setResolvedBackendId(initialBackendId);
+    setIntern(getInitialIntern());
+    setResolvedBackendId(initialBackendId || internshipData?.backendId || internshipData?._id);
     setSaved(false);
     setApplied(false);
     setNotice(null);
-  }, [id, initialBackendId]);
+  }, [id, initialBackendId, internshipData]);
 
-  // 2. Resolve MongoDB internship ID and sync live status
+  // 2. Fetch authoritative internship data from backend
   useEffect(() => {
-    searchInternships()
-      .then((res) => {
-        if (res.internships && res.internships.length > 0) {
-          const currentStatic = INTERNSHIPS.find((i) => i.id === id) ?? INTERNSHIPS[0];
-          const found = initialBackendId
-            ? res.internships.find((i) => i._id === initialBackendId)
-            : res.internships.find(
-                (i) => i.title.toLowerCase() === currentStatic.role.toLowerCase()
-              ) || res.internships[0];
-
-          if (found) {
-            setResolvedBackendId(found._id);
-            setIntern((prev) => ({
-              ...prev,
-              role: found.title || prev.role,
-              description: found.description || prev.description,
-              type: (found.mode as "Remote" | "On-site" | "Hybrid") || prev.type,
-              paid: found.type === "Paid",
-            }));
+    const targetId = initialBackendId || internshipData?.backendId || internshipData?._id;
+    if (targetId && typeof targetId === "string" && targetId.length === 24) {
+      getInternshipById(targetId)
+        .then((res) => {
+          if (res.internship) {
+            const fetched = res.internship;
+            setResolvedBackendId(fetched._id);
+            setIntern((prev) => {
+              const daysLeft = Math.max(
+                0,
+                Math.ceil((new Date(fetched.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+              );
+              const compName = (fetched as any).company || prev.company;
+              return {
+                ...prev,
+                backendId: fetched._id,
+                role: fetched.title || prev.role,
+                company: compName,
+                companyId: (fetched as any).companyProfileId || prev.companyId,
+                description: fetched.description || prev.description,
+                type: (fetched.mode as "Remote" | "On-site" | "Hybrid") || prev.type,
+                paid: fetched.type === "Paid",
+                stipend: (fetched as any).stipend || (fetched.type === "Paid" ? "BDT 15,000/mo" : undefined),
+                deadline: new Date(fetched.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }),
+                daysLeft,
+                logo: (fetched as any).companyLogo || compName.slice(0, 2).toUpperCase() || prev.logo,
+                logoBg: (fetched as any).companyLogoBg || prev.logoBg,
+                logoColor: (fetched as any).companyLogoColor || prev.logoColor,
+                location: (fetched as any).location || prev.location,
+              };
+            });
           }
-        }
-      })
-      .catch(() => {});
-  }, [id, initialBackendId]);
+        })
+        .catch(() => {});
+    } else {
+      searchInternships()
+        .then((res) => {
+          if (res.internships && res.internships.length > 0) {
+            const currentRole = (intern.role || "").toLowerCase();
+            const found = res.internships.find((i) => i.title.toLowerCase() === currentRole);
+            if (found) {
+              setResolvedBackendId(found._id);
+              setIntern((prev) => ({
+                ...prev,
+                backendId: found._id,
+                role: found.title || prev.role,
+                company: (found as any).company || prev.company,
+                companyId: (found as any).companyProfileId || prev.companyId,
+                description: found.description || prev.description,
+                type: (found.mode as "Remote" | "On-site" | "Hybrid") || prev.type,
+                paid: found.type === "Paid",
+              }));
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, [id, initialBackendId, internshipData]);
 
   // 2. Sync bookmark and application status
   useEffect(() => {

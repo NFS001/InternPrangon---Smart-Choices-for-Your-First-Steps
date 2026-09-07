@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Navigate } from './data/index';
 
 import PublicNav from './components/public/PublicNav';
@@ -44,23 +44,46 @@ const COMPANY_PAGES = ['co-dashboard', 'co-applicants', 'co-internships', 'co-pr
 const ADMIN_PAGES   = ['admin-dashboard', 'admin-companies', 'admin-verifications', 'admin-reviews', 'admin-activity'];
 
 export default function App() {
-  const [page, setPage] = useState('home');
+  const [page, setPage] = useState(() => {
+    const hash = window.location.hash.replace('#', '').trim();
+    if (hash) return hash;
+    return 'home';
+  });
   const [pageData, setPageData] = useState<Record<string, unknown>>({});
   const [transitioning, setTransitioning] = useState(false);
   const [currentUser, setCurrentUser] = useState<ApiUser | null>(() => getSavedUser());
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
+  const isNavigatingRef = useRef(false);
+
   const navigate: Navigate = (newPage, data = {}) => {
     if (newPage === page && JSON.stringify(data) === JSON.stringify(pageData)) return;
+    isNavigatingRef.current = true;
+    setPageData(data);
+    window.location.hash = newPage;
     setTransitioning(true);
     setTimeout(() => {
       setPage(newPage);
       setPageData(data);
       setTransitioning(false);
+      isNavigatingRef.current = false;
       window.scrollTo({ top: 0, behavior: 'instant' });
     }, 160);
   };
+
+  useEffect(() => {
+    const handleHash = () => {
+      if (isNavigatingRef.current) return;
+      const hash = window.location.hash.replace('#', '').trim();
+      if (hash && hash !== page) {
+        setPage(hash);
+        setPageData({});
+      }
+    };
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, [page]);
 
   async function handleLogin(email: string, password: string) {
     setAuthError('');
@@ -177,8 +200,8 @@ export default function App() {
           >
             {page === 'admin-dashboard'      && <AdminDashboardPage    navigate={navigate} />}
             {page === 'admin-companies'      && <AdminCompaniesPage    navigate={navigate} />}
-            {page === 'admin-verifications'  && <AdminVerificationsPage navigate={navigate} companyId={pageData.companyId as number | undefined} />}
-            {page === 'admin-reviews'        && <AdminReviewsPage      navigate={navigate} />}
+            {page === 'admin-verifications'  && <AdminVerificationsPage navigate={navigate} companyId={pageData.companyId as number | string | undefined} />}
+            {page === 'admin-reviews'        && <AdminReviewsPage      navigate={navigate} reportId={pageData.reportId as string | undefined} />}
             {page === 'admin-activity'       && <AdminActivityPage     navigate={navigate} />}
           </main>
         </div>
@@ -187,11 +210,11 @@ export default function App() {
       {/* Public pages */}
       {isPublic && (
         <div style={{ opacity: transitioning ? 0 : 1, transform: transitioning ? 'translateY(6px)' : 'translateY(0)', transition: 'opacity 0.16s ease, transform 0.16s ease' }}>
-          {page === 'home'              && <HomePage navigate={navigate} />}
+          {page === 'home'              && <HomePage navigate={navigate} loggedIn={Boolean(currentUser)} />}
           {page === 'internships'       && <InternshipsPage navigate={navigate} />}
-          {page === 'internship-detail' && <InternshipDetailPage navigate={navigate} id={Number(pageData.id ?? 1)} backendId={pageData.backendId as string | undefined} />}
+          {page === 'internship-detail' && <InternshipDetailPage navigate={navigate} id={pageData.id as number | string | undefined} backendId={pageData.backendId as string | undefined} internshipData={pageData.internshipData as any} />}
           {page === 'companies'         && <CompaniesPage navigate={navigate} />}
-          {page === 'company-detail'    && <CompanyDetailPage navigate={navigate} id={Number(pageData.id ?? 1)} />}
+          {page === 'company-detail'    && <CompanyDetailPage navigate={navigate} id={pageData.id as number | string | undefined} companyId={pageData.companyId as string | number | undefined} companyData={pageData.companyData as any} />}
           {page === 'reviews'           && <ReviewsPage navigate={navigate} />}
           {page === 'about'             && <AboutPage />}
         </div>

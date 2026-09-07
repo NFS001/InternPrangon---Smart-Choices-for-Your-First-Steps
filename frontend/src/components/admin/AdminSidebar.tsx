@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { Navigate } from '../../data/index';
-import { ADMIN_COMPANIES, REPORTED_REVIEWS } from '../../data/index';
 import { LogoMark } from '../../pages/DesignSystemPage';
+import { getAllCompaniesAdmin, getFlagsAdmin } from '../../api/client';
 
 interface Props {
   currentPage: string;
@@ -9,63 +9,126 @@ interface Props {
   onLogout: () => void;
 }
 
-const pendingVerif = ADMIN_COMPANIES.filter((c) => c.verificationStatus === 'pending').length;
-const pendingReports = REPORTED_REVIEWS.filter((r) => r.action === 'pending').length;
-
-const NAV_ITEMS = [
-  {
-    id: 'admin-dashboard',
-    label: 'Dashboard',
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-        <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-      </svg>
-    ),
-  },
-  {
-    id: 'admin-companies',
-    label: 'Companies',
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-      </svg>
-    ),
-  },
-  {
-    id: 'admin-verifications',
-    label: 'Verifications',
-    badge: pendingVerif > 0 ? String(pendingVerif) : undefined,
-    badgeColor: 'amber',
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-      </svg>
-    ),
-  },
-  {
-    id: 'admin-reviews',
-    label: 'Reviews',
-    badge: pendingReports > 0 ? String(pendingReports) : undefined,
-    badgeColor: 'red',
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-      </svg>
-    ),
-  },
-  {
-    id: 'admin-activity',
-    label: 'Activity',
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-      </svg>
-    ),
-  },
-];
-
 export default function AdminSidebar({ currentPage, navigate, onLogout }: Props) {
+  const [pendingVerif, setPendingVerif] = useState<number>(0);
+  const [pendingReports, setPendingReports] = useState<number>(0);
+
+  const fetchCounts = useCallback(async () => {
+    // 1. Verifications pending count (from live backend companies)
+    try {
+      const overrides: Record<string, string> = JSON.parse(
+        localStorage.getItem('internprangon_company_verifications') || '{}'
+      );
+      const res = await getAllCompaniesAdmin().catch(() => ({ companies: [] }));
+      if (res.companies && res.companies.length > 0) {
+        const count = res.companies.filter((c, idx) => {
+          const override =
+            overrides[c._id] ||
+            overrides[String(idx + 1)] ||
+            overrides[(c.companyName || '').toLowerCase()];
+          const base = (c.verificationStatus || 'pending').toLowerCase();
+          const finalStatus = (override || base).toLowerCase();
+          return finalStatus === 'pending';
+        }).length;
+        setPendingVerif(count);
+      } else {
+        setPendingVerif(0);
+      }
+    } catch {
+      setPendingVerif(0);
+    }
+
+    // 2. Reviews pending reports count (from live backend flags)
+    try {
+      const deletedIds = new Set(
+        JSON.parse(localStorage.getItem('internprangon_deleted_reviews') || '[]')
+      );
+      const resolvedIds = new Set(
+        JSON.parse(localStorage.getItem('internprangon_resolved_flags') || '[]')
+      );
+
+      const res = await getFlagsAdmin().catch(() => ({ flags: [] }));
+      const backendPending = (res.flags || []).filter((f) => {
+        const flagId = String(f._id || '');
+        const reviewId = String(f.review?._id || '');
+        if (f.status === 'Resolved') return false;
+        if (resolvedIds.has(flagId)) return false;
+        if (deletedIds.has(reviewId) || deletedIds.has(flagId)) return false;
+        return true;
+      });
+
+      setPendingReports(backendPending.length);
+    } catch {
+      setPendingReports(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCounts();
+    const handleSync = () => fetchCounts();
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('internprangon_verifications_updated', handleSync);
+    window.addEventListener('internprangon_reviews_updated', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('internprangon_verifications_updated', handleSync);
+      window.removeEventListener('internprangon_reviews_updated', handleSync);
+    };
+  }, [fetchCounts, currentPage]);
+
+  const navItems = [
+    {
+      id: 'admin-dashboard',
+      label: 'Dashboard',
+      icon: (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+      ),
+    },
+    {
+      id: 'admin-companies',
+      label: 'Companies',
+      icon: (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      ),
+    },
+    {
+      id: 'admin-verifications',
+      label: 'Verifications',
+      badge: pendingVerif > 0 ? String(pendingVerif) : undefined,
+      badgeColor: 'amber',
+      icon: (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      ),
+    },
+    {
+      id: 'admin-reviews',
+      label: 'Reviews',
+      badge: pendingReports > 0 ? String(pendingReports) : undefined,
+      badgeColor: 'red',
+      icon: (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      ),
+    },
+    {
+      id: 'admin-activity',
+      label: 'Activity',
+      icon: (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      ),
+    },
+  ];
+
   return (
     <>
       {/* ── Desktop sidebar (hidden on mobile) ── */}
@@ -100,7 +163,7 @@ export default function AdminSidebar({ currentPage, navigate, onLogout }: Props)
         {/* Nav */}
         <nav className="flex-1 px-3 space-y-0.5 pb-4">
           <p className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-brand-500 px-3 py-2 mt-1">Navigation</p>
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const active = currentPage === item.id;
             return (
               <button

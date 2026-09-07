@@ -1,0 +1,11 @@
+{
+  "title": "InternPrangon",
+  "description": "InternPrangon — Smart Choices for Your First Steps. Internship discovery and management platform.",
+  "robots": {
+    "index": true
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
