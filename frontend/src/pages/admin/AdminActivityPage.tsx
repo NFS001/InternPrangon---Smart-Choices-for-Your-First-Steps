@@ -1,300 +1,333 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import type { Navigate } from '../../data/index';
-import { getStoredActivities, type AdminActivityItem } from '../../utils/adminActivity';
-import { getAllCompaniesAdmin } from '../../api/client';
+import React, { useState, useEffect, useMemo } from "react"
+import type { Navigate } from "../../data/index"
+import {
+  getStoredActivities,
+  type AdminActivityItem,
+} from "../../utils/adminActivity"
+import { getAllCompaniesAdmin } from "../../api/client"
 
 export interface AuditLogEntry {
-  eventId: string;
-  timestamp: string;
-  actor: string;
-  actorIp: string;
-  actionCode:
-    | 'COMPANY_VERIFIED'
-    | 'COMPANY_REGISTERED'
-    | 'VERIFICATION_REVOKED'
-    | 'REVIEW_QUARANTINED'
-    | 'REVIEW_DISMISSED'
-    | 'INTERNSHIP_PUBLISHED'
-    | 'INTERNSHIP_DELETED'
-    | 'AUTH_TOKEN_ROTATED'
-    | 'SECURITY_POLICY_UPDATE';
-  targetEntity: string;
-  targetId: string;
-  severity: 'INFO' | 'WARNING' | 'CRITICAL';
-  category: 'verifications' | 'reviews' | 'companies' | 'auth';
-  summary: string;
+  eventId: string
+  timestamp: string
+  actor: string
+  actorIp: string
+  actionCode: "COMPANY_VERIFIED" | "COMPANY_REGISTERED" | "VERIFICATION_REVOKED" | "REVIEW_QUARANTINED" | "REVIEW_DISMISSED" | "INTERNSHIP_PUBLISHED" | "INTERNSHIP_DELETED" | "AUTH_TOKEN_ROTATED" | "SECURITY_POLICY_UPDATE"
+  targetEntity: string
+  targetId: string
+  severity: "INFO" | "WARNING" | "CRITICAL"
+  category: "verifications" | "reviews" | "companies" | "auth"
+  summary: string
   stateDiff?: {
-    prev_state: Record<string, unknown>;
-    new_state: Record<string, unknown>;
-  };
+    prev_state: Record<string, unknown>
+    new_state: Record<string, unknown>
+  }
 }
 
-export default function AdminActivityPage({ navigate: _navigate }: { navigate: Navigate }) {
-  const [filter, setFilter] = useState<'all' | 'verifications' | 'reviews' | 'companies' | 'auth'>('all');
-  const [search, setSearch] = useState('');
-  const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
-  const [activities, setActivities] = useState<AuditLogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function AdminActivityPage({
+  navigate: _navigate,
+}: {
+  navigate: Navigate
+}) {
+  const [filter, setFilter] =
+    useState<"all" | "verifications" | "reviews" | "companies" | "auth">("all")
+  const [search, setSearch] = useState("")
+  const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null)
+  const [activities, setActivities] = useState<AuditLogEntry[]>([])
+  const [loading, setLoading] = useState(true)
 
   // Generate seed SOC-2 compliant audit trail entries
   const defaultEntries: AuditLogEntry[] = [
     {
-      eventId: 'EVT-8921-XF',
-      timestamp: '2026-11-01 14:32:08 UTC+6',
-      actor: 'Superadmin (nafis@internprangon.com)',
-      actorIp: '103.114.98.24',
-      actionCode: 'COMPANY_VERIFIED',
-      targetEntity: 'Brain Station 23',
-      targetId: 'COM-0291',
-      severity: 'INFO',
-      category: 'verifications',
-      summary: 'Compliance documentation authenticated; posting authorization unlocked.',
+      eventId: "EVT-8921-XF",
+      timestamp: "2026-11-01 14:32:08 UTC+6",
+      actor: "Superadmin (nafis@internprangon.com)",
+      actorIp: "103.114.98.24",
+      actionCode: "COMPANY_VERIFIED",
+      targetEntity: "Brain Station 23",
+      targetId: "COM-0291",
+      severity: "INFO",
+      category: "verifications",
+      summary:
+        "Compliance documentation authenticated; posting authorization unlocked.",
       stateDiff: {
-        prev_state: { verificationStatus: 'Pending', authorizedPosting: false },
-        new_state: { verificationStatus: 'Approved', authorizedPosting: true, auditedBy: 'nafis@internprangon.com' },
+        prev_state: { verificationStatus: "Pending", authorizedPosting: false },
+        new_state: {
+          verificationStatus: "Approved",
+          authorizedPosting: true,
+          auditedBy: "nafis@internprangon.com",
+        },
       },
     },
     {
-      eventId: 'EVT-8919-BC',
-      timestamp: '2026-11-01 13:14:45 UTC+6',
-      actor: 'Superadmin (nafis@internprangon.com)',
-      actorIp: '103.114.98.24',
-      actionCode: 'REVIEW_QUARANTINED',
-      targetEntity: 'Pathao',
-      targetId: 'REV-4812',
-      severity: 'WARNING',
-      category: 'reviews',
-      summary: 'Stipend discrepancy complaint investigated; review marked fraudulent & quarantined.',
+      eventId: "EVT-8919-BC",
+      timestamp: "2026-11-01 13:14:45 UTC+6",
+      actor: "Superadmin (nafis@internprangon.com)",
+      actorIp: "103.114.98.24",
+      actionCode: "REVIEW_QUARANTINED",
+      targetEntity: "Pathao",
+      targetId: "REV-4812",
+      severity: "WARNING",
+      category: "reviews",
+      summary:
+        "Stipend discrepancy complaint investigated; review marked fraudulent & quarantined.",
       stateDiff: {
-        prev_state: { reviewStatus: 'Published', flagCount: 1 },
-        new_state: { reviewStatus: 'Quarantined', flaggedByHash: 'STU-SHA256-#4419', penaltyApplied: false },
+        prev_state: { reviewStatus: "Published", flagCount: 1 },
+        new_state: {
+          reviewStatus: "Quarantined",
+          flaggedByHash: "STU-SHA256-#4419",
+          penaltyApplied: false,
+        },
       },
     },
     {
-      eventId: 'EVT-8902-TR',
-      timestamp: '2026-11-01 11:20:10 UTC+6',
-      actor: 'Admin Ingestion Gateway',
-      actorIp: '10.0.4.12 (Internal Node)',
-      actionCode: 'COMPANY_REGISTERED',
-      targetEntity: 'TEST LIMITED',
-      targetId: 'COM-9912',
-      severity: 'INFO',
-      category: 'companies',
-      summary: 'New enterprise registration submission with 2 uploaded trade license PDFs.',
+      eventId: "EVT-8902-TR",
+      timestamp: "2026-11-01 11:20:10 UTC+6",
+      actor: "Admin Ingestion Gateway",
+      actorIp: "10.0.4.12 (Internal Node)",
+      actionCode: "COMPANY_REGISTERED",
+      targetEntity: "TEST LIMITED",
+      targetId: "COM-9912",
+      severity: "INFO",
+      category: "companies",
+      summary:
+        "New enterprise registration submission with 2 uploaded trade license PDFs.",
       stateDiff: {
         prev_state: {},
-        new_state: { name: 'TEST LIMITED', industry: 'Technology', documentsAttached: 2 },
+        new_state: {
+          name: "TEST LIMITED",
+          industry: "Technology",
+          documentsAttached: 2,
+        },
       },
     },
     {
-      eventId: 'EVT-8874-SY',
-      timestamp: '2026-11-01 09:00:01 UTC+6',
-      actor: 'SecOps Automated Daemon',
-      actorIp: '10.0.0.1 (Dhaka Node)',
-      actionCode: 'AUTH_TOKEN_ROTATED',
-      targetEntity: 'System Keyring (Level 3 Access)',
-      targetId: 'KEY-9021',
-      severity: 'INFO',
-      category: 'auth',
-      summary: 'Routine 24h administrative cryptographic session rotation completed.',
+      eventId: "EVT-8874-SY",
+      timestamp: "2026-11-01 09:00:01 UTC+6",
+      actor: "SecOps Automated Daemon",
+      actorIp: "10.0.0.1 (Dhaka Node)",
+      actionCode: "AUTH_TOKEN_ROTATED",
+      targetEntity: "System Keyring (Level 3 Access)",
+      targetId: "KEY-9021",
+      severity: "INFO",
+      category: "auth",
+      summary:
+        "Routine 24h administrative cryptographic session rotation completed.",
       stateDiff: {
-        prev_state: { keyVersion: 'v2026.10.31', validUntil: '2026-11-01T09:00:00Z' },
-        new_state: { keyVersion: 'v2026.11.01', validUntil: '2026-11-02T09:00:00Z' },
+        prev_state: {
+          keyVersion: "v2026.10.31",
+          validUntil: "2026-11-01T09:00:00Z",
+        },
+        new_state: {
+          keyVersion: "v2026.11.01",
+          validUntil: "2026-11-02T09:00:00Z",
+        },
       },
     },
     {
-      eventId: 'EVT-8850-OP',
-      timestamp: '2026-10-31 18:45:22 UTC+6',
-      actor: 'Superadmin (nafis@internprangon.com)',
-      actorIp: '103.114.98.24',
-      actionCode: 'COMPANY_VERIFIED',
-      targetEntity: 'Optimizely',
-      targetId: 'COM-0412',
-      severity: 'INFO',
-      category: 'verifications',
-      summary: 'City corporation trade license authenticated via RJSC API.',
+      eventId: "EVT-8850-OP",
+      timestamp: "2026-10-31 18:45:22 UTC+6",
+      actor: "Superadmin (nafis@internprangon.com)",
+      actorIp: "103.114.98.24",
+      actionCode: "COMPANY_VERIFIED",
+      targetEntity: "Optimizely",
+      targetId: "COM-0412",
+      severity: "INFO",
+      category: "verifications",
+      summary: "City corporation trade license authenticated via RJSC API.",
       stateDiff: {
-        prev_state: { verificationStatus: 'Pending' },
-        new_state: { verificationStatus: 'Approved' },
+        prev_state: { verificationStatus: "Pending" },
+        new_state: { verificationStatus: "Approved" },
       },
     },
     {
-      eventId: 'EVT-8821-CH',
-      timestamp: '2026-10-31 16:10:05 UTC+6',
-      actor: 'Superadmin (nafis@internprangon.com)',
-      actorIp: '103.114.98.24',
-      actionCode: 'COMPANY_VERIFIED',
-      targetEntity: 'Chaldal',
-      targetId: 'COM-0118',
-      severity: 'INFO',
-      category: 'verifications',
-      summary: 'Enterprise verification audit approved.',
+      eventId: "EVT-8821-CH",
+      timestamp: "2026-10-31 16:10:05 UTC+6",
+      actor: "Superadmin (nafis@internprangon.com)",
+      actorIp: "103.114.98.24",
+      actionCode: "COMPANY_VERIFIED",
+      targetEntity: "Chaldal",
+      targetId: "COM-0118",
+      severity: "INFO",
+      category: "verifications",
+      summary: "Enterprise verification audit approved.",
       stateDiff: {
-        prev_state: { verificationStatus: 'Pending' },
-        new_state: { verificationStatus: 'Approved' },
+        prev_state: { verificationStatus: "Pending" },
+        new_state: { verificationStatus: "Approved" },
       },
     },
     {
-      eventId: 'EVT-8810-SH',
-      timestamp: '2026-10-30 14:15:30 UTC+6',
-      actor: 'Superadmin (nafis@internprangon.com)',
-      actorIp: '103.114.98.24',
-      actionCode: 'COMPANY_VERIFIED',
-      targetEntity: 'ShopUp',
-      targetId: 'COM-0881',
-      severity: 'INFO',
-      category: 'verifications',
-      summary: 'B2B Commerce entity verification completed.',
+      eventId: "EVT-8810-SH",
+      timestamp: "2026-10-30 14:15:30 UTC+6",
+      actor: "Superadmin (nafis@internprangon.com)",
+      actorIp: "103.114.98.24",
+      actionCode: "COMPANY_VERIFIED",
+      targetEntity: "ShopUp",
+      targetId: "COM-0881",
+      severity: "INFO",
+      category: "verifications",
+      summary: "B2B Commerce entity verification completed.",
       stateDiff: {
-        prev_state: { verificationStatus: 'Pending' },
-        new_state: { verificationStatus: 'Approved' },
+        prev_state: { verificationStatus: "Pending" },
+        new_state: { verificationStatus: "Approved" },
       },
     },
     {
-      eventId: 'EVT-8790-BK',
-      timestamp: '2026-10-29 11:24:18 UTC+6',
-      actor: 'Superadmin (nafis@internprangon.com)',
-      actorIp: '103.114.98.24',
-      actionCode: 'COMPANY_VERIFIED',
-      targetEntity: 'bKash Limited',
-      targetId: 'COM-0012',
-      severity: 'INFO',
-      category: 'verifications',
-      summary: 'Fintech compliance verification cleared.',
+      eventId: "EVT-8790-BK",
+      timestamp: "2026-10-29 11:24:18 UTC+6",
+      actor: "Superadmin (nafis@internprangon.com)",
+      actorIp: "103.114.98.24",
+      actionCode: "COMPANY_VERIFIED",
+      targetEntity: "bKash Limited",
+      targetId: "COM-0012",
+      severity: "INFO",
+      category: "verifications",
+      summary: "Fintech compliance verification cleared.",
       stateDiff: {
-        prev_state: { verificationStatus: 'Pending' },
-        new_state: { verificationStatus: 'Approved' },
+        prev_state: { verificationStatus: "Pending" },
+        new_state: { verificationStatus: "Approved" },
       },
     },
-  ];
+  ]
 
   const loadActivities = async () => {
     try {
-      setLoading(true);
-      const stored = getStoredActivities();
+      setLoading(true)
+      const stored = getStoredActivities()
 
       // Transform stored activities into structured AuditLogEntries
       const transformedStored: AuditLogEntry[] = stored.map((item, idx) => {
-        let code: AuditLogEntry['actionCode'] = 'COMPANY_VERIFIED';
-        let sev: AuditLogEntry['severity'] = 'INFO';
-        let cat: AuditLogEntry['category'] = 'verifications';
+        let code: AuditLogEntry["actionCode"] = "COMPANY_VERIFIED"
+        let sev: AuditLogEntry["severity"] = "INFO"
+        let cat: AuditLogEntry["category"] = "verifications"
 
-        if (item.type === 'verification_approved') {
-          code = 'COMPANY_VERIFIED';
-          sev = 'INFO';
-          cat = 'verifications';
-        } else if (item.type === 'verification_rejected') {
-          code = 'VERIFICATION_REVOKED';
-          sev = 'WARNING';
-          cat = 'verifications';
-        } else if (item.type === 'review_deleted') {
-          code = 'REVIEW_QUARANTINED';
-          sev = 'CRITICAL';
-          cat = 'reviews';
-        } else if (item.type === 'review_dismissed') {
-          code = 'REVIEW_DISMISSED';
-          sev = 'INFO';
-          cat = 'reviews';
-        } else if (item.type === 'company_registered') {
-          code = 'COMPANY_REGISTERED';
-          sev = 'INFO';
-          cat = 'companies';
-        } else if (item.type === 'internship_posted') {
-          code = 'INTERNSHIP_PUBLISHED';
-          sev = 'INFO';
-          cat = 'companies';
+        if (item.type === "verification_approved") {
+          code = "COMPANY_VERIFIED"
+          sev = "INFO"
+          cat = "verifications"
+        } else if (item.type === "verification_rejected") {
+          code = "VERIFICATION_REVOKED"
+          sev = "WARNING"
+          cat = "verifications"
+        } else if (item.type === "review_deleted") {
+          code = "REVIEW_QUARANTINED"
+          sev = "CRITICAL"
+          cat = "reviews"
+        } else if (item.type === "review_dismissed") {
+          code = "REVIEW_DISMISSED"
+          sev = "INFO"
+          cat = "reviews"
+        } else if (item.type === "company_registered") {
+          code = "COMPANY_REGISTERED"
+          sev = "INFO"
+          cat = "companies"
+        } else if (item.type === "internship_posted") {
+          code = "INTERNSHIP_PUBLISHED"
+          sev = "INFO"
+          cat = "companies"
         }
 
         return {
           eventId: `EVT-89${90 - idx}-RT`,
-          timestamp: item.timestamp.includes('T')
-            ? new Date(item.timestamp).toLocaleString('en-US', { timeZoneName: 'short' })
+          timestamp: item.timestamp.includes("T")
+            ? new Date(item.timestamp).toLocaleString("en-US", {
+                timeZoneName: "short",
+              })
             : item.timestamp,
-          actor: item.adminName ? `${item.adminName} (nafis@internprangon.com)` : 'Admin System',
-          actorIp: '103.114.98.24',
+          actor: item.adminName
+            ? `${item.adminName} (nafis@internprangon.com)`
+            : "Admin System",
+          actorIp: "103.114.98.24",
           actionCode: code,
-          targetEntity: item.description.replace(/^Company\s+/i, '').replace(/\s+verified$/i, ''),
+          targetEntity: item.description
+            .replace(/^Company\s+/i, "")
+            .replace(/\s+verified$/i, ""),
           targetId: `RES-${1000 + idx}`,
           severity: sev,
           category: cat,
           summary: item.description,
           stateDiff: {
-            prev_state: { status: 'Pending Review' },
-            new_state: { status: 'Approved / Executed', auditNote: item.description },
+            prev_state: { status: "Pending Review" },
+            new_state: {
+              status: "Approved / Executed",
+              auditNote: item.description,
+            },
           },
-        };
-      });
+        }
+      })
 
       // Merge transformed with defaults ensuring uniqueness
-      const combined = [...transformedStored, ...defaultEntries];
-      const seen = new Set<string>();
+      const combined = [...transformedStored, ...defaultEntries]
+      const seen = new Set<string>()
       const deduplicated = combined.filter((e) => {
-        if (seen.has(e.summary)) return false;
-        seen.add(e.summary);
-        return true;
-      });
+        if (seen.has(e.summary)) return false
+        seen.add(e.summary)
+        return true
+      })
 
-      setActivities(deduplicated);
+      setActivities(deduplicated)
     } catch {
-      setActivities(defaultEntries);
+      setActivities(defaultEntries)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    loadActivities();
-    window.addEventListener('storage', loadActivities);
-    window.addEventListener('internprangon_activity_updated', loadActivities);
+    loadActivities()
+    window.addEventListener("storage", loadActivities)
+    window.addEventListener("internprangon_activity_updated", loadActivities)
     return () => {
-      window.removeEventListener('storage', loadActivities);
-      window.removeEventListener('internprangon_activity_updated', loadActivities);
-    };
-  }, []);
+      window.removeEventListener("storage", loadActivities)
+      window.removeEventListener(
+        "internprangon_activity_updated",
+        loadActivities,
+      )
+    }
+  }, [])
 
   const filtered = useMemo(() => {
     return activities.filter((item) => {
-      const categoryMatch = filter === 'all' || item.category === filter;
+      const categoryMatch = filter === "all" || item.category === filter
       const searchMatch =
         !search.trim() ||
         item.eventId.toLowerCase().includes(search.toLowerCase()) ||
         item.actionCode.toLowerCase().includes(search.toLowerCase()) ||
         item.targetEntity.toLowerCase().includes(search.toLowerCase()) ||
         item.actor.toLowerCase().includes(search.toLowerCase()) ||
-        item.summary.toLowerCase().includes(search.toLowerCase());
-      return categoryMatch && searchMatch;
-    });
-  }, [activities, filter, search]);
+        item.summary.toLowerCase().includes(search.toLowerCase())
+      return categoryMatch && searchMatch
+    })
+  }, [activities, filter, search])
 
-  const getSeverityBadge = (severity: 'INFO' | 'WARNING' | 'CRITICAL') => {
-    if (severity === 'CRITICAL') {
+  const getSeverityBadge = (severity: "INFO" | "WARNING" | "CRITICAL") => {
+    if (severity === "CRITICAL") {
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
           CRITICAL
         </span>
-      );
+      )
     }
-    if (severity === 'WARNING') {
+    if (severity === "WARNING") {
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
           WARNING
         </span>
-      );
+      )
     }
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
         INFO
       </span>
-    );
-  };
+    )
+  }
 
-  const getActionPill = (code: AuditLogEntry['actionCode']) => {
+  const getActionPill = (code: AuditLogEntry["actionCode"]) => {
     return (
       <span className="font-mono text-[10px] font-bold bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
         {code}
       </span>
-    );
-  };
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-16 px-5 py-6 lg:px-8 lg:py-8">
@@ -302,13 +335,16 @@ export default function AdminActivityPage({ navigate: _navigate }: { navigate: N
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200/80">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">System Activity & Audit Trail</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              System Activity & Audit Trail
+            </h1>
             <span className="font-mono text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
               SOC-2 Type II Immutable
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Immutable, timestamped record of platform administrative events, verification overrides, and role publications.
+            Immutable, timestamped record of platform administrative events,
+            verification overrides, and role publications.
           </p>
         </div>
 
@@ -324,8 +360,18 @@ export default function AdminActivityPage({ navigate: _navigate }: { navigate: N
       <div className="bg-white border border-slate-200/90 rounded-xl p-4 my-6 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
         {/* Search */}
         <div className="relative flex-1 max-w-sm">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+            />
           </svg>
           <input
             type="text"
@@ -339,41 +385,51 @@ export default function AdminActivityPage({ navigate: _navigate }: { navigate: N
         {/* Segmented Filter Buttons */}
         <div className="inline-flex items-center bg-slate-100 p-1 rounded-lg text-xs font-semibold">
           <button
-            onClick={() => setFilter('all')}
+            onClick={() => setFilter("all")}
             className={`px-3 py-1.5 rounded-md transition-colors ${
-              filter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              filter === "all"
+                ? "bg-white text-slate-900 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             All Events ({activities.length})
           </button>
           <button
-            onClick={() => setFilter('verifications')}
+            onClick={() => setFilter("verifications")}
             className={`px-3 py-1.5 rounded-md transition-colors ${
-              filter === 'verifications' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              filter === "verifications"
+                ? "bg-white text-indigo-700 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             Verifications
           </button>
           <button
-            onClick={() => setFilter('reviews')}
+            onClick={() => setFilter("reviews")}
             className={`px-3 py-1.5 rounded-md transition-colors ${
-              filter === 'reviews' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              filter === "reviews"
+                ? "bg-white text-indigo-700 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             Content Moderation
           </button>
           <button
-            onClick={() => setFilter('companies')}
+            onClick={() => setFilter("companies")}
             className={`px-3 py-1.5 rounded-md transition-colors ${
-              filter === 'companies' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              filter === "companies"
+                ? "bg-white text-indigo-700 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             Company Changes
           </button>
           <button
-            onClick={() => setFilter('auth')}
+            onClick={() => setFilter("auth")}
             className={`px-3 py-1.5 rounded-md transition-colors ${
-              filter === 'auth' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              filter === "auth"
+                ? "bg-white text-indigo-700 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             Auth Logs
@@ -386,12 +442,18 @@ export default function AdminActivityPage({ navigate: _navigate }: { navigate: N
         {loading ? (
           <div className="p-16 text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-3 border-indigo-600 border-t-transparent mb-3" />
-            <p className="text-xs text-slate-500 font-medium">Validating event cryptography...</p>
+            <p className="text-xs text-slate-500 font-medium">
+              Validating event cryptography...
+            </p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-16 text-center">
-            <p className="text-sm font-semibold text-slate-800 mb-1">No audit events match filters</p>
-            <p className="text-xs text-slate-400">Try adjusting your search criteria or category filter.</p>
+            <p className="text-sm font-semibold text-slate-800 mb-1">
+              No audit events match filters
+            </p>
+            <p className="text-xs text-slate-400">
+              Try adjusting your search criteria or category filter.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -409,7 +471,10 @@ export default function AdminActivityPage({ navigate: _navigate }: { navigate: N
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((log) => (
-                  <tr key={log.eventId} className="hover:bg-slate-50/80 transition-colors">
+                  <tr
+                    key={log.eventId}
+                    className="hover:bg-slate-50/80 transition-colors"
+                  >
                     {/* Event ID */}
                     <td className="px-5 py-3.5 font-mono text-[11px] font-bold text-slate-600">
                       {log.eventId}
@@ -469,7 +534,9 @@ export default function AdminActivityPage({ navigate: _navigate }: { navigate: N
         {/* Footer */}
         <div className="px-5 py-3.5 border-t border-slate-200/80 bg-slate-50/60 flex items-center justify-between text-xs text-slate-500">
           <div className="font-mono">
-            Showing <strong className="text-slate-800">{filtered.length}</strong> authenticated audit events
+            Showing{" "}
+            <strong className="text-slate-800">{filtered.length}</strong>{" "}
+            authenticated audit events
           </div>
           <div className="font-mono text-[11px] text-emerald-700 font-semibold">
             HMAC-SHA256 Signatures Valid
@@ -486,7 +553,9 @@ export default function AdminActivityPage({ navigate: _navigate }: { navigate: N
                 <span className="font-mono text-xs font-bold bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
                   {selectedLog.eventId}
                 </span>
-                <h2 className="text-sm font-bold text-slate-900">Event Audit Payload & State Diff</h2>
+                <h2 className="text-sm font-bold text-slate-900">
+                  Event Audit Payload & State Diff
+                </h2>
               </div>
               <button
                 onClick={() => setSelectedLog(null)}
@@ -500,26 +569,44 @@ export default function AdminActivityPage({ navigate: _navigate }: { navigate: N
               {/* Event Metadata Banner */}
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 grid grid-cols-2 gap-3 font-mono text-[11px]">
                 <div>
-                  <span className="text-slate-400 block text-[9px] uppercase font-bold">Action Taken</span>
-                  <span className="font-bold text-slate-900">{selectedLog.actionCode}</span>
+                  <span className="text-slate-400 block text-[9px] uppercase font-bold">
+                    Action Taken
+                  </span>
+                  <span className="font-bold text-slate-900">
+                    {selectedLog.actionCode}
+                  </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[9px] uppercase font-bold">Server Timestamp</span>
-                  <span className="text-slate-700">{selectedLog.timestamp}</span>
+                  <span className="text-slate-400 block text-[9px] uppercase font-bold">
+                    Server Timestamp
+                  </span>
+                  <span className="text-slate-700">
+                    {selectedLog.timestamp}
+                  </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[9px] uppercase font-bold">Authenticated Actor</span>
-                  <span className="text-slate-700 truncate block">{selectedLog.actor}</span>
+                  <span className="text-slate-400 block text-[9px] uppercase font-bold">
+                    Authenticated Actor
+                  </span>
+                  <span className="text-slate-700 truncate block">
+                    {selectedLog.actor}
+                  </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[9px] uppercase font-bold">Target Resource</span>
-                  <span className="text-slate-700 font-bold">{selectedLog.targetEntity}</span>
+                  <span className="text-slate-400 block text-[9px] uppercase font-bold">
+                    Target Resource
+                  </span>
+                  <span className="text-slate-700 font-bold">
+                    {selectedLog.targetEntity}
+                  </span>
                 </div>
               </div>
 
               {/* Summary Description */}
               <div className="p-3 bg-indigo-50/50 rounded-lg border border-indigo-100 text-slate-800">
-                <span className="font-bold text-indigo-900">Audit Summary: </span>
+                <span className="font-bold text-indigo-900">
+                  Audit Summary:{" "}
+                </span>
                 {selectedLog.summary}
               </div>
 
@@ -527,7 +614,9 @@ export default function AdminActivityPage({ navigate: _navigate }: { navigate: N
               <div>
                 <div className="text-[10px] uppercase font-bold text-slate-500 mb-1.5 flex items-center justify-between">
                   <span>State Mutation Payload Comparison</span>
-                  <span className="font-mono text-slate-400">Content-Type: application/json</span>
+                  <span className="font-mono text-slate-400">
+                    Content-Type: application/json
+                  </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-[10px]">
                   {/* Previous State */}
@@ -536,7 +625,11 @@ export default function AdminActivityPage({ navigate: _navigate }: { navigate: N
                       - PREVIOUS STATE
                     </div>
                     <pre className="whitespace-pre-wrap">
-                      {JSON.stringify(selectedLog.stateDiff?.prev_state || {}, null, 2)}
+                      {JSON.stringify(
+                        selectedLog.stateDiff?.prev_state || {},
+                        null,
+                        2,
+                      )}
                     </pre>
                   </div>
 
@@ -546,7 +639,11 @@ export default function AdminActivityPage({ navigate: _navigate }: { navigate: N
                       + MUTATED STATE
                     </div>
                     <pre className="whitespace-pre-wrap">
-                      {JSON.stringify(selectedLog.stateDiff?.new_state || {}, null, 2)}
+                      {JSON.stringify(
+                        selectedLog.stateDiff?.new_state || {},
+                        null,
+                        2,
+                      )}
                     </pre>
                   </div>
                 </div>
@@ -555,7 +652,8 @@ export default function AdminActivityPage({ navigate: _navigate }: { navigate: N
 
             <div className="flex justify-between items-center pt-3 border-t border-slate-100">
               <span className="font-mono text-[10px] text-slate-400">
-                Cryptographic Signature: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+                Cryptographic Signature:
+                e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
               </span>
               <button
                 onClick={() => setSelectedLog(null)}
@@ -568,5 +666,5 @@ export default function AdminActivityPage({ navigate: _navigate }: { navigate: N
         </div>
       )}
     </div>
-  );
+  )
 }

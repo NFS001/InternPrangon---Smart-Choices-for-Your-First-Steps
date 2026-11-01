@@ -1,8 +1,8 @@
-import React from 'react';
-import type { Navigate } from '../data/index';
+import React from "react"
+import type { Navigate } from "../data/index"
 
 interface Props {
-  navigate?: Navigate;
+  navigate?: Navigate
 }
 
 export default function AboutPage({ navigate }: Props) {
@@ -24,7 +24,7 @@ export default function AboutPage({ navigate }: Props) {
 
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-[#0F172A] tracking-tight leading-[1.08] mb-6">
-            Built by students,{' '}
+            Built by students,{" "}
             <span className="bg-gradient-to-r from-[#4F46E5] to-[#6366F1] bg-clip-text text-transparent">
               for students.
             </span>
@@ -33,10 +33,20 @@ export default function AboutPage({ navigate }: Props) {
           {/* Editorial Story Copy */}
           <div className="space-y-4 text-base sm:text-lg text-slate-600 leading-relaxed font-normal">
             <p>
-              InternPrangon started in 2026 inside a software engineering classroom at BRAC University. Like thousands of undergraduates across Bangladesh, our founding team experienced firsthand the exhausting frustration of hunting for verified internships: obscure listings scattered across unstructured Facebook groups, ghost postings on LinkedIn comments, and zero transparency about team culture or compensation.
+              InternPrangon started in 2026 inside a software engineering
+              classroom at BRAC University. Like thousands of undergraduates
+              across Bangladesh, our founding team experienced firsthand the
+              exhausting frustration of hunting for verified internships:
+              obscure listings scattered across unstructured Facebook groups,
+              ghost postings on LinkedIn comments, and zero transparency about
+              team culture or compensation.
             </p>
             <p className="text-slate-800 font-medium">
-              Worse yet, talented students were regularly subjected to unpaid exploitation masquerading as full-time jobs with zero mentorship. So we built what we wished existed: a singular, high-trust ecosystem uniting Bangladesh’s ambitious student talent with verified partner employers.
+              Worse yet, talented students were regularly subjected to unpaid
+              exploitation masquerading as full-time jobs with zero mentorship.
+              So we built what we wished existed: a singular, high-trust
+              ecosystem uniting Bangladesh’s ambitious student talent with
+              verified partner employers.
             </p>
           </div>
         </div>
@@ -66,56 +76,80 @@ export default function AboutPage({ navigate }: Props) {
           {/* Metric 1 */}
           <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 p-6 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Listings</span>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Active Listings
+              </span>
               <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm font-bold">
                 💼
               </span>
             </div>
             <div>
-              <p className="text-3xl sm:text-4xl font-black text-[#0F172A] tracking-tight">1,200+</p>
-              <p className="text-xs text-slate-500 font-medium mt-1">Updated weekly from verified companies</p>
+              <p className="text-3xl sm:text-4xl font-black text-[#0F172A] tracking-tight">
+                1,200+
+              </p>
+              <p className="text-xs text-slate-500 font-medium mt-1">
+                Updated weekly from verified companies
+              </p>
             </div>
           </div>
 
           {/* Metric 2 */}
           <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 p-6 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Verified Employers</span>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Verified Employers
+              </span>
               <span className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold">
                 🏢
               </span>
             </div>
             <div>
-              <p className="text-3xl sm:text-4xl font-black text-[#0F172A] tracking-tight">380+</p>
-              <p className="text-xs text-slate-500 font-medium mt-1">Trade licenses & corporate registration verified</p>
+              <p className="text-3xl sm:text-4xl font-black text-[#0F172A] tracking-tight">
+                380+
+              </p>
+              <p className="text-xs text-slate-500 font-medium mt-1">
+                Trade licenses & corporate registration verified
+              </p>
             </div>
           </div>
 
           {/* Metric 3 */}
           <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 p-6 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Registered Students</span>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Registered Students
+              </span>
               <span className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-sm font-bold">
                 🎓
               </span>
             </div>
             <div>
-              <p className="text-3xl sm:text-4xl font-black text-[#0F172A] tracking-tight">8,400+</p>
-              <p className="text-xs text-slate-500 font-medium mt-1">Representing 25+ universities nationwide</p>
+              <p className="text-3xl sm:text-4xl font-black text-[#0F172A] tracking-tight">
+                8,400+
+              </p>
+              <p className="text-xs text-slate-500 font-medium mt-1">
+                Representing 25+ universities nationwide
+              </p>
             </div>
           </div>
 
           {/* Metric 4 */}
           <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 p-6 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Platform Founded</span>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Platform Founded
+              </span>
               <span className="w-8 h-8 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center text-sm font-bold">
                 🇧🇩
               </span>
             </div>
             <div>
-              <p className="text-3xl sm:text-4xl font-black text-[#0F172A] tracking-tight">2026</p>
-              <p className="text-xs text-slate-500 font-medium mt-1">Mohakhali, Dhaka, Bangladesh</p>
+              <p className="text-3xl sm:text-4xl font-black text-[#0F172A] tracking-tight">
+                2026
+              </p>
+              <p className="text-xs text-slate-500 font-medium mt-1">
+                Mohakhali, Dhaka, Bangladesh
+              </p>
             </div>
           </div>
         </div>
@@ -150,15 +184,17 @@ export default function AboutPage({ navigate }: Props) {
                 Finding an internship shouldn't be a maze.
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mb-8">
-                Traditional job boards treat interns as an afterthought, forcing undergraduates to navigate opaque processes and risk their career beginnings.
+                Traditional job boards treat interns as an afterthought, forcing
+                undergraduates to navigate opaque processes and risk their
+                career beginnings.
               </p>
 
               <div className="space-y-4">
                 {[
-                  'Listings scattered across unstructured Facebook groups, Discord servers, and LinkedIn comments',
-                  'No reliable mechanism to verify corporate legitimacy or internship mentorship culture',
-                  'Unpaid roles masquerading as full-time jobs with zero stipends and zero mentorship',
-                  'Fake glassdoor-style corporate reviews authored or edited directly by HR marketing teams',
+                  "Listings scattered across unstructured Facebook groups, Discord servers, and LinkedIn comments",
+                  "No reliable mechanism to verify corporate legitimacy or internship mentorship culture",
+                  "Unpaid roles masquerading as full-time jobs with zero stipends and zero mentorship",
+                  "Fake glassdoor-style corporate reviews authored or edited directly by HR marketing teams",
                 ].map((item, idx) => (
                   <div key={idx} className="flex items-start gap-3">
                     <span className="w-5 h-5 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
@@ -195,15 +231,16 @@ export default function AboutPage({ navigate }: Props) {
                 One verified platform. Complete transparency.
               </h3>
               <p className="text-xs sm:text-sm text-indigo-200 leading-relaxed mb-8">
-                We empower students with clear stipend visibility, verified employer screening, and uncensored peer testimonials.
+                We empower students with clear stipend visibility, verified
+                employer screening, and uncensored peer testimonials.
               </p>
 
               <div className="space-y-4">
                 {[
-                  '100% Verified companies (business trade license & office address checked upfront by admins)',
-                  'Uncensored peer reviews and interview guides from actual student interns',
-                  'Transparent stipends shown openly before you ever spend time drafting an application',
-                  '1-Click universal application with real-time status tracking from submission to offer',
+                  "100% Verified companies (business trade license & office address checked upfront by admins)",
+                  "Uncensored peer reviews and interview guides from actual student interns",
+                  "Transparent stipends shown openly before you ever spend time drafting an application",
+                  "1-Click universal application with real-time status tracking from submission to offer",
                 ].map((item, idx) => (
                   <div key={idx} className="flex items-start gap-3">
                     <span className="w-5 h-5 rounded-full bg-emerald-400/20 text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 border border-emerald-400/40">
@@ -238,7 +275,8 @@ export default function AboutPage({ navigate }: Props) {
             How InternPrangon works
           </h2>
           <p className="text-sm text-slate-500 mt-2">
-            A parallel, transparent pipeline engineered for students and corporate teams alike.
+            A parallel, transparent pipeline engineered for students and
+            corporate teams alike.
           </p>
         </div>
 
@@ -255,24 +293,24 @@ export default function AboutPage({ navigate }: Props) {
             <div className="space-y-6 relative before:absolute before:left-5 before:top-4 before:bottom-4 before:w-0.5 before:border-l-2 before:border-dashed before:border-indigo-200">
               {[
                 {
-                  step: '01',
-                  title: 'Create Profile & Resume',
-                  desc: 'Input your university, technical skills, and upload your resume once. Our smart profile system auto-formats your credentials.',
+                  step: "01",
+                  title: "Create Profile & Resume",
+                  desc: "Input your university, technical skills, and upload your resume once. Our smart profile system auto-formats your credentials.",
                 },
                 {
-                  step: '02',
-                  title: 'Discover Verified Roles',
-                  desc: 'Filter opportunities by stipend range, remote/on-site modes, tech stack, and authentic student satisfaction scores.',
+                  step: "02",
+                  title: "Discover Verified Roles",
+                  desc: "Filter opportunities by stipend range, remote/on-site modes, tech stack, and authentic student satisfaction scores.",
                 },
                 {
-                  step: '03',
-                  title: '1-Click Universal Apply',
-                  desc: 'Apply instantly to leading tech enterprises and startups without filling the same 20-question form repeatedly.',
+                  step: "03",
+                  title: "1-Click Universal Apply",
+                  desc: "Apply instantly to leading tech enterprises and startups without filling the same 20-question form repeatedly.",
                 },
                 {
-                  step: '04',
-                  title: 'Real-time Status Tracking',
-                  desc: 'Receive live notifications whenever recruiters view your application, schedule interviews, or extend formal offers.',
+                  step: "04",
+                  title: "Real-time Status Tracking",
+                  desc: "Receive live notifications whenever recruiters view your application, schedule interviews, or extend formal offers.",
                 },
               ].map((item, idx) => (
                 <div key={idx} className="relative flex items-start gap-4 pl-2">
@@ -280,8 +318,12 @@ export default function AboutPage({ navigate }: Props) {
                     {item.step}
                   </div>
                   <div className="pt-1">
-                    <h4 className="text-sm font-extrabold text-slate-900">{item.title}</h4>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">{item.desc}</p>
+                    <h4 className="text-sm font-extrabold text-slate-900">
+                      {item.title}
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                      {item.desc}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -294,30 +336,32 @@ export default function AboutPage({ navigate }: Props) {
               <span className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-sm font-bold">
                 🏢
               </span>
-              <h3 className="text-xl font-bold text-slate-900">For Employers</h3>
+              <h3 className="text-xl font-bold text-slate-900">
+                For Employers
+              </h3>
             </div>
 
             <div className="space-y-6 relative before:absolute before:left-5 before:top-4 before:bottom-4 before:w-0.5 before:border-l-2 before:border-dashed before:border-orange-200">
               {[
                 {
-                  step: '01',
-                  title: 'Build Company Profile',
-                  desc: 'Register your organization, showcase your engineering culture, tech stack, and submit business documents for rapid verification.',
+                  step: "01",
+                  title: "Build Company Profile",
+                  desc: "Register your organization, showcase your engineering culture, tech stack, and submit business documents for rapid verification.",
                 },
                 {
-                  step: '02',
-                  title: 'Post Internship Listings',
-                  desc: 'Publish transparent internship roles specifying real stipends, mentorship leads, project scopes, and hiring deadlines.',
+                  step: "02",
+                  title: "Post Internship Listings",
+                  desc: "Publish transparent internship roles specifying real stipends, mentorship leads, project scopes, and hiring deadlines.",
                 },
                 {
-                  step: '03',
-                  title: 'Review Pre-screened Applicants',
-                  desc: 'Access verified student profiles from BUET, BRACU, NSU, DU, and top institutes with standardized resumes and GitHub links.',
+                  step: "03",
+                  title: "Review Pre-screened Applicants",
+                  desc: "Access verified student profiles from BUET, BRACU, NSU, DU, and top institutes with standardized resumes and GitHub links.",
                 },
                 {
-                  step: '04',
-                  title: 'Instant Status Updates & Offers',
-                  desc: 'Shortlist candidates, trigger interview invitations, and extend formal internship offers directly through the dashboard.',
+                  step: "04",
+                  title: "Instant Status Updates & Offers",
+                  desc: "Shortlist candidates, trigger interview invitations, and extend formal internship offers directly through the dashboard.",
                 },
               ].map((item, idx) => (
                 <div key={idx} className="relative flex items-start gap-4 pl-2">
@@ -325,8 +369,12 @@ export default function AboutPage({ navigate }: Props) {
                     {item.step}
                   </div>
                   <div className="pt-1">
-                    <h4 className="text-sm font-extrabold text-slate-900">{item.title}</h4>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">{item.desc}</p>
+                    <h4 className="text-sm font-extrabold text-slate-900">
+                      {item.title}
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                      {item.desc}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -354,9 +402,13 @@ export default function AboutPage({ navigate }: Props) {
             <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-2xl mb-5">
               👁️
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-2">Transparency First</h3>
+            <h3 className="text-lg font-bold text-slate-900 mb-2">
+              Transparency First
+            </h3>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              Stipends, student ratings, and working conditions are always visible before applying. Undergraduates deserve clarity before committing their time and ambition.
+              Stipends, student ratings, and working conditions are always
+              visible before applying. Undergraduates deserve clarity before
+              committing their time and ambition.
             </p>
           </div>
 
@@ -365,9 +417,13 @@ export default function AboutPage({ navigate }: Props) {
             <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-2xl mb-5">
               🛡️
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-2">Verified, Not Assumed</h3>
+            <h3 className="text-lg font-bold text-slate-900 mb-2">
+              Verified, Not Assumed
+            </h3>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              Strict employer screening and manual trade-license verification ensure zero ghost jobs, scam listings, or unpaid exploitation across our catalog.
+              Strict employer screening and manual trade-license verification
+              ensure zero ghost jobs, scam listings, or unpaid exploitation
+              across our catalog.
             </p>
           </div>
 
@@ -376,9 +432,13 @@ export default function AboutPage({ navigate }: Props) {
             <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-2xl mb-5">
               👥
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-2">Community Owned</h3>
+            <h3 className="text-lg font-bold text-slate-900 mb-2">
+              Community Owned
+            </h3>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              A peer-powered movement driven by genuine student contributions, anonymous workplace reviews, and shared interview knowledge across Bangladesh.
+              A peer-powered movement driven by genuine student contributions,
+              anonymous workplace reviews, and shared interview knowledge across
+              Bangladesh.
             </p>
           </div>
         </div>
@@ -396,43 +456,46 @@ export default function AboutPage({ navigate }: Props) {
             Made by BRAC Students
           </h2>
           <p className="text-sm text-slate-500 mt-2">
-            A software engineering capstone project that grew into a national student movement.
+            A software engineering capstone project that grew into a national
+            student movement.
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             {
-              name: 'Nafis Uddin Chowdhury',
-              role: 'Project Lead & Full Stack',
-              dept: 'B.Sc. in CSE, BRAC University',
-              image: '/team_nafis.jpg',
-              github: 'https://github.com/NFS001',
-              linkedin: 'https://www.linkedin.com/in/nafis-uddin-chowdhury-49bb71348/',
+              name: "Nafis Uddin Chowdhury",
+              role: "Project Lead & Full Stack",
+              dept: "B.Sc. in CSE, BRAC University",
+              image: "/team_nafis.jpg",
+              github: "https://github.com/NFS001",
+              linkedin:
+                "https://www.linkedin.com/in/nafis-uddin-chowdhury-49bb71348/",
             },
             {
-              name: 'Md. Muhtasim Fuad',
-              role: 'Database & QA Engineer',
-              dept: 'B.Sc. in CSE, BRAC University',
-              image: '/team_fuad.jpg',
-              github: 'https://github.com/mfd-7',
-              linkedin: 'https://www.linkedin.com/in/real-muhtasim-fuad/',
+              name: "Md. Muhtasim Fuad",
+              role: "Database & QA Engineer",
+              dept: "B.Sc. in CSE, BRAC University",
+              image: "/team_fuad.jpg",
+              github: "https://github.com/mfd-7",
+              linkedin: "https://www.linkedin.com/in/real-muhtasim-fuad/",
             },
             {
-              name: 'Syed Kawnain Tahmid Billah',
-              role: 'Backend & System Architect',
-              dept: 'B.Sc. in CSE, BRAC University',
-              image: '/team_tahmid.jpg',
-              github: 'https://github.com/kawnaintahmidbillah-arch',
-              linkedin: 'https://www.linkedin.com/in/syed-kawnain-tahmid-billah-725768337/',
+              name: "Syed Kawnain Tahmid Billah",
+              role: "Backend & System Architect",
+              dept: "B.Sc. in CSE, BRAC University",
+              image: "/team_tahmid.jpg",
+              github: "https://github.com/kawnaintahmidbillah-arch",
+              linkedin:
+                "https://www.linkedin.com/in/syed-kawnain-tahmid-billah-725768337/",
             },
             {
-              name: 'Tasnim Eva',
-              role: 'UI/UX & Frontend Lead',
-              dept: 'B.Sc. in CSE, BRAC University',
-              image: '/team_eva.jpg',
-              github: 'https://github.com/tasnim-eva',
-              linkedin: '',
+              name: "Tasnim Eva",
+              role: "UI/UX & Frontend Lead",
+              dept: "B.Sc. in CSE, BRAC University",
+              image: "/team_eva.jpg",
+              github: "https://github.com/tasnim-eva",
+              linkedin: "",
             },
           ].map((member, idx) => (
             <div
@@ -459,8 +522,13 @@ export default function AboutPage({ navigate }: Props) {
                             className="w-10 h-10 rounded-xl bg-white/95 hover:bg-white text-slate-900 flex items-center justify-center shadow-md transition-transform hover:scale-110"
                             aria-label="GitHub Profile"
                           >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                            <svg
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                            >
+                              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
                             </svg>
                           </a>
                         )}
@@ -472,8 +540,13 @@ export default function AboutPage({ navigate }: Props) {
                             className="w-10 h-10 rounded-xl bg-[#0A66C2] text-white flex items-center justify-center shadow-md transition-transform hover:scale-110"
                             aria-label="LinkedIn Profile"
                           >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                            <svg
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                            >
+                              <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                             </svg>
                           </a>
                         )}
@@ -484,7 +557,9 @@ export default function AboutPage({ navigate }: Props) {
                       <div className="w-16 h-16 rounded-2xl bg-white shadow-sm border border-slate-200/80 flex items-center justify-center text-indigo-600 font-black text-xl mb-2">
                         TE
                       </div>
-                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Empty Canvas</span>
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        Empty Canvas
+                      </span>
                     </div>
                   )}
                 </div>
@@ -492,8 +567,12 @@ export default function AboutPage({ navigate }: Props) {
                 <h3 className="font-extrabold text-[#0F172A] text-base group-hover:text-indigo-600 transition-colors">
                   {member.name}
                 </h3>
-                <p className="text-xs font-bold text-indigo-600 mt-0.5">{member.role}</p>
-                <p className="text-[11px] text-slate-400 font-medium mt-1">{member.dept}</p>
+                <p className="text-xs font-bold text-indigo-600 mt-0.5">
+                  {member.role}
+                </p>
+                <p className="text-[11px] text-slate-400 font-medium mt-1">
+                  {member.dept}
+                </p>
 
                 {/* Persistent Quick Links */}
                 <div className="flex items-center gap-2 mt-3.5">
@@ -505,8 +584,13 @@ export default function AboutPage({ navigate }: Props) {
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
                       aria-label={`${member.name} GitHub`}
                     >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
                       </svg>
                       <span>GitHub</span>
                     </a>
@@ -519,8 +603,13 @@ export default function AboutPage({ navigate }: Props) {
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0A66C2]/10 hover:bg-[#0A66C2]/20 text-[#0A66C2] text-xs font-bold transition-colors cursor-pointer"
                       aria-label={`${member.name} LinkedIn`}
                     >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                       </svg>
                       <span>LinkedIn</span>
                     </a>
@@ -539,7 +628,8 @@ export default function AboutPage({ navigate }: Props) {
         {/* Footer Attribution Pill */}
         <div className="mt-10 text-center">
           <span className="inline-block px-5 py-2 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold border border-slate-200/80 shadow-2xs">
-            🎓 Advised by faculty at the Department of Computer Science & Engineering, BRAC University.
+            🎓 Advised by faculty at the Department of Computer Science &
+            Engineering, BRAC University.
           </span>
         </div>
       </section>
@@ -562,20 +652,21 @@ export default function AboutPage({ navigate }: Props) {
                 Ready to take your first professional step?
               </h2>
               <p className="text-sm sm:text-base text-indigo-200 mt-3 max-w-xl">
-                Join 8,400+ students and discover verified, paid internships across Bangladesh with transparent culture insights.
+                Join 8,400+ students and discover verified, paid internships
+                across Bangladesh with transparent culture insights.
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full sm:w-auto">
               <button
-                onClick={() => navigate?.('register', { as: 'student' })}
+                onClick={() => navigate?.("register", { as: "student" })}
                 className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-extrabold text-sm shadow-lg shadow-orange-500/30 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <span>Create Free Student Account</span>
                 <span>↗</span>
               </button>
               <button
-                onClick={() => navigate?.('internships')}
+                onClick={() => navigate?.("internships")}
                 className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm border border-white/20 transition-all cursor-pointer flex items-center justify-center"
               >
                 Browse 1,200+ Internships
@@ -585,5 +676,5 @@ export default function AboutPage({ navigate }: Props) {
         </div>
       </section>
     </div>
-  );
+  )
 }

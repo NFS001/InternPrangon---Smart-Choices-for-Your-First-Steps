@@ -1,27 +1,27 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import type { Navigate } from '../../data/index';
+import React, { useState, useEffect, useMemo } from "react"
+import type { Navigate } from "../../data/index"
 import {
   getFlagsAdmin,
   updateFlagStatusAdmin,
   deleteReviewAdmin,
   type ApiFlagItem,
-} from '../../api/client';
-import { logAdminActivity } from '../../utils/adminActivity';
-import { CompanyLogo } from '../../components/common/CompanyLogos';
+} from "../../api/client"
+import { logAdminActivity } from "../../utils/adminActivity"
+import { CompanyLogo } from "../../components/common/CompanyLogos"
 
 export interface AdminReportItem {
-  id: string | number;
-  flagId?: string;
-  reviewId?: string;
-  companyName: string;
-  rating: number;
-  content: string;
-  highlightedKeyword?: string;
-  reportReason: string;
-  reporterHash: string;
-  reportedDate: string;
-  reviewDate: string;
-  status: 'Pending' | 'Resolved' | 'Deleted';
+  id: string | number
+  flagId?: string
+  reviewId?: string
+  companyName: string
+  rating: number
+  content: string
+  highlightedKeyword?: string
+  reportReason: string
+  reporterHash: string
+  reportedDate: string
+  reviewDate: string
+  status: "Pending" | "Resolved" | "Deleted"
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -31,7 +31,7 @@ function StarRating({ rating }: { rating: number }) {
         <svg
           key={n}
           className={`w-3 h-3 ${
-            n <= Math.round(rating) ? 'text-amber-400' : 'text-slate-200'
+            n <= Math.round(rating) ? "text-amber-400" : "text-slate-200"
           }`}
           fill="currentColor"
           viewBox="0 0 20 20"
@@ -40,258 +40,311 @@ function StarRating({ rating }: { rating: number }) {
         </svg>
       ))}
     </span>
-  );
+  )
 }
 
 interface Props {
-  navigate: Navigate;
-  reportId?: string;
+  navigate: Navigate
+  reportId?: string
 }
 
 export default function AdminReviewsPage({ navigate, reportId }: Props) {
-  const [reports, setReports] = useState<AdminReportItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'Pending' | 'Resolved' | 'Deleted'>('all');
-  const [filterReason, setFilterReason] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedReport, setSelectedReport] = useState<AdminReportItem | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [reports, setReports] = useState<AdminReportItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filterStatus, setFilterStatus] =
+    useState<"all" | "Pending" | "Resolved" | "Deleted">("all")
+  const [filterReason, setFilterReason] = useState<string>("all")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedReport, setSelectedReport] = useState<AdminReportItem | null>(
+    null,
+  )
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   const defaultReports: AdminReportItem[] = [
     {
-      id: 'flag-seed-1',
-      companyName: 'bKash Limited',
+      id: "flag-seed-1",
+      companyName: "bKash Limited",
       rating: 4.5,
-      content: 'Stipend arrived on the 1st of every month without fail. Engineering culture is intense with weekly prod deployments.',
-      highlightedKeyword: 'Engineering culture is intense',
-      reportReason: 'Misleading Stipend',
-      reporterHash: 'STU-SHA256-#8921',
-      reportedDate: '2026-10-24',
-      reviewDate: '2026-10-20',
-      status: 'Resolved',
+      content:
+        "Stipend arrived on the 1st of every month without fail. Engineering culture is intense with weekly prod deployments.",
+      highlightedKeyword: "Engineering culture is intense",
+      reportReason: "Misleading Stipend",
+      reporterHash: "STU-SHA256-#8921",
+      reportedDate: "2026-10-24",
+      reviewDate: "2026-10-20",
+      status: "Resolved",
     },
     {
-      id: 'flag-seed-2',
-      companyName: 'Pathao',
+      id: "flag-seed-2",
+      companyName: "Pathao",
       rating: 2.0,
-      content: 'They promised 25,000 BDT monthly stipend during the interview, but the actual contract provided only 15,000 BDT.',
-      highlightedKeyword: 'promised 25,000 BDT monthly stipend',
-      reportReason: 'Fake or Misleading',
-      reporterHash: 'STU-SHA256-#4419',
-      reportedDate: '2026-10-18',
-      reviewDate: '2026-10-17',
-      status: 'Deleted',
+      content:
+        "They promised 25,000 BDT monthly stipend during the interview, but the actual contract provided only 15,000 BDT.",
+      highlightedKeyword: "promised 25,000 BDT monthly stipend",
+      reportReason: "Fake or Misleading",
+      reporterHash: "STU-SHA256-#4419",
+      reportedDate: "2026-10-18",
+      reviewDate: "2026-10-17",
+      status: "Deleted",
     },
     {
-      id: 'flag-seed-3',
-      companyName: 'Brain Station 23',
+      id: "flag-seed-3",
+      companyName: "Brain Station 23",
       rating: 5.0,
-      content: 'Best mentorship program for junior cloud architects. Daily scrum and pair programming with principal engineers.',
-      highlightedKeyword: 'Best mentorship program',
-      reportReason: 'Spam',
-      reporterHash: 'STU-SHA256-#1104',
-      reportedDate: '2026-10-15',
-      reviewDate: '2026-10-14',
-      status: 'Resolved',
+      content:
+        "Best mentorship program for junior cloud architects. Daily scrum and pair programming with principal engineers.",
+      highlightedKeyword: "Best mentorship program",
+      reportReason: "Spam",
+      reporterHash: "STU-SHA256-#1104",
+      reportedDate: "2026-10-15",
+      reviewDate: "2026-10-14",
+      status: "Resolved",
     },
     {
-      id: 'flag-seed-4',
-      companyName: 'Chaldal',
+      id: "flag-seed-4",
+      companyName: "Chaldal",
       rating: 1.0,
-      content: 'Management made derogatory comments regarding university background during sprint retrospectives.',
-      highlightedKeyword: 'derogatory comments',
-      reportReason: 'Harassment',
-      reporterHash: 'STU-SHA256-#6732',
-      reportedDate: '2026-10-09',
-      reviewDate: '2026-10-08',
-      status: 'Deleted',
+      content:
+        "Management made derogatory comments regarding university background during sprint retrospectives.",
+      highlightedKeyword: "derogatory comments",
+      reportReason: "Harassment",
+      reporterHash: "STU-SHA256-#6732",
+      reportedDate: "2026-10-09",
+      reviewDate: "2026-10-08",
+      status: "Deleted",
     },
     {
-      id: 'flag-seed-5',
-      companyName: 'ShopUp',
+      id: "flag-seed-5",
+      companyName: "ShopUp",
       rating: 4.0,
-      content: 'High paced B2B supply chain environment. Great hands-on microservices experience with Go and Kafka.',
-      highlightedKeyword: 'microservices experience',
-      reportReason: 'Misleading Stipend',
-      reporterHash: 'STU-SHA256-#3901',
-      reportedDate: '2026-10-04',
-      reviewDate: '2026-10-02',
-      status: 'Resolved',
+      content:
+        "High paced B2B supply chain environment. Great hands-on microservices experience with Go and Kafka.",
+      highlightedKeyword: "microservices experience",
+      reportReason: "Misleading Stipend",
+      reporterHash: "STU-SHA256-#3901",
+      reportedDate: "2026-10-04",
+      reviewDate: "2026-10-02",
+      status: "Resolved",
     },
-  ];
+  ]
 
   const fetchReports = async () => {
     try {
-      setLoading(true);
-      const res = await getFlagsAdmin().catch(() => ({ flags: [] }));
-      const backendFlags = res.flags || [];
+      setLoading(true)
+      const res = await getFlagsAdmin().catch(() => ({ flags: [] }))
+      const backendFlags = res.flags || []
 
-      const deletedIds = new Set(JSON.parse(localStorage.getItem('internprangon_deleted_reviews') || '[]'));
-      const resolvedIds = new Set(JSON.parse(localStorage.getItem('internprangon_resolved_flags') || '[]'));
+      const deletedIds = new Set(
+        JSON.parse(
+          localStorage.getItem("internprangon_deleted_reviews") || "[]",
+        ),
+      )
+      const resolvedIds = new Set(
+        JSON.parse(
+          localStorage.getItem("internprangon_resolved_flags") || "[]",
+        ),
+      )
 
       if (backendFlags.length > 0) {
-        const mapped: AdminReportItem[] = backendFlags.map((f: ApiFlagItem, idx: number) => {
-          const comp = f.review?.company?.companyName || 'Platform Partner';
-          const isDeleted = deletedIds.has(String(f.review?._id)) || deletedIds.has(String(f._id));
-          const isResolved = resolvedIds.has(String(f._id)) || f.status === 'Resolved';
-          const status = isDeleted ? 'Deleted' : isResolved ? 'Resolved' : 'Pending';
+        const mapped: AdminReportItem[] = backendFlags.map(
+          (f: ApiFlagItem, idx: number) => {
+            const comp = f.review?.company?.companyName || "Platform Partner"
+            const isDeleted =
+              deletedIds.has(String(f.review?._id)) ||
+              deletedIds.has(String(f._id))
+            const isResolved =
+              resolvedIds.has(String(f._id)) || f.status === "Resolved"
+            const status = isDeleted
+              ? "Deleted"
+              : isResolved
+                ? "Resolved"
+                : "Pending"
 
-          return {
-            id: f._id || `flag-${idx}`,
-            flagId: f._id,
-            reviewId: f.review?._id,
-            companyName: comp,
-            rating: f.review?.rating || 5,
-            content: f.review?.comment || '(No review comment available)',
-            highlightedKeyword: '',
-            reportReason: f.reason || 'Flagged for moderation',
-            reporterHash: `STU-SHA256-#${String(f._id || '999').slice(-4).toUpperCase()}`,
-            reportedDate: f.dateFlagged ? new Date(f.dateFlagged).toISOString().split('T')[0] : '2026-10-25',
-            reviewDate: f.review?.createdAt ? new Date(f.review.createdAt).toISOString().split('T')[0] : '2026-10-20',
-            status,
-          };
-        });
-        setReports(mapped);
+            return {
+              id: f._id || `flag-${idx}`,
+              flagId: f._id,
+              reviewId: f.review?._id,
+              companyName: comp,
+              rating: f.review?.rating || 5,
+              content: f.review?.comment || "(No review comment available)",
+              highlightedKeyword: "",
+              reportReason: f.reason || "Flagged for moderation",
+              reporterHash: `STU-SHA256-#${String(f._id || "999")
+                .slice(-4)
+                .toUpperCase()}`,
+              reportedDate: f.dateFlagged
+                ? new Date(f.dateFlagged).toISOString().split("T")[0]
+                : "2026-10-25",
+              reviewDate: f.review?.createdAt
+                ? new Date(f.review.createdAt).toISOString().split("T")[0]
+                : "2026-10-20",
+              status,
+            }
+          },
+        )
+        setReports(mapped)
       } else {
         // Apply overrides on seed reports
         const combined = defaultReports.map((r) => {
-          if (deletedIds.has(String(r.id))) return { ...r, status: 'Deleted' as const };
-          if (resolvedIds.has(String(r.id))) return { ...r, status: 'Resolved' as const };
-          return r;
-        });
-        setReports(combined);
+          if (deletedIds.has(String(r.id)))
+            return { ...r, status: "Deleted" as const }
+          if (resolvedIds.has(String(r.id)))
+            return { ...r, status: "Resolved" as const }
+          return r
+        })
+        setReports(combined)
       }
     } catch {
-      setReports(defaultReports);
+      setReports(defaultReports)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchReports();
-  }, []);
+    fetchReports()
+  }, [])
 
   useEffect(() => {
     if (reportId && reports.length > 0) {
-      const target = reports.find((r) => String(r.id) === reportId || String(r.flagId) === reportId);
-      if (target) setSelectedReport(target);
+      const target = reports.find(
+        (r) => String(r.id) === reportId || String(r.flagId) === reportId,
+      )
+      if (target) setSelectedReport(target)
     }
-  }, [reportId, reports]);
+  }, [reportId, reports])
 
   useEffect(() => {
     if (toastMessage) {
-      const timer = setTimeout(() => setToastMessage(null), 3500);
-      return () => clearTimeout(timer);
+      const timer = setTimeout(() => setToastMessage(null), 3500)
+      return () => clearTimeout(timer)
     }
-  }, [toastMessage]);
+  }, [toastMessage])
 
   // Keep / Dismiss Report Handler
   const handleDismissReport = async (report: AdminReportItem) => {
     try {
-      const resolvedIds = new Set(JSON.parse(localStorage.getItem('internprangon_resolved_flags') || '[]'));
-      resolvedIds.add(String(report.flagId || report.id));
-      localStorage.setItem('internprangon_resolved_flags', JSON.stringify(Array.from(resolvedIds)));
+      const resolvedIds = new Set(
+        JSON.parse(
+          localStorage.getItem("internprangon_resolved_flags") || "[]",
+        ),
+      )
+      resolvedIds.add(String(report.flagId || report.id))
+      localStorage.setItem(
+        "internprangon_resolved_flags",
+        JSON.stringify(Array.from(resolvedIds)),
+      )
 
       if (report.flagId) {
-        await updateFlagStatusAdmin(report.flagId, 'Resolved').catch(() => {});
+        await updateFlagStatusAdmin(report.flagId, "Resolved").catch(() => {})
       }
 
       setReports((prev) =>
-        prev.map((r) => (r.id === report.id ? { ...r, status: 'Resolved' } : r))
-      );
+        prev.map((r) =>
+          r.id === report.id ? { ...r, status: "Resolved" } : r,
+        ),
+      )
       logAdminActivity({
-        type: 'review_dismissed',
+        type: "review_dismissed",
         description: `Flag report dismissed as compliant for review of ${report.companyName}`,
-        target: 'Content Moderation Pass',
-        adminName: 'Superadmin Nafis U.',
-      });
-      setToastMessage('✔ Flag dismissed. Student review preserved as compliant.');
-      setSelectedReport(null);
+        target: "Content Moderation Pass",
+        adminName: "Superadmin Nafis U.",
+      })
+      setToastMessage(
+        "✔ Flag dismissed. Student review preserved as compliant.",
+      )
+      setSelectedReport(null)
     } catch {
-      setToastMessage('Failed to dismiss flag.');
+      setToastMessage("Failed to dismiss flag.")
     }
-  };
+  }
 
   // Delete / Quarantine Review Handler
   const handleDeleteReview = async (report: AdminReportItem) => {
     try {
-      const deletedIds = new Set(JSON.parse(localStorage.getItem('internprangon_deleted_reviews') || '[]'));
-      deletedIds.add(String(report.reviewId || report.id));
-      deletedIds.add(String(report.flagId || report.id));
-      localStorage.setItem('internprangon_deleted_reviews', JSON.stringify(Array.from(deletedIds)));
+      const deletedIds = new Set(
+        JSON.parse(
+          localStorage.getItem("internprangon_deleted_reviews") || "[]",
+        ),
+      )
+      deletedIds.add(String(report.reviewId || report.id))
+      deletedIds.add(String(report.flagId || report.id))
+      localStorage.setItem(
+        "internprangon_deleted_reviews",
+        JSON.stringify(Array.from(deletedIds)),
+      )
 
       if (report.reviewId) {
-        await deleteReviewAdmin(report.reviewId).catch(() => {});
+        await deleteReviewAdmin(report.reviewId).catch(() => {})
       }
 
       setReports((prev) =>
-        prev.map((r) => (r.id === report.id ? { ...r, status: 'Deleted' } : r))
-      );
+        prev.map((r) => (r.id === report.id ? { ...r, status: "Deleted" } : r)),
+      )
       logAdminActivity({
-        type: 'review_deleted',
+        type: "review_deleted",
         description: `Violating review quarantined & deleted for ${report.companyName}`,
-        target: 'Compliance Infraction Penalty',
-        adminName: 'Superadmin Nafis U.',
-      });
-      setToastMessage('🗑️ Review quarantined & purged from public directory.');
-      setSelectedReport(null);
+        target: "Compliance Infraction Penalty",
+        adminName: "Superadmin Nafis U.",
+      })
+      setToastMessage("🗑️ Review quarantined & purged from public directory.")
+      setSelectedReport(null)
     } catch {
-      setToastMessage('Failed to delete review.');
+      setToastMessage("Failed to delete review.")
     }
-  };
+  }
 
   // Filtered reports
   const filteredReports = useMemo(() => {
     return reports.filter((r) => {
-      const statusMatch = filterStatus === 'all' || r.status === filterStatus;
+      const statusMatch = filterStatus === "all" || r.status === filterStatus
       const reasonMatch =
-        filterReason === 'all' ||
-        r.reportReason.toLowerCase().includes(filterReason.toLowerCase());
+        filterReason === "all" ||
+        r.reportReason.toLowerCase().includes(filterReason.toLowerCase())
       const queryMatch =
         !searchQuery.trim() ||
         r.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.reporterHash.toLowerCase().includes(searchQuery.toLowerCase());
-      return statusMatch && reasonMatch && queryMatch;
-    });
-  }, [reports, filterStatus, filterReason, searchQuery]);
+        r.reporterHash.toLowerCase().includes(searchQuery.toLowerCase())
+      return statusMatch && reasonMatch && queryMatch
+    })
+  }, [reports, filterStatus, filterReason, searchQuery])
 
   // Counts
-  const totalCount = reports.length;
-  const pendingCount = reports.filter((r) => r.status === 'Pending').length;
-  const resolvedCount = reports.filter((r) => r.status === 'Resolved').length;
-  const deletedCount = reports.filter((r) => r.status === 'Deleted').length;
+  const totalCount = reports.length
+  const pendingCount = reports.filter((r) => r.status === "Pending").length
+  const resolvedCount = reports.filter((r) => r.status === "Resolved").length
+  const deletedCount = reports.filter((r) => r.status === "Deleted").length
 
   const getReasonBadge = (reason: string) => {
-    const lower = reason.toLowerCase();
-    if (lower.includes('fake') || lower.includes('misleading')) {
+    const lower = reason.toLowerCase()
+    if (lower.includes("fake") || lower.includes("misleading")) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
           ⚠ Fake or Misleading
         </span>
-      );
+      )
     }
-    if (lower.includes('spam')) {
+    if (lower.includes("spam")) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">
           🚫 Spam & Promotion
         </span>
-      );
+      )
     }
-    if (lower.includes('harassment') || lower.includes('inappropriate')) {
+    if (lower.includes("harassment") || lower.includes("inappropriate")) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-900 border border-red-300">
           🛑 Harassment / Abuse
         </span>
-      );
+      )
     }
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
         ⚖ {reason}
       </span>
-    );
-  };
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-16 px-5 py-6 lg:px-8 lg:py-8">
@@ -307,13 +360,16 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200/80">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Review Reports & Content Moderation</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Review Reports & Content Moderation
+            </h1>
             <span className="font-mono text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
               {totalCount} Total Flags
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Trust & Safety moderation queue, policy enforcement, and student peer review compliance.
+            Trust & Safety moderation queue, policy enforcement, and student
+            peer review compliance.
           </p>
         </div>
 
@@ -335,7 +391,12 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
             Student Identity Safeguard Protocol (SOC-2 Type II)
           </div>
           <p className="text-xs text-indigo-200/90 mt-0.5 leading-relaxed">
-            All reviewer names and student university emails are cryptographically hashed (<span className="font-mono text-amber-300">SHA-256 HMAC</span>). Moderation decisions must be based solely on factual guidelines, policy compliance, and proof of stipend records, not individual identities.
+            All reviewer names and student university emails are
+            cryptographically hashed (
+            <span className="font-mono text-amber-300">SHA-256 HMAC</span>).
+            Moderation decisions must be based solely on factual guidelines,
+            policy compliance, and proof of stipend records, not individual
+            identities.
           </p>
         </div>
       </div>
@@ -344,8 +405,18 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
       <div className="bg-white border border-slate-200/90 rounded-xl p-4 mb-6 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
         {/* Search */}
         <div className="relative flex-1 max-w-sm">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+            />
           </svg>
           <input
             type="text"
@@ -360,43 +431,43 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
         <div className="flex flex-wrap items-center gap-3">
           <div className="inline-flex items-center bg-slate-100 p-1 rounded-lg text-xs font-semibold">
             <button
-              onClick={() => setFilterStatus('all')}
+              onClick={() => setFilterStatus("all")}
               className={`px-3 py-1.5 rounded-md transition-colors ${
-                filterStatus === 'all'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                filterStatus === "all"
+                  ? "bg-white text-slate-900 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               All Flags ({totalCount})
             </button>
             <button
-              onClick={() => setFilterStatus('Pending')}
+              onClick={() => setFilterStatus("Pending")}
               className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 ${
-                filterStatus === 'Pending'
-                  ? 'bg-white text-amber-800 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                filterStatus === "Pending"
+                  ? "bg-white text-amber-800 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
               Pending ({pendingCount})
             </button>
             <button
-              onClick={() => setFilterStatus('Resolved')}
+              onClick={() => setFilterStatus("Resolved")}
               className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 ${
-                filterStatus === 'Resolved'
-                  ? 'bg-white text-emerald-800 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                filterStatus === "Resolved"
+                  ? "bg-white text-emerald-800 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               Resolved ({resolvedCount})
             </button>
             <button
-              onClick={() => setFilterStatus('Deleted')}
+              onClick={() => setFilterStatus("Deleted")}
               className={`px-3 py-1.5 rounded-md transition-colors ${
-                filterStatus === 'Deleted'
-                  ? 'bg-white text-rose-800 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                filterStatus === "Deleted"
+                  ? "bg-white text-rose-800 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               Quarantined ({deletedCount})
@@ -426,12 +497,18 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
         {loading ? (
           <div className="p-16 text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-3 border-indigo-600 border-t-transparent mb-3" />
-            <p className="text-xs text-slate-500 font-medium">Scanning trust & safety feeds...</p>
+            <p className="text-xs text-slate-500 font-medium">
+              Scanning trust & safety feeds...
+            </p>
           </div>
         ) : filteredReports.length === 0 ? (
           <div className="p-16 text-center">
-            <p className="text-sm font-semibold text-slate-800 mb-1">No flagged reviews match criteria</p>
-            <p className="text-xs text-slate-400">Moderation queue clean or no records meet current filters.</p>
+            <p className="text-sm font-semibold text-slate-800 mb-1">
+              No flagged reviews match criteria
+            </p>
+            <p className="text-xs text-slate-400">
+              Moderation queue clean or no records meet current filters.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -448,7 +525,10 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredReports.map((report) => (
-                  <tr key={report.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr
+                    key={report.id}
+                    className="hover:bg-slate-50/80 transition-colors"
+                  >
                     {/* Review Snippet */}
                     <td className="px-5 py-3.5 max-w-sm">
                       <div className="flex items-center gap-2 mb-1">
@@ -457,7 +537,13 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
                           {report.reviewDate}
                         </span>
                       </div>
-                      <p className={`text-slate-800 text-xs leading-snug line-clamp-2 ${report.status === 'Deleted' ? 'line-through text-slate-400' : ''}`}>
+                      <p
+                        className={`text-slate-800 text-xs leading-snug line-clamp-2 ${
+                          report.status === "Deleted"
+                            ? "line-through text-slate-400"
+                            : ""
+                        }`}
+                      >
                         "{report.content}"
                       </p>
                     </td>
@@ -489,11 +575,11 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
 
                     {/* Moderation Status */}
                     <td className="px-4 py-3.5">
-                      {report.status === 'Resolved' ? (
+                      {report.status === "Resolved" ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                           ✔ Resolved
                         </span>
-                      ) : report.status === 'Deleted' ? (
+                      ) : report.status === "Deleted" ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
                           ✕ Quarantined
                         </span>
@@ -515,7 +601,7 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
                           Inspect Context
                         </button>
 
-                        {report.status !== 'Resolved' && (
+                        {report.status !== "Resolved" && (
                           <button
                             onClick={() => handleDismissReport(report)}
                             className="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors"
@@ -525,7 +611,7 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
                           </button>
                         )}
 
-                        {report.status !== 'Deleted' && (
+                        {report.status !== "Deleted" && (
                           <button
                             onClick={() => handleDeleteReview(report)}
                             className="px-2.5 py-1 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-md transition-colors"
@@ -551,7 +637,9 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <span className="text-base">🛡️</span>
-                <h2 className="text-base font-bold text-slate-900">Review Moderation Inspector</h2>
+                <h2 className="text-base font-bold text-slate-900">
+                  Review Moderation Inspector
+                </h2>
               </div>
               <button
                 onClick={() => setSelectedReport(null)}
@@ -567,8 +655,12 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
                 <div className="flex items-center gap-3">
                   <CompanyLogo name={selectedReport.companyName} size={36} />
                   <div>
-                    <div className="font-bold text-slate-900 text-xs">{selectedReport.companyName}</div>
-                    <div className="text-[10px] text-slate-400">Employer Target</div>
+                    <div className="font-bold text-slate-900 text-xs">
+                      {selectedReport.companyName}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      Employer Target
+                    </div>
                   </div>
                 </div>
                 {getReasonBadge(selectedReport.reportReason)}
@@ -590,12 +682,20 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
               {/* Reporter Metadata */}
               <div className="p-3 bg-indigo-50/50 rounded-lg border border-indigo-100 text-xs flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] uppercase font-bold text-indigo-700">Student Identity Token</div>
-                  <div className="font-mono text-slate-800 font-bold">{selectedReport.reporterHash}</div>
+                  <div className="text-[10px] uppercase font-bold text-indigo-700">
+                    Student Identity Token
+                  </div>
+                  <div className="font-mono text-slate-800 font-bold">
+                    {selectedReport.reporterHash}
+                  </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[10px] uppercase font-bold text-indigo-700">Date Flagged</div>
-                  <div className="font-mono text-slate-800">{selectedReport.reportedDate}</div>
+                  <div className="text-[10px] uppercase font-bold text-indigo-700">
+                    Date Flagged
+                  </div>
+                  <div className="font-mono text-slate-800">
+                    {selectedReport.reportedDate}
+                  </div>
                 </div>
               </div>
             </div>
@@ -628,5 +728,5 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
         </div>
       )}
     </div>
-  );
+  )
 }

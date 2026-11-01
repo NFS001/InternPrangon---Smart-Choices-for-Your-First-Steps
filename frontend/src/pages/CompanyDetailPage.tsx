@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from "react";
-import type { Navigate } from "../data/index";
-import { COMPANIES, INTERNSHIPS } from "../data/index";
-import { CompanyLogo } from "../components/common/CompanyLogos";
+import React, { useState, useEffect } from "react"
+import type { Navigate } from "../data/index"
+import { COMPANIES, INTERNSHIPS } from "../data/index"
+import { CompanyLogo } from "../components/common/CompanyLogos"
 import {
   getCompanyReviews,
   getCompanyDirectory,
   getCompanyById,
   getSavedUser,
-} from "../api/client";
+} from "../api/client"
 import ReportReviewModal, {
   type ReportTargetReview,
-} from "../components/public/ReportReviewModal";
+} from "../components/public/ReportReviewModal"
 
 interface Props {
-  navigate: Navigate;
-  id?: number | string;
-  companyId?: number | string;
-  companyData?: any;
+  navigate: Navigate
+  id?: number | string
+  companyId?: number | string
+  companyData?: any
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -36,10 +36,17 @@ function StarRating({ rating }: { rating: number }) {
         </svg>
       ))}
     </span>
-  );
+  )
 }
 
-const DEFAULT_TECH_STACK = ["Cloud", "React", "Node.js", "Enterprise", "AWS", "Docker"];
+const DEFAULT_TECH_STACK = [
+  "Cloud",
+  "React",
+  "Node.js",
+  "Enterprise",
+  "AWS",
+  "Docker",
+]
 
 const DEFAULT_STUDENT_REVIEWS = [
   {
@@ -72,7 +79,7 @@ const DEFAULT_STUDENT_REVIEWS = [
     quote:
       "Great balance of autonomy and guidance. Free coffee, collaborative breakout zones, and friendly sprint retrospectives made every day engaging. A genuine 10/10 tech internship in Dhaka.",
   },
-];
+]
 
 export default function CompanyDetailPage({
   navigate,
@@ -80,7 +87,7 @@ export default function CompanyDetailPage({
   companyId,
   companyData: initialData,
 }: Props) {
-  const targetKey = companyId || id;
+  const targetKey = companyId || id
   const initialCompany =
     initialData ||
     (targetKey
@@ -89,31 +96,33 @@ export default function CompanyDetailPage({
             (c.mongoId && c.mongoId === targetKey) ||
             String(c.id) === String(targetKey) ||
             (typeof targetKey === "string" &&
-              c.name.toLowerCase() === targetKey.toLowerCase())
+              c.name.toLowerCase() === targetKey.toLowerCase()),
         )
       : null) ||
-    COMPANIES[0];
+    COMPANIES[0]
 
-  const [company, setCompany] = useState(initialCompany);
-  const [tab, setTab] = useState<"about" | "internships" | "reviews">("about");
-  const [following, setFollowing] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [reportingReview, setReportingReview] = useState<ReportTargetReview | null>(null);
-  const [reportedReviewIds, setReportedReviewIds] = useState<Set<string | number>>(new Set());
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [liveReviews, setLiveReviews] = useState<any[]>([]);
+  const [company, setCompany] = useState(initialCompany)
+  const [tab, setTab] = useState<"about" | "internships" | "reviews">("about")
+  const [following, setFollowing] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [reportingReview, setReportingReview] =
+    useState<ReportTargetReview | null>(null)
+  const [reportedReviewIds, setReportedReviewIds] =
+    useState<Set<string | number>>(new Set())
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [liveReviews, setLiveReviews] = useState<any[]>([])
 
   // Find active internships belonging to this company
   const compInternships = INTERNSHIPS.filter(
     (i) =>
       i.company.toLowerCase() === company.name.toLowerCase() ||
-      i.companyId === company.id
-  );
+      i.companyId === company.id,
+  )
 
   // Sync when initialCompany or targetKey changes
   useEffect(() => {
     if (initialData) {
-      setCompany(initialData);
+      setCompany(initialData)
     } else {
       const match = targetKey
         ? COMPANIES.find(
@@ -121,22 +130,26 @@ export default function CompanyDetailPage({
               (c.mongoId && c.mongoId === targetKey) ||
               String(c.id) === String(targetKey) ||
               (typeof targetKey === "string" &&
-                c.name.toLowerCase() === targetKey.toLowerCase())
+                c.name.toLowerCase() === targetKey.toLowerCase()),
           )
-        : null;
-      if (match) setCompany(match);
+        : null
+      if (match) setCompany(match)
     }
-  }, [targetKey, initialData]);
+  }, [targetKey, initialData])
 
   // Load backend details & verified reviews if mongoId is available
   useEffect(() => {
-    const mongoIdToFetch = company.mongoId || (typeof targetKey === "string" && targetKey.length === 24 ? targetKey : undefined);
-    if (!mongoIdToFetch) return;
+    const mongoIdToFetch =
+      company.mongoId ||
+      (typeof targetKey === "string" && targetKey.length === 24
+        ? targetKey
+        : undefined)
+    if (!mongoIdToFetch) return
 
     getCompanyById(mongoIdToFetch)
       .then((res) => {
         if (res.company) {
-          const c = res.company;
+          const c = res.company
           setCompany((prev: any) => ({
             ...prev,
             mongoId: c._id,
@@ -153,10 +166,10 @@ export default function CompanyDetailPage({
             size: prev.size || "700+ Engineers",
             founded: prev.founded || "2006",
             location: prev.location || "Mohakhali, Dhaka",
-          }));
+          }))
         }
       })
-      .catch(() => {});
+      .catch(() => {})
 
     getCompanyReviews(mongoIdToFetch)
       .then((res) => {
@@ -164,45 +177,59 @@ export default function CompanyDetailPage({
           setLiveReviews(
             res.reviews.map((r: any, idx: number) => ({
               id: r._id || String(idx),
-              author: r.anonymous ? "Anonymous Student" : r.student?.name || "Student Contributor",
+              author: r.anonymous
+                ? "Anonymous Student"
+                : r.student?.name || "Student Contributor",
               university: r.university || "BRAC University",
               badge: "Verified Intern",
               rating: r.rating || 5.0,
-              date: new Date(r.createdAt || Date.now()).toLocaleDateString(undefined, {
-                month: "short",
-                year: "numeric",
-              }),
-              quote: r.comment || "Great work culture and supportive engineering mentorship.",
-            }))
-          );
+              date: new Date(r.createdAt || Date.now()).toLocaleDateString(
+                undefined,
+                {
+                  month: "short",
+                  year: "numeric",
+                },
+              ),
+              quote:
+                r.comment ||
+                "Great work culture and supportive engineering mentorship.",
+            })),
+          )
         }
       })
-      .catch(() => {});
-  }, [targetKey, company.mongoId]);
+      .catch(() => {})
+  }, [targetKey, company.mongoId])
 
   const handleShare = () => {
-    navigator.clipboard?.writeText(window.location.href);
-    setCopied(true);
-    setToastMessage("Company profile link copied to clipboard!");
+    navigator.clipboard?.writeText(window.location.href)
+    setCopied(true)
+    setToastMessage("Company profile link copied to clipboard!")
     setTimeout(() => {
-      setCopied(false);
-      setToastMessage(null);
-    }, 3000);
-  };
+      setCopied(false)
+      setToastMessage(null)
+    }, 3000)
+  }
 
   const handleFollowToggle = () => {
-    setFollowing((prev) => !prev);
-    setToastMessage(following ? `Unfollowed ${company.name}` : `You are now following ${company.name}!`);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+    setFollowing((prev) => !prev)
+    setToastMessage(
+      following
+        ? `Unfollowed ${company.name}`
+        : `You are now following ${company.name}!`,
+    )
+    setTimeout(() => setToastMessage(null), 3000)
+  }
 
   const handleReportSuccess = (reviewId: string | number) => {
-    setReportedReviewIds((prev) => new Set(prev).add(reviewId));
-    setToastMessage("Report submitted successfully. Admin moderation team notified.");
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+    setReportedReviewIds((prev) => new Set(prev).add(reviewId))
+    setToastMessage(
+      "Report submitted successfully. Admin moderation team notified.",
+    )
+    setTimeout(() => setToastMessage(null), 3000)
+  }
 
-  const reviewsToDisplay = liveReviews.length > 0 ? liveReviews : DEFAULT_STUDENT_REVIEWS;
+  const reviewsToDisplay =
+    liveReviews.length > 0 ? liveReviews : DEFAULT_STUDENT_REVIEWS
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] pb-24 font-sans selection:bg-indigo-500 selection:text-white relative">
@@ -240,15 +267,23 @@ export default function CompanyDetailPage({
               <span>Back to all companies</span>
             </button>
             <span>/</span>
-            <button onClick={() => navigate("home")} className="hover:text-slate-800 cursor-pointer">
+            <button
+              onClick={() => navigate("home")}
+              className="hover:text-slate-800 cursor-pointer"
+            >
               Home
             </button>
             <span>/</span>
-            <button onClick={() => navigate("companies")} className="hover:text-slate-800 cursor-pointer">
+            <button
+              onClick={() => navigate("companies")}
+              className="hover:text-slate-800 cursor-pointer"
+            >
               Companies
             </button>
             <span>/</span>
-            <span className="text-slate-900 font-bold truncate max-w-[200px]">{company.name}</span>
+            <span className="text-slate-900 font-bold truncate max-w-[200px]">
+              {company.name}
+            </span>
           </div>
 
           {/* Right Side Actions: Share & Follow */}
@@ -257,7 +292,15 @@ export default function CompanyDetailPage({
               onClick={handleShare}
               className="h-9 px-4 rounded-xl text-xs font-bold text-slate-700 bg-white/90 hover:bg-white border border-slate-200/90 shadow-2xs hover:shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+              >
                 <circle cx="18" cy="5" r="3" />
                 <circle cx="6" cy="12" r="3" />
                 <circle cx="18" cy="19" r="3" />
@@ -322,7 +365,10 @@ export default function CompanyDetailPage({
                 {company.name}
               </h1>
               <p className="text-sm sm:text-base text-slate-600 font-medium mt-1.5">
-                {company.industry || "Software & Cloud Solutions"} · {company.size || "700+ Engineers"} · {company.location || "Mohakhali, Dhaka"} · Founded {company.founded || "2006"}
+                {company.industry || "Software & Cloud Solutions"} ·{" "}
+                {company.size || "700+ Engineers"} ·{" "}
+                {company.location || "Mohakhali, Dhaka"} · Founded{" "}
+                {company.founded || "2006"}
               </p>
 
               {/* Tech Stack Tags */}
@@ -344,16 +390,24 @@ export default function CompanyDetailPage({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-100">
               {/* Metric 1 */}
               <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/60 flex flex-col justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700">Student Rating</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
+                  Student Rating
+                </span>
                 <div className="flex items-center gap-1.5 mt-2">
-                  <span className="text-2xl font-black text-[#0F172A]">★ {company.rating ? company.rating.toFixed(1) : "5.0"}</span>
-                  <span className="text-xs text-slate-400 font-semibold">/ 5.0</span>
+                  <span className="text-2xl font-black text-[#0F172A]">
+                    ★ {company.rating ? company.rating.toFixed(1) : "5.0"}
+                  </span>
+                  <span className="text-xs text-slate-400 font-semibold">
+                    / 5.0
+                  </span>
                 </div>
               </div>
 
               {/* Metric 2 */}
               <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200/60 flex flex-col justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Average Intern Stipend</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+                  Average Intern Stipend
+                </span>
                 <p className="text-xl sm:text-2xl font-black text-emerald-700 mt-2">
                   {company.avgStipend || "BDT 18,000 / mo"}
                 </p>
@@ -361,16 +415,23 @@ export default function CompanyDetailPage({
 
               {/* Metric 3 */}
               <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-200/60 flex flex-col justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">Active Opportunities</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">
+                  Active Opportunities
+                </span>
                 <p className="text-2xl font-black text-indigo-700 mt-2">
-                  {compInternships.length > 0 ? compInternships.length : 2} Open Roles
+                  {compInternships.length > 0 ? compInternships.length : 2} Open
+                  Roles
                 </p>
               </div>
 
               {/* Metric 4 */}
               <div className="p-4 rounded-2xl bg-violet-50/60 border border-violet-200/60 flex flex-col justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-violet-700">Recruiter Response</span>
-                <p className="text-2xl font-black text-[#0F172A] mt-2">&lt; 48 Hours</p>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-violet-700">
+                  Recruiter Response
+                </span>
+                <p className="text-2xl font-black text-[#0F172A] mt-2">
+                  &lt; 48 Hours
+                </p>
               </div>
             </div>
           </div>
@@ -398,7 +459,8 @@ export default function CompanyDetailPage({
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Active Internships ({compInternships.length > 0 ? compInternships.length : 2})
+            Active Internships (
+            {compInternships.length > 0 ? compInternships.length : 2})
           </button>
           <button
             onClick={() => setTab("reviews")}
@@ -408,7 +470,11 @@ export default function CompanyDetailPage({
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Student Reviews ({company.name.includes("Brain Station") ? 14 : (company.reviewCount || reviewsToDisplay.length)})
+            Student Reviews (
+            {company.name.includes("Brain Station")
+              ? 14
+              : company.reviewCount || reviewsToDisplay.length}
+            )
           </button>
         </div>
 
@@ -421,19 +487,37 @@ export default function CompanyDetailPage({
               ───────────────────────────────────────────────────────────── */}
           <div className="flex flex-col gap-8 min-w-0">
             {/* Tab: About & Culture */}
-            {(tab === "about" || tab === "internships" || tab === "reviews") && (
+            {(tab === "about" ||
+              tab === "internships" ||
+              tab === "reviews") && (
               <>
                 {/* "About Company" Section */}
                 {tab === "about" && (
                   <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
-                    <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">Company Overview</span>
-                    <h2 className="text-2xl font-bold text-[#0F172A] mt-1 mb-4">About {company.name}</h2>
+                    <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">
+                      Company Overview
+                    </span>
+                    <h2 className="text-2xl font-bold text-[#0F172A] mt-1 mb-4">
+                      About {company.name}
+                    </h2>
                     <div className="space-y-4 text-sm sm:text-base text-slate-600 leading-relaxed">
                       <p>
-                        {company.name} is one of Bangladesh's premier enterprise technology companies, delivering transformative cloud, fintech, and digital solutions to global Fortune 500 clients across Europe, North America, and the Middle East. With a robust engineering team of over 700 professionals, the company fosters an inclusive, research-driven engineering environment that prioritizes hands-on technical growth.
+                        {company.name} is one of Bangladesh's premier enterprise
+                        technology companies, delivering transformative cloud,
+                        fintech, and digital solutions to global Fortune 500
+                        clients across Europe, North America, and the Middle
+                        East. With a robust engineering team of over 700
+                        professionals, the company fosters an inclusive,
+                        research-driven engineering environment that prioritizes
+                        hands-on technical growth.
                       </p>
                       <p>
-                        Through their accredited university internship program, interns participate directly in production sprint cycles, receive personalized 1-on-1 mentorship from senior tech leads, and gain hands-on experience deploying containerized microservices and modern frontend architectures.
+                        Through their accredited university internship program,
+                        interns participate directly in production sprint
+                        cycles, receive personalized 1-on-1 mentorship from
+                        senior tech leads, and gain hands-on experience
+                        deploying containerized microservices and modern
+                        frontend architectures.
                       </p>
                     </div>
                   </div>
@@ -443,10 +527,15 @@ export default function CompanyDetailPage({
                 {tab === "about" && (
                   <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
                     <div className="mb-6">
-                      <span className="text-xs font-bold text-[#F97316] uppercase tracking-widest">Behind the Scenes</span>
-                      <h2 className="text-2xl font-bold text-[#0F172A] mt-1">Workplace & Engineering Culture</h2>
+                      <span className="text-xs font-bold text-[#F97316] uppercase tracking-widest">
+                        Behind the Scenes
+                      </span>
+                      <h2 className="text-2xl font-bold text-[#0F172A] mt-1">
+                        Workplace & Engineering Culture
+                      </h2>
                       <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                        Take a look inside the daily creative and collaborative atmosphere at {company.name}.
+                        Take a look inside the daily creative and collaborative
+                        atmosphere at {company.name}.
                       </p>
                     </div>
 
@@ -461,7 +550,8 @@ export default function CompanyDetailPage({
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end p-4">
                           <p className="text-xs font-semibold text-white drop-shadow">
-                            Engineers collaborating at modern open workstations & dual-monitor setups
+                            Engineers collaborating at modern open workstations
+                            & dual-monitor setups
                           </p>
                         </div>
                       </div>
@@ -489,7 +579,8 @@ export default function CompanyDetailPage({
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end p-4">
                           <p className="text-xs font-semibold text-white drop-shadow">
-                            Hackathons & weekly agile sprint architecture reviews
+                            Hackathons & weekly agile sprint architecture
+                            reviews
                           </p>
                         </div>
                       </div>
@@ -502,13 +593,18 @@ export default function CompanyDetailPage({
                   <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
                     <div className="flex items-center justify-between mb-6">
                       <div>
-                        <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">Open Positions</span>
+                        <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">
+                          Open Positions
+                        </span>
                         <h2 className="text-2xl font-bold text-[#0F172A] mt-1">
                           Active Internship Opportunities at {company.name}
                         </h2>
                       </div>
                       <span className="text-xs font-bold text-slate-400">
-                        {compInternships.length > 0 ? compInternships.length : 2} Roles
+                        {compInternships.length > 0
+                          ? compInternships.length
+                          : 2}{" "}
+                        Roles
                       </span>
                     </div>
 
@@ -544,7 +640,8 @@ export default function CompanyDetailPage({
                             Software Engineer Intern (Backend & Cloud)
                           </h3>
                           <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                            Work on scalable microservices using Node.js, Go, and AWS cloud infrastructures.
+                            Work on scalable microservices using Node.js, Go,
+                            and AWS cloud infrastructures.
                           </p>
                         </div>
                         <span className="text-xs font-bold text-indigo-600 mt-4 inline-flex items-center gap-1">
@@ -583,7 +680,8 @@ export default function CompanyDetailPage({
                             Frontend React / Next.js Intern
                           </h3>
                           <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                            Build reusable design systems and high-performance user interfaces with React and TailwindCSS.
+                            Build reusable design systems and high-performance
+                            user interfaces with React and TailwindCSS.
                           </p>
                         </div>
                         <span className="text-xs font-bold text-indigo-600 mt-4 inline-flex items-center gap-1">
@@ -599,11 +697,20 @@ export default function CompanyDetailPage({
                   <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
                     <div className="flex items-center justify-between mb-6">
                       <div>
-                        <span className="text-xs font-bold text-amber-600 uppercase tracking-widest">Verified Experiences</span>
-                        <h2 className="text-2xl font-bold text-[#0F172A] mt-1">Student Reviews</h2>
+                        <span className="text-xs font-bold text-amber-600 uppercase tracking-widest">
+                          Verified Experiences
+                        </span>
+                        <h2 className="text-2xl font-bold text-[#0F172A] mt-1">
+                          Student Reviews
+                        </h2>
                       </div>
                       <button
-                        onClick={() => navigate("write-review", { companyId: company.mongoId || company.id, companyName: company.name })}
+                        onClick={() =>
+                          navigate("write-review", {
+                            companyId: company.mongoId || company.id,
+                            companyName: company.name,
+                          })
+                        }
                         className="px-4 py-2 text-xs font-bold text-indigo-600 hover:text-white bg-indigo-50 hover:bg-indigo-600 rounded-xl transition-all cursor-pointer border border-indigo-200 shadow-2xs"
                       >
                         Write a Review
@@ -619,8 +726,12 @@ export default function CompanyDetailPage({
                           <div className="flex items-start justify-between">
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-sm text-[#0F172A]">{rev.author}</span>
-                                <span className="text-xs text-slate-400">• {rev.university}</span>
+                                <span className="font-bold text-sm text-[#0F172A]">
+                                  {rev.author}
+                                </span>
+                                <span className="text-xs text-slate-400">
+                                  • {rev.university}
+                                </span>
                               </div>
                               <span className="inline-block mt-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.2 rounded-full">
                                 {rev.badge}
@@ -630,10 +741,19 @@ export default function CompanyDetailPage({
                             <div className="flex items-center gap-2">
                               <StarRating rating={rev.rating} />
                               <button
-                                onClick={() => setReportingReview({ id: rev.id, companyName: company.name, author: rev.author, quote: rev.quote })}
+                                onClick={() =>
+                                  setReportingReview({
+                                    id: rev.id,
+                                    companyName: company.name,
+                                    author: rev.author,
+                                    quote: rev.quote,
+                                  })
+                                }
                                 className="text-[11px] text-slate-400 hover:text-rose-500 font-semibold cursor-pointer"
                               >
-                                {reportedReviewIds.has(rev.id) ? "Reported" : "Report"}
+                                {reportedReviewIds.has(rev.id)
+                                  ? "Reported"
+                                  : "Report"}
                               </button>
                             </div>
                           </div>
@@ -641,7 +761,9 @@ export default function CompanyDetailPage({
                           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed italic">
                             "{rev.quote}"
                           </p>
-                          <span className="text-[10px] text-slate-400 self-end font-semibold">{rev.date}</span>
+                          <span className="text-[10px] text-slate-400 self-end font-semibold">
+                            {rev.date}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -663,37 +785,54 @@ export default function CompanyDetailPage({
 
               <div className="space-y-4 text-xs">
                 <div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Industry</span>
-                  <p className="font-bold text-slate-800 text-sm mt-0.5">{company.industry || "Enterprise Software & FinTech"}</p>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                    Industry
+                  </span>
+                  <p className="font-bold text-slate-800 text-sm mt-0.5">
+                    {company.industry || "Enterprise Software & FinTech"}
+                  </p>
                 </div>
 
                 <div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Company Size</span>
-                  <p className="font-bold text-slate-800 text-sm mt-0.5">{company.size || "700+ Employees"}</p>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                    Company Size
+                  </span>
+                  <p className="font-bold text-slate-800 text-sm mt-0.5">
+                    {company.size || "700+ Employees"}
+                  </p>
                 </div>
 
                 <div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Headquarters</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                    Headquarters
+                  </span>
                   <p className="font-bold text-slate-800 text-sm mt-0.5">
                     8th Floor, BS23 Tower, Mohakhali C/A, Dhaka 1212
                   </p>
                 </div>
 
                 <div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Website</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                    Website
+                  </span>
                   <a
                     href={company.website || "https://brainstation-23.com"}
                     target="_blank"
                     rel="noreferrer"
                     className="font-bold text-indigo-600 hover:text-indigo-800 hover:underline inline-flex items-center gap-1 text-sm mt-0.5"
                   >
-                    <span>{company.website?.replace(/^https?:\/\//, "") || "brainstation-23.com"}</span>
+                    <span>
+                      {company.website?.replace(/^https?:\/\//, "") ||
+                        "brainstation-23.com"}
+                    </span>
                     <span>↗</span>
                   </a>
                 </div>
 
                 <div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Social Profiles</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">
+                    Social Profiles
+                  </span>
                   <div className="flex items-center gap-2">
                     <span className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer transition-colors">
                       LinkedIn
@@ -720,19 +859,27 @@ export default function CompanyDetailPage({
                   <div className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
                     ✓
                   </div>
-                  <span>Direct mentorship by Senior Tech Leads & Engineering Managers.</span>
+                  <span>
+                    Direct mentorship by Senior Tech Leads & Engineering
+                    Managers.
+                  </span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <div className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
                     ✓
                   </div>
-                  <span>Opportunity for full-time conversion (PPO) post-graduation.</span>
+                  <span>
+                    Opportunity for full-time conversion (PPO) post-graduation.
+                  </span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <div className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
                     ✓
                   </div>
-                  <span>Bi-weekly tech workshops, cloud certifications & hackathon access.</span>
+                  <span>
+                    Bi-weekly tech workshops, cloud certifications & hackathon
+                    access.
+                  </span>
                 </li>
               </ul>
             </div>
@@ -740,7 +887,9 @@ export default function CompanyDetailPage({
             {/* 3. Interactive Location Map Snippet */}
             <div className="bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200/90 p-6 shadow-xs">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Campus Location</span>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Campus Location
+                </span>
                 <a
                   href="https://maps.google.com/?q=Mohakhali+Dhaka"
                   target="_blank"
@@ -753,16 +902,61 @@ export default function CompanyDetailPage({
 
               <div className="w-full h-32 rounded-2xl overflow-hidden relative border border-slate-200 bg-[#E2E8F0]">
                 {/* SVG Map of Mohakhali / Gulshan Dhaka */}
-                <svg className="w-full h-full" viewBox="0 0 300 120" preserveAspectRatio="none">
+                <svg
+                  className="w-full h-full"
+                  viewBox="0 0 300 120"
+                  preserveAspectRatio="none"
+                >
                   <rect width="300" height="120" fill="#F1F5F9" />
-                  <line x1="0" y1="20" x2="300" y2="35" stroke="#CBD5E1" strokeWidth="6" />
-                  <line x1="0" y1="85" x2="300" y2="75" stroke="#CBD5E1" strokeWidth="8" />
-                  <line x1="60" y1="0" x2="90" y2="120" stroke="#CBD5E1" strokeWidth="6" />
-                  <line x1="220" y1="0" x2="190" y2="120" stroke="#CBD5E1" strokeWidth="7" />
+                  <line
+                    x1="0"
+                    y1="20"
+                    x2="300"
+                    y2="35"
+                    stroke="#CBD5E1"
+                    strokeWidth="6"
+                  />
+                  <line
+                    x1="0"
+                    y1="85"
+                    x2="300"
+                    y2="75"
+                    stroke="#CBD5E1"
+                    strokeWidth="8"
+                  />
+                  <line
+                    x1="60"
+                    y1="0"
+                    x2="90"
+                    y2="120"
+                    stroke="#CBD5E1"
+                    strokeWidth="6"
+                  />
+                  <line
+                    x1="220"
+                    y1="0"
+                    x2="190"
+                    y2="120"
+                    stroke="#CBD5E1"
+                    strokeWidth="7"
+                  />
                   <path d="M 0 0 L 70 0 L 50 35 L 0 25 Z" fill="#E0F2FE" />
-                  <rect x="180" y="8" width="80" height="30" rx="6" fill="#DCFCE7" />
+                  <rect
+                    x="180"
+                    y="8"
+                    width="80"
+                    height="30"
+                    rx="6"
+                    fill="#DCFCE7"
+                  />
                   {/* Pin */}
-                  <circle cx="150" cy="60" r="14" fill="rgba(99, 102, 241, 0.2)" className="animate-ping" />
+                  <circle
+                    cx="150"
+                    cy="60"
+                    r="14"
+                    fill="rgba(99, 102, 241, 0.2)"
+                    className="animate-ping"
+                  />
                   <circle cx="150" cy="60" r="8" fill="#4F46E5" />
                   <circle cx="150" cy="60" r="3" fill="#FFFFFF" />
                 </svg>
@@ -775,5 +969,5 @@ export default function CompanyDetailPage({
         </div>
       </div>
     </div>
-  );
+  )
 }

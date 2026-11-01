@@ -1,64 +1,68 @@
-import { useState, useEffect } from "react";
-import type { Navigate } from "../../data/index";
-import { CompanyLogo } from "../../components/common/CompanyLogos";
+import { useState, useEffect } from "react"
+import type { Navigate } from "../../data/index"
+import { CompanyLogo } from "../../components/common/CompanyLogos"
 import {
   getMyCompanyProfile,
   getMyCompanyInternships,
   submitCompanyProfile,
   getSavedUser,
-} from "../../api/client";
+} from "../../api/client"
 
 interface Props {
-  navigate: Navigate;
+  navigate: Navigate
 }
 
 export default function CoProfilePage({ navigate }: Props) {
-  const user = getSavedUser();
-  const [companyName, setCompanyName] = useState(user?.name || "bKash Limited");
-  const [industry, setIndustry] = useState("Fintech & Mobile Financial Services");
-  const [website, setWebsite] = useState("https://bkash.com");
-  const [contactEmail, setContactEmail] = useState(user?.email || "careers@company.com");
-  const [verificationStatus, setVerificationStatus] = useState("Approved");
+  const user = getSavedUser()
+  const [companyName, setCompanyName] = useState(user?.name || "bKash Limited")
+  const [industry, setIndustry] = useState(
+    "Fintech & Mobile Financial Services",
+  )
+  const [website, setWebsite] = useState("https://bkash.com")
+  const [contactEmail, setContactEmail] = useState(
+    user?.email || "careers@company.com",
+  )
+  const [verificationStatus, setVerificationStatus] = useState("Approved")
   const [aboutBio, setAboutBio] = useState(
-    "Leading technology solutions, distributed services, and career opportunities for young talent across Bangladesh."
-  );
-  const [companyInternships, setCompanyInternships] = useState<any[]>([]);
+    "Leading technology solutions, distributed services, and career opportunities for young talent across Bangladesh.",
+  )
+  const [companyInternships, setCompanyInternships] = useState<any[]>([])
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [editIndustry, setEditIndustry] = useState(industry);
-  const [editWebsite, setEditWebsite] = useState(website);
-  const [editBio, setEditBio] = useState(aboutBio);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false)
+  const [editIndustry, setEditIndustry] = useState(industry)
+  const [editWebsite, setEditWebsite] = useState(website)
+  const [editBio, setEditBio] = useState(aboutBio)
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
     getMyCompanyProfile()
       .then((res) => {
         if (res.profile) {
-          setCompanyName(res.profile.companyName || user?.name || "Company");
-          if (res.profile.industry) setIndustry(res.profile.industry);
-          if (res.profile.website) setWebsite(res.profile.website);
-          if (res.profile.description) setAboutBio(res.profile.description);
-          setVerificationStatus(res.profile.verificationStatus || "Approved");
+          setCompanyName(res.profile.companyName || user?.name || "Company")
+          if (res.profile.industry) setIndustry(res.profile.industry)
+          if (res.profile.website) setWebsite(res.profile.website)
+          if (res.profile.description) setAboutBio(res.profile.description)
+          setVerificationStatus(res.profile.verificationStatus || "Approved")
 
-          setEditIndustry(res.profile.industry || "Technology & Enterprise");
-          setEditWebsite(res.profile.website || "https://example.com");
-          setEditBio(res.profile.description || aboutBio);
+          setEditIndustry(res.profile.industry || "Technology & Enterprise")
+          setEditWebsite(res.profile.website || "https://example.com")
+          setEditBio(res.profile.description || aboutBio)
         }
       })
-      .catch(() => {});
+      .catch(() => {})
 
     getMyCompanyInternships()
       .then((res) => {
         if (res.internships) {
-          setCompanyInternships(res.internships);
+          setCompanyInternships(res.internships)
         }
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => {})
+  }, [])
 
   const handleSave = async () => {
-    setSaving(true);
+    setSaving(true)
     try {
       await submitCompanyProfile({
         companyName,
@@ -66,19 +70,19 @@ export default function CoProfilePage({ navigate }: Props) {
         website: editWebsite,
         description: editBio,
         verificationDocument: "trade_license.pdf",
-      });
-      setIndustry(editIndustry);
-      setWebsite(editWebsite);
-      setAboutBio(editBio);
-      setIsEditing(false);
-      setMessage("Company profile updated successfully!");
-      setTimeout(() => setMessage(null), 3000);
+      })
+      setIndustry(editIndustry)
+      setWebsite(editWebsite)
+      setAboutBio(editBio)
+      setIsEditing(false)
+      setMessage("Company profile updated successfully!")
+      setTimeout(() => setMessage(null), 3000)
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to update profile.");
+      alert(err instanceof Error ? err.message : "Failed to update profile.")
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   return (
     <div className="px-5 py-6 lg:px-8 lg:py-10 max-w-6xl mx-auto space-y-6">
@@ -97,17 +101,18 @@ export default function CoProfilePage({ navigate }: Props) {
             Public Organization Profile
           </h1>
           <p className="text-slate-500 text-xs sm:text-sm mt-1">
-            This information is publicly visible to university students across Bangladesh.
+            This information is publicly visible to university students across
+            Bangladesh.
           </p>
         </div>
 
         <div className="flex items-center gap-3 self-start sm:self-auto">
           <button
             onClick={() => {
-              setEditIndustry(industry);
-              setEditWebsite(website);
-              setEditBio(aboutBio);
-              setIsEditing(!isEditing);
+              setEditIndustry(industry)
+              setEditWebsite(website)
+              setEditBio(aboutBio)
+              setIsEditing(!isEditing)
             }}
             className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors"
           >
@@ -132,7 +137,7 @@ export default function CoProfilePage({ navigate }: Props) {
             alt="bKash Dhaka Headquarters"
             className="w-full h-full object-cover object-center brightness-105"
             onError={(e) => {
-              (e.target as HTMLElement).style.display = "none";
+              ;(e.target as HTMLElement).style.display = "none"
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-transparent pointer-events-none" />
@@ -172,12 +177,18 @@ export default function CoProfilePage({ navigate }: Props) {
           {/* Structured Info Grid (4-Column Layout) */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-slate-50/70 border border-slate-200/60">
             <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Industry</p>
-              <p className="text-xs sm:text-sm font-bold text-slate-800 mt-0.5">{industry}</p>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Industry
+              </p>
+              <p className="text-xs sm:text-sm font-bold text-slate-800 mt-0.5">
+                {industry}
+              </p>
             </div>
 
             <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Website</p>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Website
+              </p>
               <a
                 href={website}
                 target="_blank"
@@ -190,12 +201,18 @@ export default function CoProfilePage({ navigate }: Props) {
             </div>
 
             <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Recruiter Contact</p>
-              <p className="text-xs sm:text-sm font-bold text-slate-800 mt-0.5">{contactEmail}</p>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Recruiter Contact
+              </p>
+              <p className="text-xs sm:text-sm font-bold text-slate-800 mt-0.5">
+                {contactEmail}
+              </p>
             </div>
 
             <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Verification</p>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Verification
+              </p>
               <p className="text-xs sm:text-sm font-bold text-emerald-600 mt-0.5 flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 <span>{verificationStatus} & Active</span>
@@ -214,7 +231,9 @@ export default function CoProfilePage({ navigate }: Props) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Industry</label>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Industry
+              </label>
               <input
                 type="text"
                 value={editIndustry}
@@ -223,7 +242,9 @@ export default function CoProfilePage({ navigate }: Props) {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Website URL</label>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Website URL
+              </label>
               <input
                 type="text"
                 value={editWebsite}
@@ -234,7 +255,9 @@ export default function CoProfilePage({ navigate }: Props) {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Company Overview</label>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Company Overview
+            </label>
             <textarea
               rows={5}
               value={editBio}
@@ -293,7 +316,9 @@ export default function CoProfilePage({ navigate }: Props) {
                   className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 text-center space-y-1.5"
                 >
                   <span className="text-xl">{perk.icon}</span>
-                  <p className="font-bold text-[11px] text-slate-800 leading-tight">{perk.title}</p>
+                  <p className="font-bold text-[11px] text-slate-800 leading-tight">
+                    {perk.title}
+                  </p>
                 </div>
               ))}
             </div>
@@ -317,7 +342,10 @@ export default function CoProfilePage({ navigate }: Props) {
           <div className="space-y-3">
             {companyInternships.length > 0 ? (
               companyInternships.map((ci) => (
-                <div key={ci._id} className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm space-y-2">
+                <div
+                  key={ci._id}
+                  className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm space-y-2"
+                >
                   <div className="flex items-center justify-between">
                     <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
                       {ci.title}
@@ -327,7 +355,8 @@ export default function CoProfilePage({ navigate }: Props) {
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500">
-                    {ci.type === "Paid" ? "Paid · BDT 20,000/mo" : "Unpaid"} · Deadline:{" "}
+                    {ci.type === "Paid" ? "Paid · BDT 20,000/mo" : "Unpaid"} ·
+                    Deadline:{" "}
                     {ci.deadline
                       ? new Date(ci.deadline).toLocaleDateString("en-US", {
                           month: "short",
@@ -338,10 +367,13 @@ export default function CoProfilePage({ navigate }: Props) {
                   </p>
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
                     <span className="text-slate-400 text-[11px]">
-                      {ci.totalApplicants || 0} direct {ci.totalApplicants === 1 ? "applicant" : "applicants"}
+                      {ci.totalApplicants || 0} direct{" "}
+                      {ci.totalApplicants === 1 ? "applicant" : "applicants"}
                     </span>
                     <button
-                      onClick={() => navigate("co-applicants", { internshipId: ci._id })}
+                      onClick={() =>
+                        navigate("co-applicants", { internshipId: ci._id })
+                      }
                       className="font-bold text-indigo-600 hover:text-indigo-800"
                     >
                       View candidates →
@@ -358,5 +390,5 @@ export default function CoProfilePage({ navigate }: Props) {
         </div>
       </div>
     </div>
-  );
+  )
 }

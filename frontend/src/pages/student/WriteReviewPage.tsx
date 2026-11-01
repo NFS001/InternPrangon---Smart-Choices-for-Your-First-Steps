@@ -1,42 +1,42 @@
-import React, { useState, useEffect, useRef } from "react";
-import type { Navigate } from "../../data/index";
-import { COMPANIES } from "../../data/index";
-import { CompanyLogo } from "../../components/common/CompanyLogos";
+import React, { useState, useEffect, useRef } from "react"
+import type { Navigate } from "../../data/index"
+import { COMPANIES } from "../../data/index"
+import { CompanyLogo } from "../../components/common/CompanyLogos"
 import {
   getCompanyDirectory,
   submitCompanyReview,
   submitCompanyStipend,
   submitInterviewExperience,
   type ApiCompanyDirectoryItem,
-} from "../../api/client";
+} from "../../api/client"
 
 interface Props {
-  navigate: Navigate;
+  navigate: Navigate
 }
 
-type ReviewType = "Internship Experience" | "Interview Experience";
+type ReviewType = "Internship Experience" | "Interview Experience"
 
 function StarRating({
   value,
   onChange,
   size = "medium",
 }: {
-  value: number;
-  onChange: (v: number) => void;
-  size?: "small" | "medium" | "large";
+  value: number
+  onChange: (v: number) => void
+  size?: "small" | "medium" | "large"
 }) {
-  const [hovered, setHovered] = useState(0);
+  const [hovered, setHovered] = useState(0)
 
   const starSizes = {
     small: "w-5 h-5",
     medium: "w-6 h-6",
     large: "w-8 h-8",
-  };
+  }
 
   return (
     <div className="flex items-center gap-1">
       {[1, 2, 3, 4, 5].map((star) => {
-        const isFilled = (hovered || value) >= star;
+        const isFilled = (hovered || value) >= star
         return (
           <button
             key={star}
@@ -60,48 +60,54 @@ function StarRating({
               />
             </svg>
           </button>
-        );
+        )
       })}
     </div>
-  );
+  )
 }
 
 export default function WriteReviewPage({ navigate }: Props) {
-  const [reviewType, setReviewType] = useState<ReviewType>("Internship Experience");
-  const [companyId, setCompanyId] = useState("");
-  const [selectedCompanyName, setSelectedCompanyName] = useState("");
-  const [companySearch, setCompanySearch] = useState("");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [reviewType, setReviewType] = useState<ReviewType>(
+    "Internship Experience",
+  )
+  const [companyId, setCompanyId] = useState("")
+  const [selectedCompanyName, setSelectedCompanyName] = useState("")
+  const [companySearch, setCompanySearch] = useState("")
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const [companiesList, setCompaniesList] = useState<Array<{ id: string; name: string }>>([]);
-  const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [companiesList, setCompaniesList] = useState<Array<{
+    id: string
+    name: string
+  }>>([])
+  const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMsg, setErrorMsg] = useState("")
 
   // Role & Details
-  const [roleTitle, setRoleTitle] = useState("");
-  const [workMode, setWorkMode] = useState("Hybrid");
-  const [term, setTerm] = useState("Fall 2026");
-  const [stipend, setStipend] = useState("18000");
-  const [unpaid, setUnpaid] = useState(false);
-  const [duration, setDuration] = useState("3 Months");
+  const [roleTitle, setRoleTitle] = useState("")
+  const [workMode, setWorkMode] = useState("Hybrid")
+  const [term, setTerm] = useState("Fall 2026")
+  const [stipend, setStipend] = useState("18000")
+  const [unpaid, setUnpaid] = useState(false)
+  const [duration, setDuration] = useState("3 Months")
 
   // Ratings
-  const [overallRating, setOverallRating] = useState(5);
-  const [mentorshipRating, setMentorshipRating] = useState(4);
-  const [cultureRating, setCultureRating] = useState(4);
-  const [recommend, setRecommend] = useState<boolean | null>(true);
+  const [overallRating, setOverallRating] = useState(5)
+  const [mentorshipRating, setMentorshipRating] = useState(4)
+  const [cultureRating, setCultureRating] = useState(4)
+  const [recommend, setRecommend] = useState<boolean | null>(true)
 
   // Structured Written Insights
-  const [headline, setHeadline] = useState("");
-  const [theGood, setTheGood] = useState("");
-  const [theChallenges, setTheChallenges] = useState("");
-  const [advice, setAdvice] = useState("");
+  const [headline, setHeadline] = useState("")
+  const [theGood, setTheGood] = useState("")
+  const [theChallenges, setTheChallenges] = useState("")
+  const [advice, setAdvice] = useState("")
 
   // Interview Specific fields
-  const [interviewRounds, setInterviewRounds] = useState("3");
-  const [interviewDifficulty, setInterviewDifficulty] = useState<"Easy" | "Medium" | "Hard">("Medium");
+  const [interviewRounds, setInterviewRounds] = useState("3")
+  const [interviewDifficulty, setInterviewDifficulty] =
+    useState<"Easy" | "Medium" | "Hard">("Medium")
 
   useEffect(() => {
     getCompanyDirectory({ limit: 100 })
@@ -110,46 +116,49 @@ export default function WriteReviewPage({ navigate }: Props) {
           const mapped = res.companies.map((c: ApiCompanyDirectoryItem) => ({
             id: c._id,
             name: c.companyName,
-          }));
-          setCompaniesList(mapped);
+          }))
+          setCompaniesList(mapped)
           if (mapped.length > 0) {
-            setCompanyId(mapped[0].id);
-            setSelectedCompanyName(mapped[0].name);
-            setCompanySearch(mapped[0].name);
+            setCompanyId(mapped[0].id)
+            setSelectedCompanyName(mapped[0].name)
+            setCompanySearch(mapped[0].name)
           }
         } else {
-          fallbackCompanies();
+          fallbackCompanies()
         }
       })
       .catch(() => {
-        fallbackCompanies();
-      });
+        fallbackCompanies()
+      })
 
     function fallbackCompanies() {
-      const mapped = COMPANIES.map((c) => ({ id: String(c.id), name: c.name }));
-      setCompaniesList(mapped);
+      const mapped = COMPANIES.map((c) => ({ id: String(c.id), name: c.name }))
+      setCompaniesList(mapped)
       if (mapped.length > 0) {
-        setCompanyId(mapped[0].id);
-        setSelectedCompanyName(mapped[0].name);
-        setCompanySearch(mapped[0].name);
+        setCompanyId(mapped[0].id)
+        setSelectedCompanyName(mapped[0].name)
+        setCompanySearch(mapped[0].name)
       }
     }
-  }, []);
+  }, [])
 
   // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setDropdownOpen(false)
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   const filteredCompanies = companiesList.filter((c) =>
-    c.name.toLowerCase().includes(companySearch.toLowerCase())
-  );
+    c.name.toLowerCase().includes(companySearch.toLowerCase()),
+  )
 
   const ratingDescriptions: Record<number, string> = {
     1: "1.0 - Poor experience",
@@ -157,28 +166,30 @@ export default function WriteReviewPage({ navigate }: Props) {
     3: "3.0 - Decent / Average",
     4: "4.0 - Great experience",
     5: "5.0 - Excellent / Outstanding",
-  };
+  }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+    e.preventDefault()
     if (!companyId) {
-      setErrorMsg("Please select a company.");
-      return;
+      setErrorMsg("Please select a company.")
+      return
     }
     if (!headline.trim()) {
-      setErrorMsg("Please provide a one-line summary headline.");
-      return;
+      setErrorMsg("Please provide a one-line summary headline.")
+      return
     }
 
-    setSubmitting(true);
-    setErrorMsg("");
+    setSubmitting(true)
+    setErrorMsg("")
 
     try {
       if (reviewType === "Internship Experience") {
         if (!theGood.trim() && !theChallenges.trim()) {
-          setErrorMsg("Please provide your experiences in the Pros and/or Cons section.");
-          setSubmitting(false);
-          return;
+          setErrorMsg(
+            "Please provide your experiences in the Pros and/or Cons section.",
+          )
+          setSubmitting(false)
+          return
         }
 
         const reviewText = [
@@ -190,14 +201,14 @@ export default function WriteReviewPage({ navigate }: Props) {
           recommend !== null ? `RECOMMENDED: ${recommend ? "Yes" : "No"}` : "",
         ]
           .filter(Boolean)
-          .join("\n\n");
+          .join("\n\n")
 
-        await submitCompanyReview(companyId, overallRating || 5, reviewText);
+        await submitCompanyReview(companyId, overallRating || 5, reviewText)
 
         if (!unpaid && stipend) {
-          const num = Number(stipend.replace(/[^0-9]/g, ""));
+          const num = Number(stipend.replace(/[^0-9]/g, ""))
           if (!isNaN(num) && num > 0) {
-            await submitCompanyStipend(companyId, num).catch(() => {});
+            await submitCompanyStipend(companyId, num).catch(() => {})
           }
         }
       } else {
@@ -208,19 +219,22 @@ export default function WriteReviewPage({ navigate }: Props) {
           rounds: interviewRounds || "2",
           difficulty: interviewDifficulty,
           process: `${headline}\n\n${theGood}`,
-          questions: theChallenges || "Technical and problem-solving interview questions.",
+          questions:
+            theChallenges ||
+            "Technical and problem-solving interview questions.",
           tips: advice,
           outcome: "Selected",
           interviewDate: term,
-        });
+        })
       }
 
-      setSubmitted(true);
+      setSubmitted(true)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to submit review.";
-      setErrorMsg(msg);
+      const msg =
+        err instanceof Error ? err.message : "Failed to submit review."
+      setErrorMsg(msg)
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
   }
 
@@ -238,7 +252,8 @@ export default function WriteReviewPage({ navigate }: Props) {
             <span>🌱 +30 Contributor Points Awarded</span>
           </div>
           <p className="text-slate-600 text-sm max-w-md mx-auto mb-6">
-            Thank you! Your 100% anonymous insights have been safely added to help university students make informed career choices.
+            Thank you! Your 100% anonymous insights have been safely added to
+            help university students make informed career choices.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
@@ -262,7 +277,7 @@ export default function WriteReviewPage({ navigate }: Props) {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -273,7 +288,8 @@ export default function WriteReviewPage({ navigate }: Props) {
           Share Your Internship Experience
         </h1>
         <p className="text-slate-500 text-sm lg:text-base mt-1">
-          Help fellow university students make informed decisions. Real stories, zero corporate spin.
+          Help fellow university students make informed decisions. Real stories,
+          zero corporate spin.
         </p>
 
         {/* Privacy Banner */}
@@ -282,7 +298,8 @@ export default function WriteReviewPage({ navigate }: Props) {
           <div>
             <p className="font-bold text-amber-950">100% Anonymous Review</p>
             <p className="text-amber-800/90 mt-0.5">
-              Your name, email, and university ID will <strong>NEVER</strong> be revealed to employers or displayed on the review.
+              Your name, email, and university ID will <strong>NEVER</strong> be
+              revealed to employers or displayed on the review.
             </p>
           </div>
         </div>
@@ -301,7 +318,9 @@ export default function WriteReviewPage({ navigate }: Props) {
           <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-5">
             <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider pb-2 border-b border-slate-100 flex items-center justify-between">
               <span>Role & Company Details</span>
-              <span className="text-[11px] font-normal text-indigo-600">Step 1 of 2</span>
+              <span className="text-[11px] font-normal text-indigo-600">
+                Step 1 of 2
+              </span>
             </h2>
 
             {/* Review Type Segmented Toggle */}
@@ -351,10 +370,14 @@ export default function WriteReviewPage({ navigate }: Props) {
                   {selectedCompanyName ? (
                     <>
                       <CompanyLogo name={selectedCompanyName} size={28} />
-                      <span className="font-semibold text-slate-800 truncate">{selectedCompanyName}</span>
+                      <span className="font-semibold text-slate-800 truncate">
+                        {selectedCompanyName}
+                      </span>
                     </>
                   ) : (
-                    <span className="text-slate-400">Search & select company...</span>
+                    <span className="text-slate-400">
+                      Search & select company...
+                    </span>
                   )}
                 </div>
                 <span className="text-slate-400 text-xs">▾</span>
@@ -377,15 +400,17 @@ export default function WriteReviewPage({ navigate }: Props) {
                       <div
                         key={c.id}
                         onClick={() => {
-                          setCompanyId(c.id);
-                          setSelectedCompanyName(c.name);
-                          setCompanySearch(c.name);
-                          setDropdownOpen(false);
+                          setCompanyId(c.id)
+                          setSelectedCompanyName(c.name)
+                          setCompanySearch(c.name)
+                          setDropdownOpen(false)
                         }}
                         className="flex items-center gap-2.5 p-2 hover:bg-indigo-50/50 rounded-lg cursor-pointer transition-colors"
                       >
                         <CompanyLogo name={c.name} size={26} />
-                        <span className="text-xs font-semibold text-slate-800">{c.name}</span>
+                        <span className="text-xs font-semibold text-slate-800">
+                          {c.name}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -456,7 +481,9 @@ export default function WriteReviewPage({ navigate }: Props) {
                       onChange={(e) => setUnpaid(e.target.checked)}
                       className="rounded text-indigo-600 focus:ring-indigo-500 text-xs"
                     />
-                    <span className="text-[11px] font-medium text-slate-500">Unpaid</span>
+                    <span className="text-[11px] font-medium text-slate-500">
+                      Unpaid
+                    </span>
                   </label>
                 </div>
                 <input
@@ -494,7 +521,11 @@ export default function WriteReviewPage({ navigate }: Props) {
                     {ratingDescriptions[overallRating]}
                   </span>
                 </div>
-                <StarRating value={overallRating} onChange={setOverallRating} size="medium" />
+                <StarRating
+                  value={overallRating}
+                  onChange={setOverallRating}
+                  size="medium"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -502,14 +533,22 @@ export default function WriteReviewPage({ navigate }: Props) {
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
                     Mentorship & Guidance
                   </label>
-                  <StarRating value={mentorshipRating} onChange={setMentorshipRating} size="small" />
+                  <StarRating
+                    value={mentorshipRating}
+                    onChange={setMentorshipRating}
+                    size="small"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
                     Culture & Work-Life
                   </label>
-                  <StarRating value={cultureRating} onChange={setCultureRating} size="small" />
+                  <StarRating
+                    value={cultureRating}
+                    onChange={setCultureRating}
+                    size="small"
+                  />
                 </div>
               </div>
             </div>
@@ -552,7 +591,9 @@ export default function WriteReviewPage({ navigate }: Props) {
           <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-5">
             <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider pb-2 border-b border-slate-100 flex items-center justify-between">
               <span>Structured Written Insights</span>
-              <span className="text-[11px] font-normal text-indigo-600">Step 2 of 2</span>
+              <span className="text-[11px] font-normal text-indigo-600">
+                Step 2 of 2
+              </span>
             </h2>
 
             {/* One-line Headline */}
@@ -623,7 +664,10 @@ export default function WriteReviewPage({ navigate }: Props) {
             <span className="text-xl">🎉</span>
             <div>
               <p className="text-xs font-bold text-slate-800">
-                Submitting this review earns <span className="text-orange-600 font-extrabold">+30 Contributor Points</span>
+                Submitting this review earns{" "}
+                <span className="text-orange-600 font-extrabold">
+                  +30 Contributor Points
+                </span>
               </p>
               <p className="text-[11px] text-slate-400">
                 Instantly advances your status towards Explorer Tier.
@@ -636,10 +680,14 @@ export default function WriteReviewPage({ navigate }: Props) {
             disabled={submitting}
             className="w-full sm:w-auto px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs md:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <span>{submitting ? "Submitting securely..." : "Submit Anonymous Review ↗"}</span>
+            <span>
+              {submitting
+                ? "Submitting securely..."
+                : "Submit Anonymous Review ↗"}
+            </span>
           </button>
         </div>
       </form>
     </div>
-  );
+  )
 }

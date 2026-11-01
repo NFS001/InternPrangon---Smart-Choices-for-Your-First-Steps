@@ -1,33 +1,37 @@
-import { useState, useEffect } from "react";
-import type { Navigate } from "../../data/index";
-import { CURRENT_STUDENT } from "../../data/index";
-import { getLeaderboard, getStudentProfile, getSavedUser } from "../../api/client";
+import { useState, useEffect } from "react"
+import type { Navigate } from "../../data/index"
+import { CURRENT_STUDENT } from "../../data/index"
+import {
+  getLeaderboard,
+  getStudentProfile,
+  getSavedUser,
+} from "../../api/client"
 
 interface Props {
-  navigate: Navigate;
+  navigate: Navigate
 }
 
 interface TierLadder {
-  name: string;
-  icon: string;
-  pointsRange: string;
-  perks: string;
-  bg: string;
-  border: string;
-  textColor: string;
-  isCurrent?: boolean;
+  name: string
+  icon: string
+  pointsRange: string
+  perks: string
+  bg: string
+  border: string
+  textColor: string
+  isCurrent?: boolean
 }
 
 interface ContributorRow {
-  rank: number;
-  name: string;
-  avatar?: string;
-  university: string;
-  contributions: number;
-  points: number;
-  badgeTier: string;
-  badgeIcon: string;
-  isCurrentUser?: boolean;
+  rank: number
+  name: string
+  avatar?: string
+  university: string
+  contributions: number
+  points: number
+  badgeTier: string
+  badgeIcon: string
+  isCurrentUser?: boolean
 }
 
 const BADGE_TIERS: TierLadder[] = [
@@ -77,7 +81,7 @@ const BADGE_TIERS: TierLadder[] = [
     border: "border-purple-200",
     textColor: "text-purple-900",
   },
-];
+]
 
 const DEFAULT_LEADERBOARD: ContributorRow[] = [
   {
@@ -136,32 +140,34 @@ const DEFAULT_LEADERBOARD: ContributorRow[] = [
     badgeTier: "Newbie",
     badgeIcon: "🌱",
   },
-];
+]
 
 export default function ContributorsPage({ navigate }: Props) {
-  const [timeFilter, setTimeFilter] = useState<"All-Time" | "This Month">("This Month");
-  const [points, setPoints] = useState(25);
-  const [badge, setBadge] = useState("Newbie");
-  const [rows, setRows] = useState<ContributorRow[]>(DEFAULT_LEADERBOARD);
+  const [timeFilter, setTimeFilter] = useState<"All-Time" | "This Month">(
+    "This Month",
+  )
+  const [points, setPoints] = useState(25)
+  const [badge, setBadge] = useState("Newbie")
+  const [rows, setRows] = useState<ContributorRow[]>(DEFAULT_LEADERBOARD)
 
-  const savedUser = getSavedUser();
-  const studentName = savedUser?.name || CURRENT_STUDENT.name;
+  const savedUser = getSavedUser()
+  const studentName = savedUser?.name || CURRENT_STUDENT.name
 
   useEffect(() => {
     getStudentProfile()
       .then((res) => {
         if (res.profile) {
-          setPoints(res.profile.points ?? 25);
-          setBadge(res.profile.badge ?? "Newbie");
+          setPoints(res.profile.points ?? 25)
+          setBadge(res.profile.badge ?? "Newbie")
         }
       })
-      .catch(() => {});
+      .catch(() => {})
 
     getLeaderboard(20)
       .then((res) => {
         if (res.leaderboard && res.leaderboard.length > 0) {
           const mapped: ContributorRow[] = res.leaderboard.map((item, idx) => {
-            const isMe = item.name === studentName || idx === 2;
+            const isMe = item.name === studentName || idx === 2
             return {
               rank: item.rank || idx + 1,
               name: isMe ? `${studentName} (You)` : item.name,
@@ -174,22 +180,22 @@ export default function ContributorsPage({ navigate }: Props) {
                 item.badge === "Elite"
                   ? "🏆"
                   : item.badge === "Veteran"
-                  ? "⚡"
-                  : item.badge === "Insider"
-                  ? "💡"
-                  : item.badge === "Explorer"
-                  ? "🔭"
-                  : "🌱",
+                    ? "⚡"
+                    : item.badge === "Insider"
+                      ? "💡"
+                      : item.badge === "Explorer"
+                        ? "🔭"
+                        : "🌱",
               isCurrentUser: isMe,
-            };
-          });
-          setRows(mapped);
+            }
+          })
+          setRows(mapped)
         }
       })
       .catch(() => {
-        setRows(DEFAULT_LEADERBOARD);
-      });
-  }, [studentName]);
+        setRows(DEFAULT_LEADERBOARD)
+      })
+  }, [studentName])
 
   return (
     <div className="px-5 py-6 lg:px-8 lg:py-10 max-w-5xl mx-auto space-y-8">
@@ -199,7 +205,8 @@ export default function ContributorsPage({ navigate }: Props) {
           Contributors & Leaderboard
         </h1>
         <p className="text-slate-500 text-sm lg:text-base mt-1">
-          Share verified internship reviews, interview insights, and stipend data to unlock elite recruitment perks.
+          Share verified internship reviews, interview insights, and stipend
+          data to unlock elite recruitment perks.
         </p>
       </div>
 
@@ -216,7 +223,7 @@ export default function ContributorsPage({ navigate }: Props) {
                 alt="Nafis"
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  (e.target as HTMLElement).style.display = "none";
+                  ;(e.target as HTMLElement).style.display = "none"
                 }}
               />
               <div className="w-full h-full bg-gradient-to-br from-indigo-600 to-orange-500 flex items-center justify-center font-bold text-white text-lg">
@@ -226,7 +233,9 @@ export default function ContributorsPage({ navigate }: Props) {
 
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-white tracking-tight">{studentName}</h2>
+                <h2 className="text-lg font-bold text-white tracking-tight">
+                  {studentName}
+                </h2>
                 <span className="text-[10px] font-bold text-indigo-300 bg-indigo-900/60 px-2 py-0.5 rounded-full border border-indigo-700/50">
                   You
                 </span>
@@ -241,7 +250,8 @@ export default function ContributorsPage({ navigate }: Props) {
           <div className="flex-1 w-full lg:max-w-md">
             <div className="flex items-center justify-between text-xs mb-2">
               <span className="font-semibold text-slate-300">
-                Progress: <strong className="text-white">{points} / 100 pts</strong>
+                Progress:{" "}
+                <strong className="text-white">{points} / 100 pts</strong>
               </span>
               <span className="text-amber-400 font-medium">
                 {Math.max(0, 100 - points)} points to Explorer tier
@@ -250,7 +260,9 @@ export default function ContributorsPage({ navigate }: Props) {
             <div className="w-full bg-slate-800 rounded-full h-3 p-0.5 overflow-hidden border border-slate-700/60">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-indigo-400 to-orange-500 transition-all duration-700"
-                style={{ width: `${Math.min(100, Math.max(10, (points / 100) * 100))}%` }}
+                style={{
+                  width: `${Math.min(100, Math.max(10, (points / 100) * 100))}%`,
+                }}
               />
             </div>
           </div>
@@ -258,9 +270,13 @@ export default function ContributorsPage({ navigate }: Props) {
           {/* Right: Badge Pill + Action Button */}
           <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
             <div className="text-right">
-              <p className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Tier</p>
+              <p className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                Tier
+              </p>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-xl text-xs font-bold mt-0.5">
-                <span>🌱 {badge} ({points} pts)</span>
+                <span>
+                  🌱 {badge} ({points} pts)
+                </span>
               </div>
             </div>
 
@@ -278,7 +294,9 @@ export default function ContributorsPage({ navigate }: Props) {
       <div className="space-y-3">
         <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
           <span>Badge Tier Ladder</span>
-          <span className="text-xs font-normal text-slate-500">(5 Progression Levels)</span>
+          <span className="text-xs font-normal text-slate-500">
+            (5 Progression Levels)
+          </span>
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
@@ -297,8 +315,12 @@ export default function ContributorsPage({ navigate }: Props) {
                   )}
                 </div>
 
-                <h3 className={`font-bold text-sm ${tier.textColor}`}>{tier.name}</h3>
-                <p className="text-xs font-semibold text-slate-500 mt-0.5">{tier.pointsRange}</p>
+                <h3 className={`font-bold text-sm ${tier.textColor}`}>
+                  {tier.name}
+                </h3>
+                <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                  {tier.pointsRange}
+                </p>
               </div>
 
               <div className="mt-3 pt-2.5 border-t border-slate-200/50">
@@ -315,9 +337,12 @@ export default function ContributorsPage({ navigate }: Props) {
       <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
-            <h2 className="text-base font-bold text-slate-900">Top Contributors</h2>
+            <h2 className="text-base font-bold text-slate-900">
+              Top Contributors
+            </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Rankings refresh daily based on verified university reviews and interview reports.
+              Rankings refresh daily based on verified university reviews and
+              interview reports.
             </p>
           </div>
 
@@ -361,9 +386,9 @@ export default function ContributorsPage({ navigate }: Props) {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {rows.map((row) => {
-                const isRank1 = row.rank === 1;
-                const isRank2 = row.rank === 2;
-                const isRank3 = row.rank === 3;
+                const isRank1 = row.rank === 1
+                const isRank2 = row.rank === 2
+                const isRank3 = row.rank === 3
 
                 return (
                   <tr
@@ -377,13 +402,30 @@ export default function ContributorsPage({ navigate }: Props) {
                     {/* Rank */}
                     <td className="py-3.5 px-3">
                       {isRank1 ? (
-                        <span className="text-base" title="1st Place Gold Medal">🥇</span>
+                        <span
+                          className="text-base"
+                          title="1st Place Gold Medal"
+                        >
+                          🥇
+                        </span>
                       ) : isRank2 ? (
-                        <span className="text-base" title="2nd Place Silver Medal">🥈</span>
+                        <span
+                          className="text-base"
+                          title="2nd Place Silver Medal"
+                        >
+                          🥈
+                        </span>
                       ) : isRank3 ? (
-                        <span className="text-base" title="3rd Place Bronze Medal">🥉</span>
+                        <span
+                          className="text-base"
+                          title="3rd Place Bronze Medal"
+                        >
+                          🥉
+                        </span>
                       ) : (
-                        <span className="font-bold text-slate-500 text-xs pl-1">#{row.rank}</span>
+                        <span className="font-bold text-slate-500 text-xs pl-1">
+                          #{row.rank}
+                        </span>
                       )}
                     </td>
 
@@ -395,19 +437,29 @@ export default function ContributorsPage({ navigate }: Props) {
                             isRank1
                               ? "bg-amber-100 text-amber-800 border-2 border-amber-400 shadow-xs"
                               : isRank2
-                              ? "bg-slate-200 text-slate-700 border border-slate-300"
-                              : row.isCurrentUser
-                              ? "border-2 border-indigo-400"
-                              : "bg-slate-100 text-slate-600"
+                                ? "bg-slate-200 text-slate-700 border border-slate-300"
+                                : row.isCurrentUser
+                                  ? "border-2 border-indigo-400"
+                                  : "bg-slate-100 text-slate-600"
                           }`}
                         >
                           {row.avatar ? (
-                            <img src={row.avatar} alt="avatar" className="w-full h-full object-cover" />
+                            <img
+                              src={row.avatar}
+                              alt="avatar"
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             row.name.slice(0, 2).toUpperCase()
                           )}
                         </div>
-                        <span className={`text-xs ${row.isCurrentUser ? "text-indigo-950 font-bold" : "text-slate-800 font-medium"}`}>
+                        <span
+                          className={`text-xs ${
+                            row.isCurrentUser
+                              ? "text-indigo-950 font-bold"
+                              : "text-slate-800 font-medium"
+                          }`}
+                        >
                           {row.name}
                         </span>
                       </div>
@@ -438,7 +490,7 @@ export default function ContributorsPage({ navigate }: Props) {
                       </span>
                     </td>
                   </tr>
-                );
+                )
               })}
             </tbody>
           </table>
@@ -554,5 +606,5 @@ export default function ContributorsPage({ navigate }: Props) {
         </div>
       </div>
     </div>
-  );
+  )
 }

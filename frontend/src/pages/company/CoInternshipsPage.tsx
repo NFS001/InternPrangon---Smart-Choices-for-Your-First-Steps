@@ -1,30 +1,30 @@
-import { useState, useEffect } from "react";
-import type { Navigate } from "../../data/index";
+import { useState, useEffect } from "react"
+import type { Navigate } from "../../data/index"
 import {
   getMyCompanyInternships,
   postInternship,
   deleteCompanyInternship,
   type ApiCompanyInternship,
-} from "../../api/client";
+} from "../../api/client"
 
 interface Props {
-  navigate: Navigate;
+  navigate: Navigate
 }
 
-type TabType = "active" | "drafts" | "closed";
+type TabType = "active" | "drafts" | "closed"
 
 interface InternshipCardItem {
-  id: string;
-  title: string;
-  status: "Active & Accepting Applications" | "Draft" | "Closed / Expired";
-  mode: string;
-  type: string;
-  stipend: string;
-  deadline: string;
-  postedAgo: string;
-  applicants: number;
-  shortlisted: number;
-  interviewing: number;
+  id: string
+  title: string
+  status: "Active & Accepting Applications" | "Draft" | "Closed / Expired"
+  mode: string
+  type: string
+  stipend: string
+  deadline: string
+  postedAgo: string
+  applicants: number
+  shortlisted: number
+  interviewing: number
 }
 
 const DEFAULT_LISTINGS: InternshipCardItem[] = [
@@ -54,63 +54,75 @@ const DEFAULT_LISTINGS: InternshipCardItem[] = [
     shortlisted: 1,
     interviewing: 0,
   },
-];
+]
 
 export default function CoInternshipsPage({ navigate }: Props) {
-  const [activeTab, setActiveTab] = useState<TabType>("active");
-  const [listings, setListings] = useState<InternshipCardItem[]>([]);
-  const [createMode, setCreateMode] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>("active")
+  const [listings, setListings] = useState<InternshipCardItem[]>([])
+  const [createMode, setCreateMode] = useState(false)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
 
   // Form state
-  const [title, setTitle] = useState("");
-  const [department, setDepartment] = useState("");
-  const [mode, setMode] = useState<"Remote" | "On-site" | "Hybrid">("Remote");
-  const [type, setType] = useState<"Paid" | "Unpaid">("Paid");
-  const [stipend, setStipend] = useState("20,000");
-  const [deadline, setDeadline] = useState("2027-05-20");
-  const [description, setDescription] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [title, setTitle] = useState("")
+  const [department, setDepartment] = useState("")
+  const [mode, setMode] = useState<"Remote" | "On-site" | "Hybrid">("Remote")
+  const [type, setType] = useState<"Paid" | "Unpaid">("Paid")
+  const [stipend, setStipend] = useState("20,000")
+  const [deadline, setDeadline] = useState("2027-05-20")
+  const [description, setDescription] = useState("")
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     getMyCompanyInternships()
       .then((res) => {
         if (res.internships) {
-          const mapped: InternshipCardItem[] = res.internships.map((i, idx) => ({
-            id: i._id || `post-${idx}`,
-            title: i.title,
-            status: i.status === "expired" ? "Closed / Expired" : "Active & Accepting Applications",
-            mode: i.mode || "On-site",
-            type: i.type || "Paid",
-            stipend: i.type === "Paid" ? "BDT 20,000/mo" : "Unpaid",
-            deadline: i.deadline ? new Date(i.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "May 20, 2027",
-            postedAgo: "Posted recently",
-            applicants: i.totalApplicants ?? 0,
-            shortlisted: i.shortlisted ?? 0,
-            interviewing: i.interviewing ?? 0,
-          }));
-          setListings(mapped);
+          const mapped: InternshipCardItem[] = res.internships.map(
+            (i, idx) => ({
+              id: i._id || `post-${idx}`,
+              title: i.title,
+              status:
+                i.status === "expired"
+                  ? "Closed / Expired"
+                  : "Active & Accepting Applications",
+              mode: i.mode || "On-site",
+              type: i.type || "Paid",
+              stipend: i.type === "Paid" ? "BDT 20,000/mo" : "Unpaid",
+              deadline: i.deadline
+                ? new Date(i.deadline).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                : "May 20, 2027",
+              postedAgo: "Posted recently",
+              applicants: i.totalApplicants ?? 0,
+              shortlisted: i.shortlisted ?? 0,
+              interviewing: i.interviewing ?? 0,
+            }),
+          )
+          setListings(mapped)
         }
       })
       .catch(() => {
-        setListings([]);
-      });
-  }, []);
+        setListings([])
+      })
+  }, [])
 
   const handlePublish = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
+    e.preventDefault()
+    if (!title.trim()) return
 
-    setSubmitting(true);
+    setSubmitting(true)
     try {
       await postInternship({
         title: title.trim(),
-        description: description.trim() || `Exciting internship opportunity for ${title}.`,
+        description:
+          description.trim() || `Exciting internship opportunity for ${title}.`,
         type: type === "Paid" ? "Paid" : "Unpaid",
         mode: mode === "Remote" ? "Remote" : "On-site",
         deadline,
-      });
+      })
 
       const newItem: InternshipCardItem = {
         id: `post-${Date.now()}`,
@@ -119,46 +131,55 @@ export default function CoInternshipsPage({ navigate }: Props) {
         mode,
         type,
         stipend: type === "Paid" ? `BDT ${stipend}/mo` : "Unpaid",
-        deadline: new Date(deadline).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        deadline: new Date(deadline).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
         postedAgo: "Just now",
         applicants: 0,
         shortlisted: 0,
         interviewing: 0,
-      };
+      }
 
-      setListings((prev) => [newItem, ...prev]);
-      setCreateMode(false);
-      setTitle("");
-      setToastMessage("Internship published successfully and live for students!");
-      setTimeout(() => setToastMessage(null), 3500);
+      setListings((prev) => [newItem, ...prev])
+      setCreateMode(false)
+      setTitle("")
+      setToastMessage(
+        "Internship published successfully and live for students!",
+      )
+      setTimeout(() => setToastMessage(null), 3500)
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to post internship.");
+      alert(err instanceof Error ? err.message : "Failed to post internship.")
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
-  };
+  }
 
   const handleDelete = (id: string) => {
     if (window.confirm("Are you sure you want to close/delete this role?")) {
-      setListings((prev) => prev.filter((i) => i.id !== id));
-      deleteCompanyInternship(id).catch(() => {});
-      setToastMessage("Internship removed from active listings.");
-      setTimeout(() => setToastMessage(null), 3000);
+      setListings((prev) => prev.filter((i) => i.id !== id))
+      deleteCompanyInternship(id).catch(() => {})
+      setToastMessage("Internship removed from active listings.")
+      setTimeout(() => setToastMessage(null), 3000)
     }
-  };
+  }
 
   const counts = {
-    active: listings.filter((i) => i.status === "Active & Accepting Applications").length,
+    active: listings.filter(
+      (i) => i.status === "Active & Accepting Applications",
+    ).length,
     drafts: listings.filter((i) => i.status === "Draft").length,
     closed: listings.filter((i) => i.status === "Closed / Expired").length || 3, // demonstration count 3 as specified
-  };
+  }
 
   const filtered = listings.filter((i) => {
-    if (activeTab === "active") return i.status === "Active & Accepting Applications";
-    if (activeTab === "drafts") return i.status === "Draft";
-    if (activeTab === "closed") return i.status === "Closed / Expired";
-    return true;
-  });
+    if (activeTab === "active")
+      return i.status === "Active & Accepting Applications"
+    if (activeTab === "drafts") return i.status === "Draft"
+    if (activeTab === "closed") return i.status === "Closed / Expired"
+    return true
+  })
 
   return (
     <div className="px-5 py-6 lg:px-8 lg:py-10 max-w-6xl mx-auto space-y-6">
@@ -177,7 +198,8 @@ export default function CoInternshipsPage({ navigate }: Props) {
             Internship Listings
           </h1>
           <p className="text-slate-500 text-xs sm:text-sm mt-1">
-            Manage active openings, draft roles, and view historical applicant volume.
+            Manage active openings, draft roles, and view historical applicant
+            volume.
           </p>
         </div>
 
@@ -228,8 +250,13 @@ export default function CoInternshipsPage({ navigate }: Props) {
         <div className="bg-white rounded-3xl border border-indigo-200 p-6 lg:p-8 shadow-xl space-y-5 animate-scale-up">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Create New Internship Vacancy</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Post an opening to receive applicants from top university candidates.</p>
+              <h2 className="text-lg font-bold text-slate-900">
+                Create New Internship Vacancy
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Post an opening to receive applicants from top university
+                candidates.
+              </p>
             </div>
             <button
               onClick={() => setCreateMode(false)}
@@ -362,7 +389,7 @@ export default function CoInternshipsPage({ navigate }: Props) {
       {/* 3. Listing Management Cards */}
       <div className="space-y-4">
         {filtered.map((item) => {
-          const isItem2 = item.title.includes("Cybersecurity");
+          const isItem2 = item.title.includes("Cybersecurity")
 
           return (
             <div
@@ -399,7 +426,8 @@ export default function CoInternshipsPage({ navigate }: Props) {
                 {/* Candidate Funnel Counter */}
                 <div className="flex items-center gap-2 text-xs self-start sm:self-center">
                   <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-700 font-bold text-xs">
-                    {item.applicants} {item.applicants === 1 ? "Applicant" : "Applicants"}
+                    {item.applicants}{" "}
+                    {item.applicants === 1 ? "Applicant" : "Applicants"}
                   </span>
                   <span className="bg-blue-50 px-3 py-1 rounded-full text-blue-700 font-bold text-xs">
                     {item.shortlisted} Shortlisted
@@ -440,7 +468,11 @@ export default function CoInternshipsPage({ navigate }: Props) {
                 {/* Dropdown Options */}
                 <div className="relative">
                   <button
-                    onClick={() => setOpenDropdownId(openDropdownId === item.id ? null : item.id)}
+                    onClick={() =>
+                      setOpenDropdownId(
+                        openDropdownId === item.id ? null : item.id,
+                      )
+                    }
                     className="px-3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5"
                   >
                     <span>More Options</span>
@@ -451,8 +483,8 @@ export default function CoInternshipsPage({ navigate }: Props) {
                     <div className="absolute right-0 bottom-full mb-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-20 overflow-hidden divide-y divide-slate-50 text-xs">
                       <button
                         onClick={() => {
-                          alert(`Listing "${item.title}" is paused.`);
-                          setOpenDropdownId(null);
+                          alert(`Listing "${item.title}" is paused.`)
+                          setOpenDropdownId(null)
                         }}
                         className="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 text-slate-700 font-medium"
                       >
@@ -460,8 +492,8 @@ export default function CoInternshipsPage({ navigate }: Props) {
                       </button>
                       <button
                         onClick={() => {
-                          alert(`Duplicated "${item.title}".`);
-                          setOpenDropdownId(null);
+                          alert(`Duplicated "${item.title}".`)
+                          setOpenDropdownId(null)
                         }}
                         className="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 text-slate-700 font-medium"
                       >
@@ -469,8 +501,8 @@ export default function CoInternshipsPage({ navigate }: Props) {
                       </button>
                       <button
                         onClick={() => {
-                          handleDelete(item.id);
-                          setOpenDropdownId(null);
+                          handleDelete(item.id)
+                          setOpenDropdownId(null)
                         }}
                         className="w-full text-left px-3.5 py-2.5 hover:bg-rose-50 text-rose-600 font-medium"
                       >
@@ -481,9 +513,9 @@ export default function CoInternshipsPage({ navigate }: Props) {
                 </div>
               </div>
             </div>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }
