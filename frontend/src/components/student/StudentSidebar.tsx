@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { Navigate } from '../../data/index';
 import { LogoMark } from '../../pages/DesignSystemPage';
-import { getSavedUser, getStudentProfile, type ApiUser } from '../../api/client';
+import { getSavedUser, getStudentProfile, getMyApplications, getMyBookmarks, getMyNotifications, type ApiUser } from '../../api/client';
+import { CURRENT_STUDENT } from '../../data/index';
 
 interface StudentSidebarProps {
   currentPage: string;
@@ -10,285 +11,348 @@ interface StudentSidebarProps {
   currentUser?: ApiUser | null;
 }
 
-function getInitials(name?: string) {
-  if (!name) return 'ST';
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
-}
-
-const NAV_ITEMS = [
-  {
-    id: 'dashboard',
-    label: 'Overview',
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
-        <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
-      </svg>
-    ),
-  },
-  {
-    id: 'internships',
-    label: 'Browse',
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-      </svg>
-    ),
-  },
-  {
-    id: 'saved',
-    label: 'Saved',
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-      </svg>
-    ),
-  },
-  {
-    id: 'applications',
-    label: 'My Applications',
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-      </svg>
-    ),
-  },
-  {
-    id: 'write-review',
-    label: 'Write Review',
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-      </svg>
-    ),
-  },
-  {
-    id: 'contributors',
-    label: 'Contributors',
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-      </svg>
-    ),
-  },
-  {
-    id: 'notifications',
-    label: 'Notifications',
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
-      </svg>
-    ),
-  },
-];
-
-const BOTTOM_ITEMS = [
-  {
-    id: 'profile',
-    label: 'Profile',
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-      </svg>
-    ),
-  },
-];
-
-// Mobile bottom tab items (5 most important)
-const MOBILE_TABS = [
-  {
-    id: 'dashboard',
-    label: 'Home',
-    icon: (active: boolean) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
-        <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
-      </svg>
-    ),
-  },
-  {
-    id: 'internships',
-    label: 'Browse',
-    icon: (active: boolean) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-      </svg>
-    ),
-  },
-  {
-    id: 'saved',
-    label: 'Saved',
-    icon: (active: boolean) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-      </svg>
-    ),
-  },
-  {
-    id: 'applications',
-    label: 'Applied',
-    badge: true,
-    icon: (active: boolean) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-      </svg>
-    ),
-  },
-  {
-    id: 'profile',
-    label: 'Profile',
-    icon: (active: boolean) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-      </svg>
-    ),
-  },
-];
-
 export default function StudentSidebar({ currentPage, navigate, onLogout, currentUser }: StudentSidebarProps) {
   const user = currentUser ?? getSavedUser();
   const [profile, setProfile] = useState<{ points: number; badge: string }>({
-    points: 0,
-    badge: 'Newbie'
+    points: 25,
+    badge: 'Newbie',
   });
+  const [appCount, setAppCount] = useState(3);
+  const [savedCount, setSavedCount] = useState(1);
+  const [unreadNotif, setUnreadNotif] = useState(true);
 
   useEffect(() => {
     getStudentProfile()
       .then((res) => {
         if (res.profile) {
           setProfile({
-            points: res.profile.points ?? 0,
-            badge: res.profile.badge ?? 'Newbie'
+            points: res.profile.points !== undefined && res.profile.points !== 0 ? res.profile.points : 25,
+            badge: res.profile.badge || 'Newbie',
           });
         }
       })
       .catch(() => {});
+
+    getMyApplications()
+      .then((res) => {
+        if (res.applications && res.applications.length > 0) {
+          setAppCount(res.applications.length);
+        }
+      })
+      .catch(() => {});
+
+    getMyBookmarks()
+      .then((res) => {
+        if (res.bookmarks && res.bookmarks.length > 0) {
+          setSavedCount(res.bookmarks.length);
+        }
+      })
+      .catch(() => {});
+
+    getMyNotifications()
+      .then((res) => {
+        const unread = (res.notifications || []).some((n) => !n.isRead);
+        setUnreadNotif(unread);
+      })
+      .catch(() => {});
   }, [user?.id]);
 
-  const displayName = user?.name || 'Student';
-  const displayEmail = user?.email || 'student@internprangon.com';
-  const initials = getInitials(displayName);
+  const displayName = user?.name || CURRENT_STUDENT.name;
+  const universitySub = `${CURRENT_STUDENT.university} · ${CURRENT_STUDENT.department}`;
+
+  const navItems = [
+    {
+      id: 'dashboard',
+      label: 'Overview',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+        </svg>
+      ),
+    },
+    {
+      id: 'internships',
+      label: 'Browse Internships',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      ),
+    },
+    {
+      id: 'saved',
+      label: 'Saved Roles',
+      badge: savedCount > 0 ? String(savedCount) : '1',
+      badgeClass: 'bg-slate-100 text-slate-600',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'applications',
+      label: 'My Applications',
+      badge: String(appCount),
+      badgeClass: 'bg-indigo-100 text-indigo-700 font-black',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </svg>
+      ),
+    },
+    {
+      id: 'write-review',
+      label: 'Write a Review',
+      chip: '+30 pts',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'contributors',
+      label: 'Contributors & Leaderboard',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="8" r="7" />
+          <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+        </svg>
+      ),
+    },
+    {
+      id: 'notifications',
+      label: 'Notifications',
+      hasDot: unreadNotif,
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+      ),
+    },
+  ];
 
   return (
     <>
-      {/* ── Desktop sidebar (hidden on mobile) ── */}
-      <aside className="hidden md:flex w-56 shrink-0 bg-white border-r border-neutral-200 flex-col sticky top-0 h-screen overflow-y-auto">
-        {/* Logo */}
-        <button
-          onClick={() => navigate('home')}
-          className="flex items-center gap-2.5 px-5 h-[68px] border-b border-neutral-100 shrink-0 group hover:bg-neutral-50 transition-colors"
-        >
-          <LogoMark size={28} />
-          <span
-            className="font-display italic text-[16px] font-bold text-neutral-900 group-hover:text-brand-700 transition-colors"
-            style={{ fontVariationSettings: "'opsz' 36, 'wght' 800" }}
+      {/* ── Desktop Fixed Sidebar (w-64) ── */}
+      <aside className="hidden md:flex w-64 shrink-0 bg-white/90 backdrop-blur-md border-r border-slate-200/80 min-h-screen p-5 flex-col justify-between sticky top-0 h-screen overflow-y-auto">
+        <div>
+          {/* Top Branding Logo */}
+          <button
+            onClick={() => navigate('home')}
+            className="flex items-center gap-2.5 pb-5 border-b border-slate-100 group cursor-pointer w-full text-left"
+            aria-label="InternPrangon home"
           >
-            Intern<span className="font-sans not-italic text-brand-600">Prangon</span>
-          </span>
-        </button>
+            <LogoMark size={32} />
+            <div className="flex items-center">
+              <span
+                className="font-display italic text-[18px] font-extrabold text-slate-900 tracking-tight"
+                style={{ fontVariationSettings: "'opsz' 36, 'wght' 800" }}
+              >
+                Intern
+              </span>
+              <span className="font-sans not-italic text-[18px] font-black bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 bg-clip-text text-transparent ml-[2px]">
+                Prangon
+              </span>
+              <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 ml-0.5 mb-1.5 shrink-0 shadow-sm shadow-orange-500/40" />
+            </div>
+          </button>
 
-        {/* User card */}
-        <button
-          onClick={() => navigate('profile')}
-          className="flex items-center gap-3 mx-3 mt-4 mb-2 p-3 rounded-xl hover:bg-neutral-50 transition-colors text-left group"
-        >
-          <div className="w-9 h-9 rounded-full bg-brand-600 flex items-center justify-center text-white text-xs font-extrabold shrink-0">
-            {initials}
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-neutral-900 truncate">{displayName}</p>
-            <p className="text-[10px] text-neutral-400 truncate">{displayEmail}</p>
-          </div>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 ml-auto">
-            <path d="m9 18 6-6-6-6" />
-          </svg>
-        </button>
+          {/* Student Profile Mini-Pill (Top) */}
+          <button
+            onClick={() => navigate('profile')}
+            className="w-full mt-4 mb-5 p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/50 border border-slate-200/80 hover:border-indigo-200 transition-all text-left group cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              {/* Rounded-xl squircle avatar frame */}
+              <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-slate-200 shadow-2xs">
+                <img
+                  src="/team_nafis.jpg"
+                  alt={displayName}
+                  className="w-full h-full object-cover object-top"
+                  onError={(e) => {
+                    // Fallback to gradient initials if image is missing
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">
+                  {displayName}
+                </p>
+                <p className="text-[11px] text-slate-400 font-medium truncate mt-0.5">
+                  {universitySub}
+                </p>
+              </div>
+            </div>
 
-        {/* Points badge */}
-        <div className="mx-3 mb-4 px-3 py-2 bg-brand-50 border border-brand-100 rounded-xl flex items-center gap-2">
-          <span className="text-lg">⭐</span>
-          <div>
-            <p className="text-xs font-extrabold text-brand-800">{profile.points} pts</p>
-            <p className="text-[9px] text-brand-500 font-semibold">{profile.badge} tier</p>
-          </div>
+            {/* Points Pill */}
+            <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+              <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200/80 font-bold">
+                🌱 {profile.badge} · {profile.points} pts
+              </span>
+              <span className="text-slate-400 group-hover:text-indigo-600 font-bold transition-colors">
+                ›
+              </span>
+            </div>
+          </button>
+
+          {/* Navigation Menu Items */}
+          <nav className="space-y-1">
+            {navItems.map((item) => {
+              const active = currentPage === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => navigate(item.id)}
+                  className={[
+                    'w-full flex items-center gap-3 px-3 py-2.5 text-left transition-all duration-150 text-xs sm:text-sm cursor-pointer',
+                    active
+                      ? 'bg-indigo-50 text-indigo-600 font-semibold rounded-xl border-l-4 border-indigo-600 pl-3 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 rounded-xl font-medium',
+                  ].join(' ')}
+                >
+                  <span className={active ? 'text-indigo-600' : 'text-slate-400'}>
+                    {item.icon}
+                  </span>
+                  <span className="flex-1 truncate">{item.label}</span>
+
+                  {item.badge && (
+                    <span className={`px-2 py-0.5 text-[10px] rounded-full border border-slate-200/60 ${item.badgeClass}`}>
+                      {item.badge}
+                    </span>
+                  )}
+
+                  {item.chip && (
+                    <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 animate-pulse">
+                      {item.chip}
+                    </span>
+                  )}
+
+                  {item.hasDot && (
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
         </div>
 
-        {/* Nav items */}
-        <nav className="flex-1 px-3 space-y-0.5">
-          {NAV_ITEMS.map((item) => {
-            const active = currentPage === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => navigate(item.id)}
-                className={[
-                  'w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-xl transition-all duration-150 text-sm font-medium',
-                  active
-                    ? 'bg-brand-600 text-white shadow-sm'
-                    : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900',
-                ].join(' ')}
-              >
-                <span className={active ? 'text-white' : 'text-neutral-400'}>{item.icon}</span>
-                <span className="flex-1">{item.label}</span>
-                {item.badge && (
-                  <span className={['px-1.5 py-0.5 text-[9px] font-extrabold rounded-full', active ? 'bg-white/20 text-white' : 'bg-neutral-200 text-neutral-600'].join(' ')}>
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
+        {/* Bottom Menu Section */}
+        <div className="pt-4 border-t border-slate-200/80 space-y-1">
+          <button
+            onClick={() => navigate('profile')}
+            className={[
+              'w-full flex items-center gap-3 px-3 py-2.5 text-left transition-all duration-150 text-xs sm:text-sm cursor-pointer',
+              currentPage === 'profile'
+                ? 'bg-indigo-50 text-indigo-600 font-semibold rounded-xl border-l-4 border-indigo-600 pl-3'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 rounded-xl font-medium',
+            ].join(' ')}
+          >
+            <span className={currentPage === 'profile' ? 'text-indigo-600' : 'text-slate-400'}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </span>
+            <span className="flex-1">My Profile & Settings</span>
+          </button>
 
-        {/* Bottom items */}
-        <div className="px-3 pb-4 pt-2 space-y-0.5 border-t border-neutral-100 mt-2">
-          {BOTTOM_ITEMS.map((item) => {
-            const active = currentPage === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => navigate(item.id)}
-                className={['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors', active ? 'bg-brand-600 text-white' : 'text-neutral-500 hover:bg-neutral-100'].join(' ')}
-              >
-                <span className={active ? 'text-white' : 'text-neutral-400'}>{item.icon}</span>
-                {item.label}
-              </button>
-            );
-          })}
           <button
             onClick={onLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-400 hover:text-danger-600 hover:bg-danger-50 transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-left"
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 hover:text-rose-600">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
-            Log out
+            <span>Log out</span>
           </button>
         </div>
       </aside>
 
       {/* ── Mobile bottom tab bar (hidden on desktop) ── */}
-      <nav className="flex md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-neutral-200 h-16">
-        {MOBILE_TABS.map((tab) => {
+      <nav className="flex md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200/80 h-16 px-2">
+        {[
+          {
+            id: 'dashboard',
+            label: 'Home',
+            icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+              </svg>
+            ),
+          },
+          {
+            id: 'internships',
+            label: 'Browse',
+            icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            ),
+          },
+          {
+            id: 'applications',
+            label: 'Applied',
+            badge: appCount > 0,
+            icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+              </svg>
+            ),
+          },
+          {
+            id: 'notifications',
+            label: 'Alerts',
+            dot: unreadNotif,
+            icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+            ),
+          },
+          {
+            id: 'profile',
+            label: 'Profile',
+            icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            ),
+          },
+        ].map((tab) => {
           const active = currentPage === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => navigate(tab.id)}
               className={[
-                'flex-1 flex flex-col items-center justify-center gap-0.5 py-2 relative transition-colors',
-                active ? 'text-brand-600' : 'text-neutral-400',
+                'flex-1 flex flex-col items-center justify-center gap-1 py-1.5 relative transition-colors cursor-pointer',
+                active ? 'text-indigo-600 font-bold' : 'text-slate-400 font-medium',
               ].join(' ')}
             >
-              {tab.icon(active)}
+              {tab.icon}
               {tab.badge && (
-                <span className="absolute top-1 right-1/4 w-1.5 h-1.5 rounded-full bg-red-500" />
+                <span className="absolute top-2 right-1/4 w-2 h-2 rounded-full bg-indigo-600 ring-2 ring-white" />
               )}
-              <span className="text-[10px] font-semibold leading-none">{tab.label}</span>
+              {tab.dot && (
+                <span className="absolute top-2 right-1/4 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+              )}
+              <span className="text-[10px] leading-none">{tab.label}</span>
             </button>
           );
         })}

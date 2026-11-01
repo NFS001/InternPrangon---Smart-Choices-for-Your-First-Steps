@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { Navigate } from "../../data/index";
 import { COMPANIES } from "../../data/index";
+import { CompanyLogo } from "../../components/common/CompanyLogos";
 import {
   getCompanyDirectory,
   submitCompanyReview,
@@ -14,9 +15,6 @@ interface Props {
 }
 
 type ReviewType = "Internship Experience" | "Interview Experience";
-type InterviewTypeOption = "Online" | "Phone" | "On-site" | "Video call";
-type DifficultyOption = "Easy" | "Medium" | "Hard";
-type OutcomeOption = "Selected" | "Rejected" | "Waiting" | "Prefer not to say";
 
 function StarRating({
   value,
@@ -31,36 +29,39 @@ function StarRating({
 
   const starSizes = {
     small: "w-5 h-5",
-    medium: "w-7 h-7",
-    large: "w-9 h-9",
+    medium: "w-6 h-6",
+    large: "w-8 h-8",
   };
 
   return (
-    <div className="flex gap-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          onClick={() => onChange(star)}
-          onMouseEnter={() => setHovered(star)}
-          onMouseLeave={() => setHovered(0)}
-          className={`${starSizes[size]} transition-transform hover:scale-110 focus:outline-none`}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill={(hovered || value) >= star ? "#f59e0b" : "none"}
-            stroke={(hovered || value) >= star ? "#f59e0b" : "#d1d5db"}
-            strokeWidth={1.5}
-            className="w-full h-full"
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((star) => {
+        const isFilled = (hovered || value) >= star;
+        return (
+          <button
+            key={star}
+            type="button"
+            onClick={() => onChange(star)}
+            onMouseEnter={() => setHovered(star)}
+            onMouseLeave={() => setHovered(0)}
+            className={`${starSizes[size]} transition-transform hover:scale-110 focus:outline-none`}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-            />
-          </svg>
-        </button>
-      ))}
+            <svg
+              viewBox="0 0 24 24"
+              fill={isFilled ? "#F59E0B" : "none"}
+              stroke={isFilled ? "#F59E0B" : "#CBD5E1"}
+              strokeWidth={1.5}
+              className="w-full h-full drop-shadow-xs"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+              />
+            </svg>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -68,37 +69,39 @@ function StarRating({
 export default function WriteReviewPage({ navigate }: Props) {
   const [reviewType, setReviewType] = useState<ReviewType>("Internship Experience");
   const [companyId, setCompanyId] = useState("");
+  const [selectedCompanyName, setSelectedCompanyName] = useState("");
+  const [companySearch, setCompanySearch] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [companiesList, setCompaniesList] = useState<Array<{ id: string; name: string }>>([]);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // ── Internship Experience State ──
-  const [overallRating, setOverallRating] = useState(5);
-  const [cultureRating, setCultureRating] = useState(4);
-  const [mentorshipRating, setMentorshipRating] = useState(4);
-  const [recommend, setRecommend] = useState<boolean | null>(true);
+  // Role & Details
+  const [roleTitle, setRoleTitle] = useState("");
+  const [workMode, setWorkMode] = useState("Hybrid");
+  const [term, setTerm] = useState("Fall 2026");
+  const [stipend, setStipend] = useState("18000");
   const [unpaid, setUnpaid] = useState(false);
+  const [duration, setDuration] = useState("3 Months");
+
+  // Ratings
+  const [overallRating, setOverallRating] = useState(5);
+  const [mentorshipRating, setMentorshipRating] = useState(4);
+  const [cultureRating, setCultureRating] = useState(4);
+  const [recommend, setRecommend] = useState<boolean | null>(true);
+
+  // Structured Written Insights
   const [headline, setHeadline] = useState("");
-  const [experience, setExperience] = useState("");
-  const [stipend, setStipend] = useState("");
-  const [duration, setDuration] = useState("");
+  const [theGood, setTheGood] = useState("");
+  const [theChallenges, setTheChallenges] = useState("");
+  const [advice, setAdvice] = useState("");
 
-  // ── Interview Experience State ──
-  const [role, setRole] = useState("");
-  const [interviewType, setInterviewType] = useState<InterviewTypeOption>("Online");
-  const [rounds, setRounds] = useState("2");
-  const [difficulty, setDifficulty] = useState<DifficultyOption>("Medium");
-  const [process, setProcess] = useState("");
-  const [questions, setQuestions] = useState("");
-  const [tips, setTips] = useState("");
-  const [outcome, setOutcome] = useState<OutcomeOption>("Selected");
-  const [interviewDate, setInterviewDate] = useState("");
-
-  const reviewTypes: ReviewType[] = ["Internship Experience", "Interview Experience"];
-  const interviewTypes: InterviewTypeOption[] = ["Online", "Phone", "On-site", "Video call"];
-  const difficultyOptions: DifficultyOption[] = ["Easy", "Medium", "Hard"];
-  const outcomeOptions: OutcomeOption[] = ["Selected", "Rejected", "Waiting", "Prefer not to say"];
+  // Interview Specific fields
+  const [interviewRounds, setInterviewRounds] = useState("3");
+  const [interviewDifficulty, setInterviewDifficulty] = useState<"Easy" | "Medium" | "Hard">("Medium");
 
   useEffect(() => {
     getCompanyDirectory({ limit: 100 })
@@ -111,20 +114,59 @@ export default function WriteReviewPage({ navigate }: Props) {
           setCompaniesList(mapped);
           if (mapped.length > 0) {
             setCompanyId(mapped[0].id);
+            setSelectedCompanyName(mapped[0].name);
+            setCompanySearch(mapped[0].name);
           }
         } else {
-          setCompaniesList(COMPANIES.map((c) => ({ id: String(c.id), name: c.name })));
+          fallbackCompanies();
         }
       })
       .catch(() => {
-        setCompaniesList(COMPANIES.map((c) => ({ id: String(c.id), name: c.name })));
+        fallbackCompanies();
       });
+
+    function fallbackCompanies() {
+      const mapped = COMPANIES.map((c) => ({ id: String(c.id), name: c.name }));
+      setCompaniesList(mapped);
+      if (mapped.length > 0) {
+        setCompanyId(mapped[0].id);
+        setSelectedCompanyName(mapped[0].name);
+        setCompanySearch(mapped[0].name);
+      }
+    }
   }, []);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredCompanies = companiesList.filter((c) =>
+    c.name.toLowerCase().includes(companySearch.toLowerCase())
+  );
+
+  const ratingDescriptions: Record<number, string> = {
+    1: "1.0 - Poor experience",
+    2: "2.0 - Below average",
+    3: "3.0 - Decent / Average",
+    4: "4.0 - Great experience",
+    5: "5.0 - Excellent / Outstanding",
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!companyId) {
       setErrorMsg("Please select a company.");
+      return;
+    }
+    if (!headline.trim()) {
+      setErrorMsg("Please provide a one-line summary headline.");
       return;
     }
 
@@ -133,13 +175,23 @@ export default function WriteReviewPage({ navigate }: Props) {
 
     try {
       if (reviewType === "Internship Experience") {
-        if (!headline.trim() || !experience.trim()) {
-          setErrorMsg("Please provide both a headline and your internship experience.");
+        if (!theGood.trim() && !theChallenges.trim()) {
+          setErrorMsg("Please provide your experiences in the Pros and/or Cons section.");
           setSubmitting(false);
           return;
         }
 
-        const reviewText = `${headline.trim()}: ${experience.trim()}`;
+        const reviewText = [
+          headline.trim(),
+          theGood.trim() ? `PROS: ${theGood.trim()}` : "",
+          theChallenges.trim() ? `CONS: ${theChallenges.trim()}` : "",
+          advice.trim() ? `ADVICE: ${advice.trim()}` : "",
+          `ROLE: ${roleTitle || "Intern"} (${workMode}, ${term})`,
+          recommend !== null ? `RECOMMENDED: ${recommend ? "Yes" : "No"}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n\n");
+
         await submitCompanyReview(companyId, overallRating || 5, reviewText);
 
         if (!unpaid && stipend) {
@@ -150,33 +202,22 @@ export default function WriteReviewPage({ navigate }: Props) {
         }
       } else {
         // Interview Experience
-        if (!role.trim()) {
-          setErrorMsg("Please specify the position / internship role.");
-          setSubmitting(false);
-          return;
-        }
-        if (!process.trim()) {
-          setErrorMsg("Please describe your interview process.");
-          setSubmitting(false);
-          return;
-        }
-
         await submitInterviewExperience(companyId, {
-          role: role.trim(),
-          interviewType,
-          rounds: rounds.trim() || "1",
-          difficulty,
-          process: process.trim(),
-          questions: questions.trim() || process.trim(),
-          tips: tips.trim(),
-          outcome,
-          interviewDate: interviewDate.trim(),
+          role: roleTitle.trim() || "Internship Candidate",
+          interviewType: workMode === "Remote" ? "Video call" : "On-site",
+          rounds: interviewRounds || "2",
+          difficulty: interviewDifficulty,
+          process: `${headline}\n\n${theGood}`,
+          questions: theChallenges || "Technical and problem-solving interview questions.",
+          tips: advice,
+          outcome: "Selected",
+          interviewDate: term,
         });
       }
 
       setSubmitted(true);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to submit.";
+      const msg = err instanceof Error ? err.message : "Failed to submit review.";
       setErrorMsg(msg);
     } finally {
       setSubmitting(false);
@@ -184,40 +225,39 @@ export default function WriteReviewPage({ navigate }: Props) {
   }
 
   if (submitted) {
-    const isInterview = reviewType === "Interview Experience";
     return (
-      <div className="max-w-2xl mx-auto px-5 py-8 lg:px-8 lg:py-10">
-        <div className="bg-success-50 border border-success-200 rounded-3xl p-8 text-center shadow-sm">
-          <div className="text-5xl mb-4">🎉</div>
-          <h2 className="text-2xl font-bold text-success-800 mb-2">
-            {isInterview ? "Interview Experience Submitted!" : "Review Submitted!"}
+      <div className="max-w-2xl mx-auto px-5 py-12 lg:px-8">
+        <div className="bg-white/95 backdrop-blur-md border border-slate-200/80 rounded-3xl p-8 text-center shadow-lg">
+          <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 border border-emerald-200 shadow-sm">
+            🎉
+          </div>
+          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight mb-2">
+            Review Submitted Successfully!
           </h2>
-          <p className="text-success-700 font-medium mb-1">
-            You earned <span className="font-bold text-success-900">+5 contributor points</span> for your contribution.
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-full text-xs font-bold mb-4">
+            <span>🌱 +30 Contributor Points Awarded</span>
+          </div>
+          <p className="text-slate-600 text-sm max-w-md mx-auto mb-6">
+            Thank you! Your 100% anonymous insights have been safely added to help university students make informed career choices.
           </p>
-          <p className="text-success-600 text-sm mb-6">
-            {isInterview
-              ? "Your anonymous interview report helps university students prepare effectively and ace their hiring rounds."
-              : "Your anonymous contribution helps thousands of university students make informed career choices."}
-          </p>
-          <div className="flex justify-center flex-wrap gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={() => navigate("reviews")}
-              className="px-5 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-colors text-sm shadow-sm"
+              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors shadow-sm"
             >
-              View in Reviews →
+              Browse Public Reviews →
             </button>
             <button
               onClick={() => navigate("contributors")}
-              className="px-5 py-2.5 bg-success-600 text-white font-semibold rounded-xl hover:bg-success-700 transition-colors text-sm shadow-sm"
+              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors"
             >
-              View Leaderboard
+              Check Leaderboard
             </button>
             <button
               onClick={() => navigate("dashboard")}
-              className="px-5 py-2.5 bg-white border border-success-300 text-success-800 font-semibold rounded-xl hover:bg-success-50 transition-colors text-sm shadow-sm"
+              className="px-5 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold rounded-xl text-xs transition-colors"
             >
-              Dashboard
+              Back to Dashboard
             </button>
           </div>
         </div>
@@ -225,404 +265,380 @@ export default function WriteReviewPage({ navigate }: Props) {
     );
   }
 
-  const isInterview = reviewType === "Interview Experience";
-
   return (
-    <div className="max-w-2xl mx-auto px-5 py-8 lg:px-8 lg:py-10">
-      {/* Title */}
-      <h1
-        className="text-2xl text-brand-700 mb-2"
-        style={{ fontFamily: "Fraunces, Georgia, serif", fontStyle: "italic" }}
-      >
-        {isInterview ? "Write an Interview Experience" : "Write a Review"}
-      </h1>
-      <p className="text-neutral-500 text-sm mb-6">
-        {isInterview
-          ? "Help other students prepare for their interviews."
-          : "Help other students make informed decisions."}
-      </p>
+    <div className="px-5 py-6 lg:px-8 lg:py-10 max-w-6xl mx-auto space-y-6">
+      {/* Header & Privacy Callout */}
+      <div>
+        <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight">
+          Share Your Internship Experience
+        </h1>
+        <p className="text-slate-500 text-sm lg:text-base mt-1">
+          Help fellow university students make informed decisions. Real stories, zero corporate spin.
+        </p>
 
-      {/* Anonymity notice */}
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
-        <span className="text-amber-500 text-lg flex-shrink-0">🔒</span>
-        <div className="text-amber-900 text-sm">
-          <p className="font-semibold">Your name will not be displayed.</p>
-          <p className="text-xs text-amber-800/90 mt-0.5">
-            {isInterview
-              ? "Interview experiences are anonymous. Earn +5 points and level up your badge!"
-              : "Reviews are fully anonymous. Earn +5 points and level up your contributor badge!"}
-          </p>
+        {/* Privacy Banner */}
+        <div className="mt-4 p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex items-start gap-3 text-xs text-amber-900">
+          <span className="text-lg shrink-0">🛡️</span>
+          <div>
+            <p className="font-bold text-amber-950">100% Anonymous Review</p>
+            <p className="text-amber-800/90 mt-0.5">
+              Your name, email, and university ID will <strong>NEVER</strong> be revealed to employers or displayed on the review.
+            </p>
+          </div>
         </div>
       </div>
 
       {errorMsg && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mb-6">
+        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold">
           {errorMsg}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        {/* Company name */}
-        <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-            Company name <span className="text-danger-600">*</span>
-          </label>
-          <select
-            value={companyId}
-            onChange={(e) => setCompanyId(e.target.value)}
-            required
-            className="w-full border border-neutral-300 rounded-xl px-4 py-2.5 text-sm text-neutral-800 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent"
-          >
-            <option value="">Select a company...</option>
-            {companiesList.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
+      {/* Form Layout: 2-Column Bento Card Form */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {/* LEFT COLUMN: Role & Rating Information */}
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-5">
+            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider pb-2 border-b border-slate-100 flex items-center justify-between">
+              <span>Role & Company Details</span>
+              <span className="text-[11px] font-normal text-indigo-600">Step 1 of 2</span>
+            </h2>
 
-        {/* Review type toggle */}
-        <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1.5">Review type</label>
-          <div className="flex gap-2">
-            {reviewTypes.map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => {
-                  setReviewType(type);
-                  setErrorMsg("");
-                }}
-                className={`flex-1 py-2.5 text-sm font-medium rounded-xl border transition-all ${
-                  reviewType === type
-                    ? "bg-brand-600 text-white border-brand-600 font-semibold shadow-sm"
-                    : "bg-white text-neutral-600 border-neutral-300 hover:bg-neutral-50"
-                }`}
+            {/* Review Type Segmented Toggle */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Review Type
+              </label>
+              <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200/60">
+                <button
+                  type="button"
+                  onClick={() => setReviewType("Internship Experience")}
+                  className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                    reviewType === "Internship Experience"
+                      ? "bg-white text-indigo-600 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <span>💼</span>
+                  <span>Internship Experience</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReviewType("Interview Experience")}
+                  className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                    reviewType === "Interview Experience"
+                      ? "bg-white text-indigo-600 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <span>🎙️</span>
+                  <span>Interview Experience</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Company Select with Autocomplete + Logos */}
+            <div className="relative" ref={dropdownRef}>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Company Name <span className="text-rose-500">*</span>
+              </label>
+
+              <div
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-300 bg-white hover:border-indigo-400 cursor-pointer shadow-sm text-sm"
               >
-                {type}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ─── INTERVIEW EXPERIENCE FIELDS ─── */}
-        {isInterview ? (
-          <>
-            {/* Position / Internship role */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                Position / Internship role <span className="text-danger-600">*</span>
-              </label>
-              <input
-                type="text"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                required
-                placeholder="e.g. Software Engineering Intern"
-                className="w-full border border-neutral-300 rounded-xl px-4 py-2.5 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent"
-              />
-            </div>
-
-            {/* Interview type pills */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                Interview type <span className="text-danger-600">*</span>
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {interviewTypes.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setInterviewType(t)}
-                    className={`py-2 px-3 text-xs sm:text-sm font-medium rounded-xl border transition-colors ${
-                      interviewType === t
-                        ? "bg-brand-600 text-white border-brand-600 font-semibold shadow-sm"
-                        : "bg-white text-neutral-600 border-neutral-300 hover:bg-neutral-50"
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {selectedCompanyName ? (
+                    <>
+                      <CompanyLogo name={selectedCompanyName} size={28} />
+                      <span className="font-semibold text-slate-800 truncate">{selectedCompanyName}</span>
+                    </>
+                  ) : (
+                    <span className="text-slate-400">Search & select company...</span>
+                  )}
+                </div>
+                <span className="text-slate-400 text-xs">▾</span>
               </div>
-            </div>
 
-            {/* Number of rounds */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                Number of rounds
-              </label>
-              <input
-                type="text"
-                value={rounds}
-                onChange={(e) => setRounds(e.target.value)}
-                placeholder="e.g. 3"
-                className="w-full border border-neutral-300 rounded-xl px-4 py-2.5 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent"
-              />
-            </div>
-
-            {/* Difficulty */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                Difficulty <span className="text-danger-600">*</span>
-              </label>
-              <div className="grid grid-cols-3 gap-2.5">
-                {difficultyOptions.map((diff) => {
-                  const isSelected = difficulty === diff;
-                  const activeClass =
-                    diff === "Easy"
-                      ? "bg-emerald-600 text-white border-emerald-600 font-semibold shadow-sm"
-                      : diff === "Medium"
-                      ? "bg-amber-600 text-white border-amber-600 font-semibold shadow-sm"
-                      : "bg-rose-600 text-white border-rose-600 font-semibold shadow-sm";
-
-                  return (
-                    <button
-                      key={diff}
-                      type="button"
-                      onClick={() => setDifficulty(diff)}
-                      className={`py-2.5 text-sm rounded-xl border transition-colors ${
-                        isSelected
-                          ? activeClass
-                          : "bg-white text-neutral-600 border-neutral-300 hover:bg-neutral-50"
-                      }`}
-                    >
-                      {diff}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Interview process */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                Interview process <span className="text-danger-600">*</span>
-              </label>
-              <textarea
-                rows={4}
-                value={process}
-                onChange={(e) => setProcess(e.target.value)}
-                required
-                placeholder="Describe what happened during the interview, including the different rounds and what you were asked..."
-                className="w-full border border-neutral-300 rounded-xl px-4 py-2.5 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent resize-none"
-              />
-            </div>
-
-            {/* Questions asked */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                Questions asked
-              </label>
-              <textarea
-                rows={3}
-                value={questions}
-                onChange={(e) => setQuestions(e.target.value)}
-                placeholder="Share technical, behavioral, or other questions you remember..."
-                className="w-full border border-neutral-300 rounded-xl px-4 py-2.5 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent resize-none"
-              />
-            </div>
-
-            {/* Tips for future candidates */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                Tips for future candidates
-              </label>
-              <textarea
-                rows={3}
-                value={tips}
-                onChange={(e) => setTips(e.target.value)}
-                placeholder="What should another student prepare for before applying/interviewing?"
-                className="w-full border border-neutral-300 rounded-xl px-4 py-2.5 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent resize-none"
-              />
-            </div>
-
-            {/* Outcome */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                Outcome
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {outcomeOptions.map((out) => (
-                  <button
-                    key={out}
-                    type="button"
-                    onClick={() => setOutcome(out)}
-                    className={`py-2 px-3 text-xs sm:text-sm rounded-xl border transition-colors ${
-                      outcome === out
-                        ? "bg-brand-600 text-white border-brand-600 font-semibold shadow-sm"
-                        : "bg-white text-neutral-600 border-neutral-300 hover:bg-neutral-50"
-                    }`}
-                  >
-                    {out}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Interview date */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                Interview date (optional)
-              </label>
-              <input
-                type="date"
-                value={interviewDate}
-                onChange={(e) => setInterviewDate(e.target.value)}
-                className="w-full border border-neutral-300 rounded-xl px-4 py-2.5 text-sm text-neutral-800 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent"
-              />
-            </div>
-
-            {/* Submit Interview Experience Button */}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 disabled:opacity-60 transition-colors shadow-sm"
-            >
-              {submitting
-                ? "Submitting interview experience..."
-                : "Submit anonymous interview experience (+5 points)"}
-            </button>
-          </>
-        ) : (
-          /* ─── INTERNSHIP EXPERIENCE FIELDS ─── */
-          <>
-            {/* Overall star rating */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                Overall rating <span className="text-danger-600">*</span>
-              </label>
-              <StarRating value={overallRating} onChange={setOverallRating} size="large" />
-              {overallRating > 0 && (
-                <p className="text-xs text-neutral-400 mt-1">
-                  {["", "Poor", "Below average", "Average", "Good", "Excellent"][overallRating]}
-                </p>
+              {dropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 overflow-hidden">
+                  <div className="p-2 border-b border-slate-100 bg-slate-50">
+                    <input
+                      type="text"
+                      placeholder="Type company name..."
+                      value={companySearch}
+                      onChange={(e) => setCompanySearch(e.target.value)}
+                      className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-48 overflow-y-auto p-1 divide-y divide-slate-50">
+                    {filteredCompanies.map((c) => (
+                      <div
+                        key={c.id}
+                        onClick={() => {
+                          setCompanyId(c.id);
+                          setSelectedCompanyName(c.name);
+                          setCompanySearch(c.name);
+                          setDropdownOpen(false);
+                        }}
+                        className="flex items-center gap-2.5 p-2 hover:bg-indigo-50/50 rounded-lg cursor-pointer transition-colors"
+                      >
+                        <CompanyLogo name={c.name} size={26} />
+                        <span className="text-xs font-semibold text-slate-800">{c.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* Headline */}
+            {/* Role Title */}
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                Headline <span className="text-danger-600">*</span>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Role Title <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
-                value={headline}
-                onChange={(e) => setHeadline(e.target.value)}
+                placeholder="e.g. Frontend Engineer Intern"
+                value={roleTitle}
+                onChange={(e) => setRoleTitle(e.target.value)}
                 required
-                placeholder="Summarize your experience in one line"
-                className="w-full border border-neutral-300 rounded-xl px-4 py-2.5 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
 
-            {/* Experience textarea */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                Your experience <span className="text-danger-600">*</span>
+            {/* Work Mode & Term Dual Select */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Work Mode
+                </label>
+                <select
+                  value={workMode}
+                  onChange={(e) => setWorkMode(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="Hybrid">Hybrid</option>
+                  <option value="On-site">On-site</option>
+                  <option value="Remote">Remote</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Term / Season
+                </label>
+                <select
+                  value={term}
+                  onChange={(e) => setTerm(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="Fall 2026">Fall 2026</option>
+                  <option value="Summer 2026">Summer 2026</option>
+                  <option value="Spring 2026">Spring 2026</option>
+                  <option value="Fall 2025">Fall 2025</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Compensation & Duration */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Stipend (BDT/mo)
+                  </label>
+                  <label className="inline-flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={unpaid}
+                      onChange={(e) => setUnpaid(e.target.checked)}
+                      className="rounded text-indigo-600 focus:ring-indigo-500 text-xs"
+                    />
+                    <span className="text-[11px] font-medium text-slate-500">Unpaid</span>
+                  </label>
+                </div>
+                <input
+                  type="number"
+                  placeholder="e.g. 18000"
+                  disabled={unpaid}
+                  value={unpaid ? "" : stipend}
+                  onChange={(e) => setStipend(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 disabled:bg-slate-100 disabled:text-slate-400 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Internship Duration
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 3 Months"
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
+
+            {/* Multi-Criteria Star Ratings */}
+            <div className="space-y-3.5 pt-2 border-t border-slate-100">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Overall Experience <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
+                    {ratingDescriptions[overallRating]}
+                  </span>
+                </div>
+                <StarRating value={overallRating} onChange={setOverallRating} size="medium" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Mentorship & Guidance
+                  </label>
+                  <StarRating value={mentorshipRating} onChange={setMentorshipRating} size="small" />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Culture & Work-Life
+                  </label>
+                  <StarRating value={cultureRating} onChange={setCultureRating} size="small" />
+                </div>
+              </div>
+            </div>
+
+            {/* Recommendation Pill */}
+            <div className="pt-2 border-t border-slate-100">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                Would you recommend this company to other students?
               </label>
-              <textarea
-                rows={4}
-                value={experience}
-                onChange={(e) => setExperience(e.target.value)}
-                required
-                placeholder="Describe your internship experience honestly..."
-                className="w-full border border-neutral-300 rounded-xl px-4 py-2.5 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent resize-none"
-              />
-            </div>
-
-            {/* Sub-ratings */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">Work culture</label>
-                <StarRating value={cultureRating} onChange={setCultureRating} size="small" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">Mentorship</label>
-                <StarRating value={mentorshipRating} onChange={setMentorshipRating} size="small" />
-              </div>
-            </div>
-
-            {/* Recommend */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">Would you recommend?</label>
-              <div className="flex gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setRecommend(true)}
-                  className={`flex-1 py-2.5 text-sm font-medium rounded-xl border transition-colors ${
+                  className={`py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
                     recommend === true
-                      ? "bg-green-600 text-white border-green-600 font-semibold shadow-sm"
-                      : "bg-white text-neutral-600 border-neutral-300 hover:bg-neutral-50"
+                      ? "bg-emerald-50 border-emerald-500 text-emerald-800 shadow-xs"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                   }`}
                 >
-                  👍 Yes
+                  <span>👍</span>
+                  <span>Yes, recommended</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setRecommend(false)}
-                  className={`flex-1 py-2.5 text-sm font-medium rounded-xl border transition-colors ${
+                  className={`py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
                     recommend === false
-                      ? "bg-red-600 text-white border-red-600 font-semibold shadow-sm"
-                      : "bg-white text-neutral-600 border-neutral-300 hover:bg-neutral-50"
+                      ? "bg-rose-50 border-rose-500 text-rose-800 shadow-xs"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                   }`}
                 >
-                  👎 No
+                  <span>👎</span>
+                  <span>No, look elsewhere</span>
                 </button>
               </div>
             </div>
+          </div>
 
-            {/* Stipend */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Stipend</label>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 relative">
-                  <input
-                    type="number"
-                    value={stipend}
-                    onChange={(e) => setStipend(e.target.value)}
-                    disabled={unpaid}
-                    placeholder="e.g. 15000"
-                    className="w-full border border-neutral-300 rounded-xl px-4 py-2.5 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent disabled:bg-neutral-50 disabled:text-neutral-400"
-                  />
-                </div>
-                <span className="text-sm text-neutral-500 flex-shrink-0">BDT/month</span>
-                <label className="flex items-center gap-1.5 flex-shrink-0 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={unpaid}
-                    onChange={(e) => {
-                      setUnpaid(e.target.checked);
-                      if (e.target.checked) setStipend("");
-                    }}
-                    className="w-4 h-4 accent-brand-600"
-                  />
-                  <span className="text-sm text-neutral-600">Unpaid</span>
-                </label>
-              </div>
-            </div>
+          {/* RIGHT COLUMN: Structured Written Insights */}
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-5">
+            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider pb-2 border-b border-slate-100 flex items-center justify-between">
+              <span>Structured Written Insights</span>
+              <span className="text-[11px] font-normal text-indigo-600">Step 2 of 2</span>
+            </h2>
 
-            {/* Duration */}
+            {/* One-line Headline */}
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Duration</label>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                One-Line Headline <span className="text-rose-500">*</span>
+              </label>
               <input
                 type="text"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                placeholder="e.g. 3 months"
-                className="w-full border border-neutral-300 rounded-xl px-4 py-2.5 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent"
+                placeholder="Summarize your experience in one punchy sentence..."
+                value={headline}
+                onChange={(e) => setHeadline(e.target.value)}
+                required
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
 
-            {/* Submit Internship Review Button */}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 disabled:opacity-60 transition-colors shadow-sm"
-            >
-              {submitting ? "Submitting review..." : "Submit anonymous review (+5 points)"}
-            </button>
-          </>
-        )}
+            {/* The Good (Pros) */}
+            <div>
+              <label className="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                The Good (Pros)
+              </label>
+              <textarea
+                rows={4}
+                placeholder="What did you enjoy? What did you learn? (Mentorship, tech stack, codebase, office perks, supportive seniors)..."
+                value={theGood}
+                onChange={(e) => setTheGood(e.target.value)}
+                className="w-full p-3.5 rounded-xl border border-slate-200 border-l-4 border-l-emerald-500 bg-emerald-50/20 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 resize-none leading-relaxed"
+              />
+            </div>
+
+            {/* The Challenges (Cons) */}
+            <div>
+              <label className="block text-xs font-bold text-amber-800 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                The Challenges (Cons)
+              </label>
+              <textarea
+                rows={4}
+                placeholder="What could be improved? (Workload, management, communication, stipend timeliness, unclear requirements)..."
+                value={theChallenges}
+                onChange={(e) => setTheChallenges(e.target.value)}
+                className="w-full p-3.5 rounded-xl border border-slate-200 border-l-4 border-l-amber-500 bg-amber-50/20 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 resize-none leading-relaxed"
+              />
+            </div>
+
+            {/* Advice for Applicants */}
+            <div>
+              <label className="block text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                Advice for Applicants
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Tips for passing the interview, topics to study, or resume advice for future students..."
+                value={advice}
+                onChange={(e) => setAdvice(e.target.value)}
+                className="w-full p-3.5 rounded-xl border border-slate-200 border-l-4 border-l-indigo-400 bg-indigo-50/20 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none leading-relaxed"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Form Footer */}
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/80 p-5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">🎉</span>
+            <div>
+              <p className="text-xs font-bold text-slate-800">
+                Submitting this review earns <span className="text-orange-600 font-extrabold">+30 Contributor Points</span>
+              </p>
+              <p className="text-[11px] text-slate-400">
+                Instantly advances your status towards Explorer Tier.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full sm:w-auto px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs md:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            <span>{submitting ? "Submitting securely..." : "Submit Anonymous Review ↗"}</span>
+          </button>
+        </div>
       </form>
     </div>
   );

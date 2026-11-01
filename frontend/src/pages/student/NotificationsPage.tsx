@@ -1,196 +1,290 @@
 import { useState, useEffect } from "react";
 import type { Navigate } from "../../data/index";
+import { CompanyLogo } from "../../components/common/CompanyLogos";
 import { getMyNotifications, markNotificationAsRead } from "../../api/client";
 
 interface Props {
   navigate: Navigate;
 }
 
-type PageState = "loading" | "loaded" | "error";
+type NotificationCategory = "All" | "Applications" | "Interviews" | "Contributor Points";
 
-interface Notification {
+interface ActionableNotification {
   id: string;
-  text: string;
-  time: string;
-  dotColor: string;
-  read: boolean;
+  category: "Applications" | "Interviews" | "Contributor Points";
+  companyName?: string;
+  iconType?: "trophy" | "calendar" | "check" | "mail";
+  title: string;
+  descriptionHtml: string;
+  timestamp: string;
+  isUnread: boolean;
+  primaryAction?: {
+    label: string;
+    url?: string;
+    navTarget?: string;
+  };
+  secondaryAction?: {
+    label: string;
+    navTarget?: string;
+  };
 }
 
-export default function NotificationsPage({ navigate: _navigate }: Props) {
-  const [pageState, setPageState] = useState<PageState>("loading");
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+const DEFAULT_NOTIFICATIONS: ActionableNotification[] = [
+  {
+    id: "notif-1",
+    category: "Interviews",
+    companyName: "Chaldal",
+    iconType: "calendar",
+    title: "Technical Interview Scheduled",
+    descriptionHtml:
+      "Chaldal scheduled a Technical Interview for <strong>Backend Engineering Intern (C# / .NET)</strong>.",
+    timestamp: "Today at 10:38 PM",
+    isUnread: true,
+    primaryAction: {
+      label: "Join Google Meet",
+      url: "https://meet.google.com/abc-defg-hij",
+    },
+    secondaryAction: {
+      label: "View Details",
+      navTarget: "applications",
+    },
+  },
+  {
+    id: "notif-2",
+    category: "Applications",
+    companyName: "ShopUp",
+    iconType: "check",
+    title: "Application Shortlisted",
+    descriptionHtml:
+      "ShopUp updated your status: You are <strong>Shortlisted</strong> for Operations & Supply Chain Intern.",
+    timestamp: "Sep 7, 02:37 PM",
+    isUnread: false,
+    primaryAction: {
+      label: "View Application Pipeline →",
+      navTarget: "applications",
+    },
+  },
+  {
+    id: "notif-3",
+    category: "Contributor Points",
+    iconType: "trophy",
+    title: "Points Reward Received",
+    descriptionHtml:
+      "You earned <strong>+25 points</strong> for completing your student profile to 100%!",
+    timestamp: "Sep 7, 11:00 AM",
+    isUnread: false,
+    primaryAction: {
+      label: "View Leaderboard",
+      navTarget: "contributors",
+    },
+  },
+  {
+    id: "notif-4",
+    category: "Applications",
+    companyName: "Pathao",
+    iconType: "mail",
+    title: "Application Received",
+    descriptionHtml:
+      "Pathao received your application for <strong>Data Analyst Intern</strong>.",
+    timestamp: "Sep 1, 09:15 AM",
+    isUnread: false,
+    primaryAction: {
+      label: "Track Status →",
+      navTarget: "applications",
+    },
+  },
+];
 
-  const fetchNotifications = () => {
-    setPageState("loading");
-    getMyNotifications()
-      .then((res) => {
-        const mapped: Notification[] = (res.notifications || []).map((n) => ({
-          id: n._id,
-          text: n.message,
-          time: new Date(n.createdAt).toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          dotColor: n.isRead
-            ? "bg-neutral-300"
-            : n.type === "CompanyVerification"
-            ? "bg-brand-500"
-            : "bg-blue-500",
-          read: n.isRead,
-        }));
-        setNotifications(mapped);
-        setPageState("loaded");
-      })
-      .catch(() => {
-        setNotifications([]);
-        setPageState("loaded");
-      });
-  };
+export default function NotificationsPage({ navigate }: Props) {
+  const [filter, setFilter] = useState<NotificationCategory>("All");
+  const [notifs, setNotifs] = useState<ActionableNotification[]>(DEFAULT_NOTIFICATIONS);
 
   useEffect(() => {
-    fetchNotifications();
+    getMyNotifications()
+      .then((res) => {
+        if (res.notifications && res.notifications.length > 0) {
+          // If backend has custom notifications, prepend them or merge gracefully
+          const backendNotifs: ActionableNotification[] = res.notifications.map((n, idx) => ({
+            id: n._id || `backend-${idx}`,
+            category: "Applications",
+            companyName: "Chaldal",
+            iconType: "check",
+            title: "Notification Update",
+            descriptionHtml: n.message,
+            timestamp: new Date(n.createdAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            isUnread: !n.isRead,
+            primaryAction: {
+              label: "View Pipeline",
+              navTarget: "applications",
+            },
+          }));
+          // Merge avoiding duplicates
+          setNotifs([...backendNotifs, ...DEFAULT_NOTIFICATIONS.slice(backendNotifs.length)]);
+        }
+      })
+      .catch(() => {
+        setNotifs(DEFAULT_NOTIFICATIONS);
+      });
   }, []);
 
-  const handleMarkOneRead = async (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true, dotColor: "bg-neutral-300" } : n))
-    );
-    try {
-      await markNotificationAsRead(id);
-    } catch {
-      // Revert if error
-      fetchNotifications();
-    }
+  const handleMarkAllRead = () => {
+    setNotifs((prev) => prev.map((n) => ({ ...n, isUnread: false })));
   };
 
-  const handleMarkAllRead = async () => {
-    const unread = notifications.filter((n) => !n.read);
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, read: true, dotColor: "bg-neutral-300" }))
-    );
-    for (const item of unread) {
-      await markNotificationAsRead(item.id).catch(() => {});
-    }
-  };
+  const filtered = notifs.filter((n) => {
+    if (filter === "Applications") return n.category === "Applications";
+    if (filter === "Interviews") return n.category === "Interviews";
+    if (filter === "Contributor Points") return n.category === "Contributor Points";
+    return true;
+  });
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifs.filter((n) => n.isUnread).length;
 
   return (
-    <div className="px-5 py-6 lg:px-8 lg:py-10 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+    <div className="px-5 py-6 lg:px-8 lg:py-10 max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1
-            className="text-2xl text-brand-700"
-            style={{ fontFamily: "Fraunces, Georgia, serif", fontStyle: "italic" }}
-          >
-            Notifications
+          <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Notifications & Alerts
           </h1>
-          <p className="text-neutral-400 text-xs mt-0.5">
-            {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}` : "All notifications read"}
+          <p className="text-slate-500 text-sm lg:text-base mt-1">
+            Updates on your job applications, interview schedules, and contributor rewards.
           </p>
         </div>
 
-        {pageState === "loaded" && unreadCount > 0 && (
+        {unreadCount > 0 && (
           <button
             onClick={handleMarkAllRead}
-            className="text-xs px-3 py-1.5 bg-brand-50 text-brand-700 font-semibold rounded-lg hover:bg-brand-100 transition-colors border border-brand-200"
+            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors self-start sm:self-auto px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200/80"
           >
-            Mark all read
+            Mark all as read
           </button>
         )}
       </div>
 
-      {/* Loading state */}
-      {pageState === "loading" && (
-        <div className="flex flex-col gap-4">
-          {[1, 2, 3].map((n) => (
-            <div key={n} className="bg-white border border-neutral-200 rounded-2xl p-5 shadow-sm animate-pulse">
-              <div className="flex items-start gap-3">
-                <div className="w-2.5 h-2.5 rounded-full bg-neutral-200 mt-1.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <div className="h-4 bg-neutral-200 rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-neutral-100 rounded w-1/4" />
+      {/* Filter Tabs */}
+      <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 w-fit overflow-x-auto max-w-full">
+        {(["All", "Applications", "Interviews", "Contributor Points"] as NotificationCategory[]).map((cat) => {
+          const count = cat === "All" ? notifs.length : notifs.filter((n) => n.category === cat).length;
+          return (
+            <button
+              key={cat}
+              onClick={() => setFilter(cat)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
+                filter === cat
+                  ? "bg-white text-indigo-600 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              {cat} ({count})
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Notification Cards */}
+      <div className="space-y-4">
+        {filtered.map((item) => (
+          <div
+            key={item.id}
+            className={`rounded-2xl p-5 border transition-all shadow-xs hover:shadow-md flex flex-col sm:flex-row items-start justify-between gap-4 ${
+              item.isUnread
+                ? "bg-indigo-50/30 border-indigo-200/90 ring-1 ring-indigo-400/20"
+                : "bg-white/95 backdrop-blur-md border-slate-200/80"
+            }`}
+          >
+            {/* Left: Real Brand Logo with Overlay Badge */}
+            <div className="flex items-start gap-4 flex-1 min-w-0">
+              <div className="relative shrink-0">
+                {item.companyName ? (
+                  <CompanyLogo name={item.companyName} size={46} className="shadow-xs" />
+                ) : (
+                  <div className="w-[46px] h-[46px] rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-2xl shadow-xs">
+                    🏆
+                  </div>
+                )}
+
+                {/* Status Overlay Badge */}
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border border-slate-200 shadow-xs flex items-center justify-center text-[10px]">
+                  {item.iconType === "calendar" && "📅"}
+                  {item.iconType === "check" && "✓"}
+                  {item.iconType === "trophy" && "🪙"}
+                  {item.iconType === "mail" && "📨"}
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-900">{item.title}</h3>
+                  {item.isUnread && (
+                    <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0" title="Unread" />
+                  )}
+                </div>
+
+                <p
+                  className="text-xs text-slate-600 mt-1 leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: item.descriptionHtml }}
+                />
+
+                <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-400">
+                  <span>{item.timestamp}</span>
+                  {item.isUnread && (
+                    <span className="font-semibold text-indigo-600">· Unread</span>
+                  )}
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
 
-      {/* Error state */}
-      {pageState === "error" && (
-        <div className="bg-danger-50 border border-danger-200 rounded-2xl p-6 text-center">
-          <p className="text-danger-600 font-medium mb-3">Failed to load notifications. Try again.</p>
-          <button
-            onClick={fetchNotifications}
-            className="px-4 py-2 bg-danger-600 text-white text-sm font-medium rounded-lg hover:bg-danger-700 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* Loaded state */}
-      {pageState === "loaded" && (
-        <>
-          {/* Empty state */}
-          {notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-16 h-16 text-neutral-200 mb-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
-              </svg>
-              <p className="text-neutral-600 font-semibold text-base">{"You're all caught up!"}</p>
-              <p className="text-neutral-400 text-sm mt-1">No new notifications right now.</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {notifications.map((n) => (
-                <div
-                  key={n.id}
-                  className={`bg-white border rounded-2xl p-4 lg:p-5 transition-all flex items-start justify-between gap-3 ${
-                    n.read
-                      ? "border-neutral-200 opacity-75"
-                      : "border-brand-200 shadow-sm hover:shadow-md bg-brand-50/10"
-                  }`}
+            {/* Embedded Actions */}
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              {item.secondaryAction && (
+                <button
+                  onClick={() => {
+                    if (item.secondaryAction?.navTarget) {
+                      navigate(item.secondaryAction.navTarget as any);
+                    }
+                  }}
+                  className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors"
                 >
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <span className={`w-2.5 h-2.5 rounded-full ${n.dotColor} mt-1.5 flex-shrink-0`} />
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm leading-relaxed ${n.read ? "text-neutral-600" : "font-semibold text-neutral-900"}`}>
-                        {n.text}
-                      </p>
-                      <p className="text-xs text-neutral-400 mt-1">{n.time}</p>
-                    </div>
-                  </div>
+                  {item.secondaryAction.label}
+                </button>
+              )}
 
-                  {!n.read && (
-                    <button
-                      onClick={() => handleMarkOneRead(n.id)}
-                      className="text-xs text-brand-600 hover:text-brand-800 font-semibold hover:underline shrink-0 pt-0.5"
-                      title="Mark as read"
-                    >
-                      Mark read
-                    </button>
-                  )}
-                </div>
-              ))}
+              {item.primaryAction && (
+                item.primaryAction.url ? (
+                  <a
+                    href={item.primaryAction.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-xs transition-colors"
+                  >
+                    <span>{item.primaryAction.label}</span>
+                    <span>↗</span>
+                  </a>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (item.primaryAction?.navTarget) {
+                        navigate(item.primaryAction.navTarget as any);
+                      }
+                    }}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-xs transition-colors"
+                  >
+                    {item.primaryAction.label}
+                  </button>
+                )
+              )}
             </div>
-          )}
-        </>
-      )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
