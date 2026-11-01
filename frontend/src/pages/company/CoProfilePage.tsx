@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Navigate } from "../../data/index";
+import { CompanyLogo } from "../../components/common/CompanyLogos";
 import {
   getMyCompanyProfile,
   getMyCompanyInternships,
@@ -13,25 +14,20 @@ interface Props {
 
 export default function CoProfilePage({ navigate }: Props) {
   const user = getSavedUser();
-  const [profile, setProfile] = useState<{
-    _id?: string;
-    companyName: string;
-    industry?: string;
-    description?: string;
-    website?: string;
-    verificationStatus: "Pending" | "Approved" | "Rejected";
-  }>({
-    companyName: user?.name || "Company",
-    industry: "Software & Technology",
-    description: "Technology firm offering modern internship opportunities.",
-    website: "https://example.com",
-    verificationStatus: "Pending",
-  });
-  const [activeCount, setActiveCount] = useState(0);
+  const [companyName, setCompanyName] = useState(user?.name || "bKash Limited");
+  const [industry, setIndustry] = useState("Fintech & Mobile Financial Services");
+  const [website, setWebsite] = useState("https://bkash.com");
+  const [contactEmail, setContactEmail] = useState(user?.email || "careers@company.com");
+  const [verificationStatus, setVerificationStatus] = useState("Approved");
+  const [aboutBio, setAboutBio] = useState(
+    "Leading technology solutions, distributed services, and career opportunities for young talent across Bangladesh."
+  );
+  const [companyInternships, setCompanyInternships] = useState<any[]>([]);
+
   const [isEditing, setIsEditing] = useState(false);
-  const [editIndustry, setEditIndustry] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editWebsite, setEditWebsite] = useState("");
+  const [editIndustry, setEditIndustry] = useState(industry);
+  const [editWebsite, setEditWebsite] = useState(website);
+  const [editBio, setEditBio] = useState(aboutBio);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -39,183 +35,225 @@ export default function CoProfilePage({ navigate }: Props) {
     getMyCompanyProfile()
       .then((res) => {
         if (res.profile) {
-          setProfile({
-            ...res.profile,
-            companyName: res.profile.companyName || user?.name || "Company",
-            industry: res.profile.industry || "Software & Technology",
-            description: res.profile.description || "Leading technology solutions and internship provider.",
-            website: res.profile.website || "https://example.com",
-            verificationStatus: res.profile.verificationStatus || "Pending",
-          });
-          setEditIndustry(res.profile.industry || "Software & Technology");
-          setEditDescription(res.profile.description || "");
+          setCompanyName(res.profile.companyName || user?.name || "Company");
+          if (res.profile.industry) setIndustry(res.profile.industry);
+          if (res.profile.website) setWebsite(res.profile.website);
+          if (res.profile.description) setAboutBio(res.profile.description);
+          setVerificationStatus(res.profile.verificationStatus || "Approved");
+
+          setEditIndustry(res.profile.industry || "Technology & Enterprise");
           setEditWebsite(res.profile.website || "https://example.com");
+          setEditBio(res.profile.description || aboutBio);
         }
       })
       .catch(() => {});
 
     getMyCompanyInternships()
       .then((res) => {
-        const active = (res.internships || []).filter((i) => i.status === "active").length;
-        setActiveCount(active);
+        if (res.internships) {
+          setCompanyInternships(res.internships);
+        }
       })
       .catch(() => {});
-  }, [user?.name]);
+  }, []);
 
-  async function handleSave() {
+  const handleSave = async () => {
     setSaving(true);
-    setMessage(null);
     try {
       await submitCompanyProfile({
-        companyName: profile.companyName,
+        companyName,
         industry: editIndustry,
-        description: editDescription,
         website: editWebsite,
+        description: editBio,
         verificationDocument: "trade_license.pdf",
       });
-      setProfile((prev) => ({
-        ...prev,
-        industry: editIndustry,
-        description: editDescription,
-        website: editWebsite,
-      }));
+      setIndustry(editIndustry);
+      setWebsite(editWebsite);
+      setAboutBio(editBio);
       setIsEditing(false);
       setMessage("Company profile updated successfully!");
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to update profile");
+      alert(err instanceof Error ? err.message : "Failed to update profile.");
     } finally {
       setSaving(false);
     }
-  }
-
-  const infoRows = [
-    { label: "Industry", value: profile.industry || "Software & Technology" },
-    { label: "Account email", value: user?.email || "company@example.com" },
-    { label: "Website", value: profile.website || "https://example.com" },
-    { label: "Status", value: profile.verificationStatus },
-  ];
+  };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8 lg:px-8 lg:py-10 min-h-screen bg-neutral-50">
+    <div className="px-5 py-6 lg:px-8 lg:py-10 max-w-6xl mx-auto space-y-6">
+      {/* Toast */}
       {message && (
-        <div className="fixed top-5 right-5 bg-success-600 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-semibold z-50 animate-fade-in">
-          {message}
+        <div className="fixed top-5 right-5 z-50 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg text-xs font-bold flex items-center gap-2 animate-fade-in">
+          <span>✓</span>
+          <span>{message}</span>
         </div>
       )}
 
-      {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+      {/* 1. Header & Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1
-            className="text-2xl lg:text-3xl text-neutral-900 leading-tight"
-            style={{
-              fontFamily: "Fraunces, serif",
-              fontStyle: "italic",
-              fontVariationSettings: "'opsz' 72, 'wght' 700",
-            }}
-          >
-            Company Profile
+          <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Public Organization Profile
           </h1>
-          <p className="text-sm text-neutral-500 mt-1">
-            Public-facing organization information for {profile.companyName}
+          <p className="text-slate-500 text-xs sm:text-sm mt-1">
+            This information is publicly visible to university students across Bangladesh.
           </p>
         </div>
-        <button
-          onClick={() => setIsEditing(!isEditing)}
-          className="bg-brand-600 text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-brand-700 transition-colors shadow-sm"
-        >
-          {isEditing ? "Cancel" : "Edit Profile"}
-        </button>
+
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          <button
+            onClick={() => {
+              setEditIndustry(industry);
+              setEditWebsite(website);
+              setEditBio(aboutBio);
+              setIsEditing(!isEditing);
+            }}
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors"
+          >
+            {isEditing ? "Close Editor" : "Edit Profile & Branding"}
+          </button>
+          <button
+            onClick={() => navigate("company-detail", { id: 5 })}
+            className="px-4 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl shadow-2xs transition-colors flex items-center gap-1.5"
+          >
+            <span>View Public Profile</span>
+            <span>↗</span>
+          </button>
+        </div>
       </div>
 
-      {/* Section 1: Company identity */}
-      <div className="bg-white border border-neutral-200 rounded-3xl p-6 lg:p-8 mb-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-start gap-6">
-          {/* Logo */}
-          <div className="w-20 h-20 rounded-2xl bg-brand-600 text-white flex items-center justify-center text-2xl font-bold flex-shrink-0 shadow-md">
-            {profile.companyName.slice(0, 2).toUpperCase()}
+      {/* 2. Hero Showcase Card */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+        {/* Top Cover Photo Banner */}
+        <div className="relative h-52 sm:h-64 w-full overflow-hidden bg-slate-900">
+          <img
+            src="/workplace_office_banner.jpg"
+            alt="bKash Dhaka Headquarters"
+            className="w-full h-full object-cover object-center brightness-105"
+            onError={(e) => {
+              (e.target as HTMLElement).style.display = "none";
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-transparent pointer-events-none" />
+          <span className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-slate-950/60 backdrop-blur-md text-white text-xs font-semibold border border-white/20 shadow-xs flex items-center gap-1.5">
+            <span>📍</span>
+            <span>Dhaka Headquarters</span>
+          </span>
+        </div>
+
+        {/* Brand Block & Identity Information */}
+        <div className="px-6 lg:px-8 pb-8 relative">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-5">
+              {/* Elevated Squircle Brand Logo overlapping the banner photo */}
+              <div className="-mt-12 sm:-mt-16 w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-white p-2.5 shadow-xl border-4 border-white flex items-center justify-center shrink-0 z-10">
+                <CompanyLogo name={companyName} size={72} />
+              </div>
+
+              {/* Company Name & Metadata - strictly positioned on the clean white card below the photo */}
+              <div className="pt-2 sm:pt-5 space-y-1">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+                    {companyName}
+                  </h2>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shadow-2xs">
+                    <span>✔</span>
+                    <span>Verified Enterprise Partner</span>
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                  Dhaka, Bangladesh · 500+ Employees · {industry}
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Name + verification */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h2
-                className="text-2xl lg:text-3xl text-neutral-900 leading-tight font-bold"
-                style={{
-                  fontFamily: "Fraunces, serif",
-                  fontStyle: "italic",
-                }}
-              >
-                {profile.companyName}
-              </h2>
-              {profile.verificationStatus === "Approved" && (
-                <span className="inline-flex items-center gap-1 bg-success-50 text-success-700 text-xs font-semibold px-3 py-1 rounded-full border border-success-200">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Verified Enterprise
-                </span>
-              )}
+          {/* Structured Info Grid (4-Column Layout) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-slate-50/70 border border-slate-200/60">
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Industry</p>
+              <p className="text-xs sm:text-sm font-bold text-slate-800 mt-0.5">{industry}</p>
             </div>
 
-            {/* Info rows */}
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
-              {infoRows.map((row) => (
-                <div key={row.label} className="flex items-baseline gap-2">
-                  <span className="text-xs text-neutral-400 w-28 flex-shrink-0 font-medium">
-                    {row.label}
-                  </span>
-                  <span className="text-sm font-semibold text-neutral-800 truncate">{row.value}</span>
-                </div>
-              ))}
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Website</p>
+              <a
+                href={website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs sm:text-sm font-bold text-indigo-600 hover:underline mt-0.5 inline-flex items-center gap-1"
+              >
+                <span>{website}</span>
+                <span>↗</span>
+              </a>
+            </div>
+
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Recruiter Contact</p>
+              <p className="text-xs sm:text-sm font-bold text-slate-800 mt-0.5">{contactEmail}</p>
+            </div>
+
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Verification</p>
+              <p className="text-xs sm:text-sm font-bold text-emerald-600 mt-0.5 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>{verificationStatus} & Active</span>
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Edit Form Modal/Drawer */}
+      {/* Editor Drawer */}
       {isEditing && (
-        <div className="bg-white border border-brand-200 rounded-3xl p-6 lg:p-8 mb-6 shadow-md space-y-4">
-          <h3 className="font-bold text-neutral-900 text-base">Edit Company Details</h3>
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Industry</label>
-            <input
-              type="text"
-              value={editIndustry}
-              onChange={(e) => setEditIndustry(e.target.value)}
-              className="w-full border border-neutral-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
-            />
+        <div className="bg-white rounded-3xl border border-indigo-200 p-6 lg:p-8 shadow-xl space-y-4 animate-scale-up">
+          <h3 className="font-extrabold text-base text-slate-900 pb-2 border-b border-slate-100">
+            Edit Public Profile Details
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Industry</label>
+              <input
+                type="text"
+                value={editIndustry}
+                onChange={(e) => setEditIndustry(e.target.value)}
+                className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Website URL</label>
+              <input
+                type="text"
+                value={editWebsite}
+                onChange={(e) => setEditWebsite(e.target.value)}
+                className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
           </div>
+
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Website URL</label>
-            <input
-              type="text"
-              value={editWebsite}
-              onChange={(e) => setEditWebsite(e.target.value)}
-              className="w-full border border-neutral-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">About / Bio</label>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Company Overview</label>
             <textarea
-              rows={4}
-              value={editDescription}
-              onChange={(e) => setEditDescription(e.target.value)}
-              className="w-full border border-neutral-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 resize-none"
+              rows={5}
+              value={editBio}
+              onChange={(e) => setEditBio(e.target.value)}
+              className="w-full p-3.5 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-indigo-500 leading-relaxed"
             />
           </div>
-          <div className="flex gap-2 justify-end pt-2">
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
             <button
               onClick={() => setIsEditing(false)}
-              className="px-4 py-2 border border-neutral-200 text-neutral-600 rounded-xl text-xs font-semibold hover:bg-neutral-50"
+              className="px-4 py-2 border border-slate-300 text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-50"
             >
               Cancel
             </button>
             <button
-              disabled={saving}
               onClick={handleSave}
-              className="px-5 py-2 bg-brand-600 text-white rounded-xl text-xs font-semibold hover:bg-brand-700 transition-colors shadow-sm disabled:opacity-50"
+              disabled={saving}
+              className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save Changes"}
             </button>
@@ -223,29 +261,100 @@ export default function CoProfilePage({ navigate }: Props) {
         </div>
       )}
 
-      {/* Section 2: About */}
-      <div className="bg-white border border-neutral-200 rounded-3xl p-6 lg:p-8 mb-6 shadow-sm">
-        <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">
-          Company Overview & Culture
-        </h3>
-        <p className="text-sm text-neutral-700 leading-relaxed">
-          {profile.description || "No company description provided yet."}
-        </p>
-      </div>
+      {/* 3. Organization Overview & Culture Bento */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left: About bKash (7 cols) */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-3">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              About {companyName}
+            </h3>
+            <div className="text-xs text-slate-700 leading-relaxed space-y-3">
+              {aboutBio.split("\n\n").map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
+            </div>
+          </div>
 
-      {/* Section 3: Stat Overview */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-white border border-neutral-200 rounded-2xl p-5 shadow-sm">
-          <p className="text-xs text-neutral-500 uppercase tracking-wide font-semibold mb-1">
-            Active Internships
-          </p>
-          <p className="text-2xl font-bold text-brand-600">{activeCount}</p>
+          {/* Workplace & Perks */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-3">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              Workplace & Student Intern Perks
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+              {[
+                { title: "Mentorship Program", icon: "👨‍🏫" },
+                { title: "Flexible Core Hours", icon: "⏰" },
+                { title: "Subsidized Lunch", icon: "🍲" },
+                { title: "Pre-Placement Offer (PPO) Track", icon: "🎯" },
+              ].map((perk) => (
+                <div
+                  key={perk.title}
+                  className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 text-center space-y-1.5"
+                >
+                  <span className="text-xl">{perk.icon}</span>
+                  <p className="font-bold text-[11px] text-slate-800 leading-tight">{perk.title}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-        <div className="bg-white border border-neutral-200 rounded-2xl p-5 shadow-sm">
-          <p className="text-xs text-neutral-500 uppercase tracking-wide font-semibold mb-1">
-            Verification Status
-          </p>
-          <p className="text-2xl font-bold text-success-600">{profile.verificationStatus}</p>
+
+        {/* Right: Active Opportunities Preview (5 cols) */}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              Live Opportunities ({companyInternships.length})
+            </h3>
+            <button
+              onClick={() => navigate("co-internships")}
+              className="text-xs font-bold text-indigo-600 hover:underline"
+            >
+              Manage all →
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {companyInternships.length > 0 ? (
+              companyInternships.map((ci) => (
+                <div key={ci._id} className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
+                      {ci.title}
+                    </h4>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      {ci.mode || "On-site"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    {ci.type === "Paid" ? "Paid · BDT 20,000/mo" : "Unpaid"} · Deadline:{" "}
+                    {ci.deadline
+                      ? new Date(ci.deadline).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "May 20, 2027"}
+                  </p>
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-400 text-[11px]">
+                      {ci.totalApplicants || 0} direct {ci.totalApplicants === 1 ? "applicant" : "applicants"}
+                    </span>
+                    <button
+                      onClick={() => navigate("co-applicants", { internshipId: ci._id })}
+                      className="font-bold text-indigo-600 hover:text-indigo-800"
+                    >
+                      View candidates →
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-6 rounded-2xl border border-dashed border-slate-200 bg-white text-center text-xs text-slate-400">
+                No live opportunities posted yet.
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
