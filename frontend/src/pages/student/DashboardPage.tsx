@@ -12,6 +12,8 @@ import {
   type ApiApplicationItem,
   type ApiNotificationItem
 } from "../../api/client";
+import DocumentPreviewModal from "../../components/common/DocumentPreviewModal";
+import { formatResumeFilename } from "../../utils/formatDocument";
 
 interface Props {
   navigate: Navigate;
@@ -28,7 +30,8 @@ export default function DashboardPage({ navigate, currentUser }: Props) {
   const [savedCount, setSavedCount] = useState(1);
   const [applications, setApplications] = useState<ApiApplicationItem[]>([]);
   const [notifications, setNotifications] = useState<ApiNotificationItem[]>([]);
-  const [resumeFilename, setResumeFilename] = useState("Nafis_Resume_CSE.pdf");
+  const [resumeFilename, setResumeFilename] = useState("Nafis_Uddin_Chowdhury_Resume.pdf");
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   useEffect(() => {
     getStudentProfile()
@@ -43,7 +46,7 @@ export default function DashboardPage({ navigate, currentUser }: Props) {
     getMyResume()
       .then((res) => {
         if (res.resume && res.resume.filePath) {
-          const fn = res.resume.filePath.split(/[/\\]/).pop() || "Nafis_Resume_CSE.pdf";
+          const fn = formatResumeFilename(res.resume.filePath, res.resume.originalName);
           setResumeFilename(fn);
         }
       })
@@ -159,8 +162,9 @@ export default function DashboardPage({ navigate, currentUser }: Props) {
               Update Skills
             </button>
             <button
-              onClick={() => navigate("profile")}
+              onClick={() => setIsPreviewOpen(true)}
               className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600/60 hover:bg-indigo-600 text-white font-medium text-xs md:text-sm rounded-xl border border-indigo-400/40 backdrop-blur-sm transition-all shadow-sm"
+              title="Click to preview verified resume"
             >
               <span>📄</span>
               <span className="truncate max-w-[180px]">{resumeFilename}</span>
@@ -518,6 +522,14 @@ export default function DashboardPage({ navigate, currentUser }: Props) {
           </div>
         </div>
       </div>
+
+      {/* In-App Glassmorphic Document Preview Modal */}
+      <DocumentPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        documentUrl="/sample_resume.pdf"
+        documentTitle={resumeFilename}
+      />
     </div>
   );
 }

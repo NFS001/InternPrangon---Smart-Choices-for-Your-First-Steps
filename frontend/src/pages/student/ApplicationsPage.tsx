@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import type { Navigate } from "../../data/index";
 import { CompanyLogo } from "../../components/common/CompanyLogos";
 import { getMyApplications } from "../../api/client";
+import DocumentPreviewModal from "../../components/common/DocumentPreviewModal";
+import { formatResumeFilename } from "../../utils/formatDocument";
 
 interface Props {
   navigate: Navigate;
@@ -28,6 +30,8 @@ interface ApplicationItem {
     actionLabel?: string;
     actionUrl?: string;
   };
+  resumeFilename?: string;
+  resumeUrl?: string;
 }
 
 const DEFAULT_APPLICATIONS: ApplicationItem[] = [
@@ -52,6 +56,8 @@ const DEFAULT_APPLICATIONS: ApplicationItem[] = [
       actionLabel: "Join Meeting Link",
       actionUrl: "https://meet.google.com/abc-defg-hij",
     },
+    resumeFilename: "Nafis_Uddin_Chowdhury_Resume.pdf",
+    resumeUrl: "/sample_resume.pdf",
   },
   {
     id: "app-2",
@@ -72,6 +78,8 @@ const DEFAULT_APPLICATIONS: ApplicationItem[] = [
       type: "info",
       text: "Application reviewed by hiring manager. Hiring committee is reviewing candidate portfolio.",
     },
+    resumeFilename: "Nafis_Uddin_Chowdhury_Resume.pdf",
+    resumeUrl: "/sample_resume.pdf",
   },
   {
     id: "app-3",
@@ -92,12 +100,15 @@ const DEFAULT_APPLICATIONS: ApplicationItem[] = [
       type: "submitted",
       text: "Application submitted successfully and delivered to talent acquisition queue.",
     },
+    resumeFilename: "Nafis_Uddin_Chowdhury_Resume.pdf",
+    resumeUrl: "/sample_resume.pdf",
   },
 ];
 
 export default function ApplicationsPage({ navigate }: Props) {
   const [filter, setFilter] = useState<FilterType>("All");
   const [apps, setApps] = useState<ApplicationItem[]>(DEFAULT_APPLICATIONS);
+  const [selectedResumeModal, setSelectedResumeModal] = useState<{ url: string; title: string } | null>(null);
 
   useEffect(() => {
     getMyApplications()
@@ -110,9 +121,16 @@ export default function ApplicationsPage({ navigate }: Props) {
             const stageNum =
               statusMapped === "Offered" ? 4 : statusMapped === "Interviewing" ? 3 : statusMapped === "Shortlisted" ? 2 : 1;
 
+            const resumeObj = typeof apiApp.resume === "object" ? apiApp.resume : null;
+            const cleanResumeName = formatResumeFilename(
+              resumeObj?.filePath || (typeof apiApp.resume === "string" ? apiApp.resume : null),
+              resumeObj?.originalName,
+              "Nafis_Uddin_Chowdhury_Resume.pdf"
+            );
+
             return {
               id: apiApp.applicationId || `app-${idx}`,
-              companyName: "Chaldal",
+              companyName: (typeof apiApp.internship === "object" && apiApp.internship?.company) || "Chaldal",
               roleTitle: intern?.title || "Engineering Intern",
               location: intern?.mode ? `${intern.mode} · Dhaka` : "On-site · Dhaka",
               stipend: "Stipend: BDT 18,000/mo",
@@ -129,6 +147,8 @@ export default function ApplicationsPage({ navigate }: Props) {
                 { title: "Interview Scheduled", date: stageNum >= 3 ? "Oct 12" : undefined },
                 { title: "Decision / Offer" },
               ],
+              resumeFilename: cleanResumeName,
+              resumeUrl: "/sample_resume.pdf",
             };
           });
           setApps(mapped);
@@ -405,13 +425,28 @@ export default function ApplicationsPage({ navigate }: Props) {
               )}
 
               {/* Footer Actions */}
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                <button
-                  onClick={() => navigate("internships")}
-                  className="px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white text-slate-700 hover:text-slate-900 text-xs font-semibold rounded-xl transition-colors shadow-sm"
-                >
-                  View Job Posting
-                </button>
+              <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => navigate("internships")}
+                    className="px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white text-slate-700 hover:text-slate-900 text-xs font-semibold rounded-xl transition-colors shadow-2xs"
+                  >
+                    View Job Posting
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setSelectedResumeModal({
+                        url: app.resumeUrl || "/sample_resume.pdf",
+                        title: app.resumeFilename || `${app.companyName}_Application_Resume.pdf`,
+                      });
+                    }}
+                    className="px-3.5 py-2 border border-indigo-200/80 hover:border-indigo-300 bg-indigo-50/60 hover:bg-indigo-100/70 text-indigo-700 text-xs font-semibold rounded-xl transition-colors shadow-2xs flex items-center gap-1.5"
+                  >
+                    <span>📄</span>
+                    <span>Preview Resume</span>
+                  </button>
+                </div>
 
                 <button
                   onClick={() => {
@@ -428,6 +463,16 @@ export default function ApplicationsPage({ navigate }: Props) {
           ))
         )}
       </div>
+
+      {/* In-App Glassmorphic Document Preview Modal */}
+      {selectedResumeModal && (
+        <DocumentPreviewModal
+          isOpen={Boolean(selectedResumeModal)}
+          onClose={() => setSelectedResumeModal(null)}
+          documentUrl={selectedResumeModal.url}
+          documentTitle={selectedResumeModal.title}
+        />
+      )}
     </div>
   );
 }

@@ -11,6 +11,10 @@ const resumeSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    originalName: {
+        type: String,
+        default: 'Nafis_Uddin_Chowdhury_Resume_2026.pdf'
+    },
     uploadedDate: {
         type: Date,
         required: true,

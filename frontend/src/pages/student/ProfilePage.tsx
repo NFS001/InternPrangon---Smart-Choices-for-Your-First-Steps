@@ -9,6 +9,8 @@ import {
   uploadResume,
   type ApiUser,
 } from "../../api/client";
+import DocumentPreviewModal from "../../components/common/DocumentPreviewModal";
+import { formatResumeFilename } from "../../utils/formatDocument";
 
 interface Props {
   navigate: Navigate;
@@ -43,8 +45,12 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
   ]);
 
   const [newSkillInput, setNewSkillInput] = useState("");
-  const [resumeFilename, setResumeFilename] = useState("Nafis_Uddin_Chowdhury_Resume_2026.pdf");
+  const [resumeFilename, setResumeFilename] = useState("Nafis_Uddin_Chowdhury_Resume.pdf");
   const [resumeUploadDate, setResumeUploadDate] = useState("Sep 7, 2026");
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [resumeBlobUrl, setResumeBlobUrl] = useState<string | null>(null);
+
+  const resumeUrl = resumeBlobUrl || "/sample_resume.pdf";
 
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [editBioValue, setEditBioValue] = useState("");
@@ -69,7 +75,7 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
     getMyResume()
       .then((res) => {
         if (res.resume && res.resume.filePath) {
-          const fn = res.resume.filePath.split(/[/\\]/).pop() || "Nafis_Uddin_Chowdhury_Resume_2026.pdf";
+          const fn = formatResumeFilename(res.resume.filePath, res.resume.originalName);
           setResumeFilename(fn);
           if (res.resume.uploadedDate) {
             setResumeUploadDate(
@@ -139,8 +145,9 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
     setFeedbackMsg(null);
     try {
       const res = await uploadResume(file);
-      const fn = res.resume?.filePath?.split(/[/\\]/).pop() || file.name;
+      const fn = formatResumeFilename(res.resume?.filePath, file.name);
       setResumeFilename(fn);
+      setResumeBlobUrl(URL.createObjectURL(file));
       setResumeUploadDate("Just now");
       setFeedbackMsg({ type: "success", text: "Resume uploaded & parsed successfully!" });
       setTimeout(() => setFeedbackMsg(null), 3500);
@@ -149,6 +156,21 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
         type: "error",
         text: err instanceof Error ? err.message : "Failed to upload PDF.",
       });
+    }
+  };
+
+  const handleDownloadResume = () => {
+    try {
+      const link = document.createElement("a");
+      link.href = resumeUrl;
+      link.download = resumeFilename;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch {
+      window.open(resumeUrl, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -439,10 +461,13 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
         </div>
 
         {/* Elevated Document Preview Card */}
-        <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div
+          onClick={() => setIsPreviewOpen(true)}
+          className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-100/70 cursor-pointer transition flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
+        >
           <div className="flex items-start gap-3.5">
             {/* Red SVG PDF Icon Container */}
-            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 border border-red-200 flex items-center justify-center shrink-0 shadow-2xs">
+            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 border border-red-200 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
               <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" opacity="0.4" />
                 <path d="M14 2v6h6" />
@@ -452,7 +477,7 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
 
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-bold text-slate-900 text-xs md:text-sm">
+                <h3 className="font-bold text-slate-900 text-xs md:text-sm group-hover:text-indigo-600 transition-colors">
                   {resumeFilename}
                 </h3>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -461,7 +486,7 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                240 KB · Uploaded {resumeUploadDate} · Parsed for 1-Click Apply
+                240 KB · Uploaded {resumeUploadDate} · Click to preview in interactive viewer
               </p>
             </div>
           </div>
@@ -469,22 +494,35 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
           {/* Action Pills */}
           <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
             <button
-              onClick={() => alert(`Previewing ${resumeFilename} in secure document viewer.`)}
-              className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200 shadow-2xs transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsPreviewOpen(true);
+              }}
+              className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200 shadow-2xs transition-colors flex items-center gap-1"
             >
-              Preview
+              <span>👁️</span>
+              <span>Preview</span>
             </button>
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
               className="px-3 py-1.5 bg-white hover:bg-slate-100 text-indigo-600 font-semibold text-xs rounded-xl border border-slate-200 shadow-2xs transition-colors"
             >
               Replace PDF
             </button>
             <button
-              onClick={() => alert(`Downloading verified resume: ${resumeFilename}`)}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-2xs transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDownloadResume();
+              }}
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-2xs transition-colors flex items-center gap-1"
             >
-              Download
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>Download</span>
             </button>
           </div>
         </div>
@@ -516,6 +554,14 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
           </div>
         </div>
       </div>
+
+      {/* In-App Glassmorphic Document Preview Modal */}
+      <DocumentPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        documentUrl={resumeUrl}
+        documentTitle={resumeFilename}
+      />
     </div>
   );
 }

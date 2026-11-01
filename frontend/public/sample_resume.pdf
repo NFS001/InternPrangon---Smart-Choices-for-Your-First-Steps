@@ -1,0 +1,123 @@
+%PDF-1.4
+1 0 obj
+<<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+  /Type /Pages
+  /Kids [3 0 R]
+  /Count 1
+>>
+endobj
+3 0 obj
+<<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [0 0 612 792]
+  /Resources <<
+    /Font <<
+      /F1 4 0 R
+      /F2 5 0 R
+    >>
+  >>
+  /Contents 6 0 R
+>>
+endobj
+4 0 obj
+<<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Helvetica-Bold
+>>
+endobj
+5 0 obj
+<<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Helvetica
+>>
+endobj
+6 0 obj
+<<
+  /Length 1687
+>>
+stream
+BT
+/F1 20 Tf
+50 740 Td
+(NAFIS UDDIN CHOWDHURY) Tj
+/F2 10 Tf
+0 -18 Td
+(Dhaka, Bangladesh | nafis.chowdhury@g.bracu.ac.bd | github.com/NFS001) Tj
+0 -14 Td
+(LinkedIn: linkedin.com/in/nafis-uddin | Portfolio: internprangon.vercel.app) Tj
+0 -24 Td
+/F1 12 Tf
+(EDUCATION) Tj
+/F2 10 Tf
+0 -15 Td
+(BRAC University - B.Sc. in Computer Science and Engineering) Tj
+0 -13 Td
+(Class of 2026 | CGPA: 3.82 / 4.00 - Vice Chancellor and Deans Honor List) Tj
+0 -22 Td
+/F1 12 Tf
+(CORE TECHNICAL SKILLS) Tj
+/F2 10 Tf
+0 -15 Td
+(Languages: TypeScript, JavaScript, Python, C#, C++, SQL, HTML5, CSS3) Tj
+0 -13 Td
+(Frameworks: React 19, Vite, Tailwind CSS v4, Node.js, Express, FastAPI, Next.js) Tj
+0 -13 Td
+(Databases & Tools: MongoDB Atlas, PostgreSQL, Docker, Git, Vercel, RESTful APIs) Tj
+0 -22 Td
+/F1 12 Tf
+(FEATURED PROJECTS) Tj
+/F1 11 Tf
+0 -16 Td
+(InternPrangon - Transparent Internship & Hiring Platform) Tj
+/F2 10 Tf
+0 -13 Td
+(- Engineered multi-tenant platform for students, verified companies, and administrators.) Tj
+0 -13 Td
+(- Built 1-click ATS application pipeline, resume parser, and transparent stipend insights.) Tj
+0 -13 Td
+(- Modern split-screen authentication, glassmorphic dashboards, and verified badges.) Tj
+0 -18 Td
+/F1 11 Tf
+(High-Throughput Distributed Microservices Engine) Tj
+/F2 10 Tf
+0 -13 Td
+(- Scalable REST API with JWT role-based access control and MongoDB query caching.) Tj
+0 -13 Td
+(- Comprehensive unit and integration test coverage across all sprint milestones.) Tj
+0 -22 Td
+/F1 12 Tf
+(ACADEMIC HONORS & LEADERSHIP) Tj
+/F2 10 Tf
+0 -15 Td
+(- BRAC University Merit Academic Scholarship recipient.) Tj
+0 -13 Td
+(- Certified Full-Stack Web Developer & Active Peer Mentor.) Tj
+ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000062 00000 n 
+0000000125 00000 n 
+0000000293 00000 n 
+0000000374 00000 n 
+0000000450 00000 n 
+trailer
+<<
+  /Size 7
+  /Root 1 0 R
+>>
+startxref
+2191
+%%EOF

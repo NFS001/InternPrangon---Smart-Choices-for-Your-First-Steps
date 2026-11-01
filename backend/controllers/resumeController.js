@@ -27,6 +27,7 @@ const removeResumeFile = async (filePath) => {
 const formatResume = (resume) => ({
     resumeId: resume._id,
     filePath: resume.filePath,
+    originalName: resume.originalName || 'Nafis_Uddin_Chowdhury_Resume_2026.pdf',
     uploadedDate: resume.uploadedDate
 });
 
@@ -37,6 +38,7 @@ const uploadOrUpdateResume = async (req, res) => {
 
     const studentId = req.user._id;
     const newFilePath = path.posix.join('uploads', 'resumes', req.file.filename);
+    const originalName = req.file.originalname || 'Nafis_Uddin_Chowdhury_Resume_2026.pdf';
 
     try {
         let resume = await Resume.findOne({ studentId });
@@ -45,6 +47,7 @@ const uploadOrUpdateResume = async (req, res) => {
             resume = await Resume.create({
                 studentId,
                 filePath: newFilePath,
+                originalName,
                 uploadedDate: new Date()
             });
 
@@ -56,6 +59,7 @@ const uploadOrUpdateResume = async (req, res) => {
 
         const oldFilePath = resume.filePath;
         resume.filePath = newFilePath;
+        resume.originalName = originalName;
         resume.uploadedDate = new Date();
         await resume.save();
 
@@ -88,4 +92,33 @@ const getCurrentResume = async (req, res) => {
     }
 };
 
-module.exports = { uploadOrUpdateResume, getCurrentResume };
+const downloadMyResume = async (req, res) => {
+    try {
+        const resume = await Resume.findOne({ studentId: req.user._id });
+        const cleanName = resume?.originalName || 'Nafis_Uddin_Chowdhury_Resume.pdf';
+
+        if (resume && resume.filePath) {
+            const absolutePath = path.resolve(__dirname, '..', resume.filePath);
+            if (fs.existsSync(absolutePath)) {
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader('Content-Disposition', `inline; filename="${cleanName}"`);
+                return fs.createReadStream(absolutePath).pipe(res);
+            }
+        }
+
+        // Check fallback sample_resume.pdf in frontend/public
+        const samplePdfPath = path.resolve(__dirname, '..', '..', 'frontend', 'public', 'sample_resume.pdf');
+        if (fs.existsSync(samplePdfPath)) {
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `inline; filename="${cleanName}"`);
+            return fs.createReadStream(samplePdfPath).pipe(res);
+        }
+
+        res.status(404).json({ message: 'Resume document not available on disk' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error downloading resume' });
+    }
+};
+
+module.exports = { uploadOrUpdateResume, getCurrentResume, downloadMyResume };
+

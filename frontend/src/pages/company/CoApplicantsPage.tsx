@@ -7,6 +7,8 @@ import {
   type ApiCompanyApplicantItem,
   type ApiCompanyInternship,
 } from "../../api/client";
+import DocumentPreviewModal from "../../components/common/DocumentPreviewModal";
+import { formatResumeFilename } from "../../utils/formatDocument";
 
 interface Props {
   navigate: Navigate;
@@ -95,6 +97,7 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
   const [profileModalCandidate, setProfileModalCandidate] = useState<CandidateCardData | null>(null);
   const [interviewModalCandidate, setInterviewModalCandidate] = useState<CandidateCardData | null>(null);
   const [rejectModalCandidate, setRejectModalCandidate] = useState<CandidateCardData | null>(null);
+  const [resumeModalData, setResumeModalData] = useState<{ url: string; title: string } | null>(null);
 
   // Interview modal inputs
   const [interviewLink, setInterviewLink] = useState("https://meet.google.com/interview-room");
@@ -132,6 +135,7 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
               workMode: intern?.mode || "On-site",
               bio: a.student?.bio || "Undergraduate student looking for internship opportunities.",
               skills: a.student?.skills && a.student.skills.length > 0 ? a.student.skills : ["React", "JavaScript", "Problem Solving"],
+              resumeUrl: a.resume?.filePath || "/sample_resume.pdf",
             };
           });
           setCandidates(mapped);
@@ -163,9 +167,12 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
     setRejectModalCandidate(null);
   };
 
-  const handleSimulatedDownload = (c: CandidateCardData) => {
-    const filename = `${c.name.replace(/\s+/g, "_")}_Resume.pdf`;
-    alert(`Downloading candidate resume: ${filename}`);
+  const handleDownloadResume = (c: CandidateCardData) => {
+    const cleanName = formatResumeFilename(c.resumeUrl, null, `${c.name.replace(/\s+/g, "_")}_Resume.pdf`);
+    setResumeModalData({
+      url: c.resumeUrl || "/sample_resume.pdf",
+      title: cleanName,
+    });
   };
 
   const filteredCandidates = candidates.filter((c) => {
@@ -450,10 +457,10 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
 
                   {/* Download CV */}
                   <button
-                    onClick={() => handleSimulatedDownload(candidate)}
+                    onClick={() => handleDownloadResume(candidate)}
                     className="px-3.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs rounded-xl shadow-2xs transition-colors flex items-center gap-1"
                   >
-                    <span>📄 Download CV (PDF)</span>
+                    <span>📄 Preview & Download CV</span>
                   </button>
                 </div>
 
@@ -655,10 +662,10 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
 
               <div className="pt-2 flex items-center justify-between">
                 <button
-                  onClick={() => handleSimulatedDownload(profileModalCandidate)}
+                  onClick={() => handleDownloadResume(profileModalCandidate)}
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs"
                 >
-                  Download Complete CV (PDF)
+                  Preview & Download CV (PDF)
                 </button>
                 <button
                   onClick={() => setProfileModalCandidate(null)}
@@ -670,6 +677,16 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
             </div>
           </div>
         </div>
+      )}
+
+      {/* In-App Glassmorphic Document Preview Modal */}
+      {resumeModalData && (
+        <DocumentPreviewModal
+          isOpen={Boolean(resumeModalData)}
+          onClose={() => setResumeModalData(null)}
+          documentUrl={resumeModalData.url}
+          documentTitle={resumeModalData.title}
+        />
       )}
     </div>
   );
