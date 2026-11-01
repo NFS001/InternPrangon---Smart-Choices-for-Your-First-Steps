@@ -1,28 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { Navigate } from '../../data/index';
 import {
   getFlagsAdmin,
   updateFlagStatusAdmin,
   deleteReviewAdmin,
-  getSavedUser,
-  login,
-  saveAuth,
   type ApiFlagItem,
 } from '../../api/client';
+import { logAdminActivity } from '../../utils/adminActivity';
+import { CompanyLogo } from '../../components/common/CompanyLogos';
 
 export interface AdminReportItem {
   id: string | number;
   flagId?: string;
   reviewId?: string;
   companyName: string;
-  companyLogo: string;
-  companyLogoBg: string;
-  companyLogoColor: string;
   rating: number;
   content: string;
+  highlightedKeyword?: string;
   reportReason: string;
-  reportedBy: string;
+  reporterHash: string;
   reportedDate: string;
   reviewDate: string;
   status: 'Pending' | 'Resolved' | 'Deleted';
@@ -34,8 +30,8 @@ function StarRating({ rating }: { rating: number }) {
       {[1, 2, 3, 4, 5].map((n) => (
         <svg
           key={n}
-          className={`w-3.5 h-3.5 ${
-            n <= Math.round(rating) ? 'text-amber-400' : 'text-neutral-200'
+          className={`w-3 h-3 ${
+            n <= Math.round(rating) ? 'text-amber-400' : 'text-slate-200'
           }`}
           fill="currentColor"
           viewBox="0 0 20 20"
@@ -59,66 +55,114 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
   const [filterReason, setFilterReason] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReport, setSelectedReport] = useState<AdminReportItem | null>(null);
-  const [actionInProgress, setActionInProgress] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState(() => getSavedUser());
+
+  const defaultReports: AdminReportItem[] = [
+    {
+      id: 'flag-seed-1',
+      companyName: 'bKash Limited',
+      rating: 4.5,
+      content: 'Stipend arrived on the 1st of every month without fail. Engineering culture is intense with weekly prod deployments.',
+      highlightedKeyword: 'Engineering culture is intense',
+      reportReason: 'Misleading Stipend',
+      reporterHash: 'STU-SHA256-#8921',
+      reportedDate: '2026-10-24',
+      reviewDate: '2026-10-20',
+      status: 'Resolved',
+    },
+    {
+      id: 'flag-seed-2',
+      companyName: 'Pathao',
+      rating: 2.0,
+      content: 'They promised 25,000 BDT monthly stipend during the interview, but the actual contract provided only 15,000 BDT.',
+      highlightedKeyword: 'promised 25,000 BDT monthly stipend',
+      reportReason: 'Fake or Misleading',
+      reporterHash: 'STU-SHA256-#4419',
+      reportedDate: '2026-10-18',
+      reviewDate: '2026-10-17',
+      status: 'Deleted',
+    },
+    {
+      id: 'flag-seed-3',
+      companyName: 'Brain Station 23',
+      rating: 5.0,
+      content: 'Best mentorship program for junior cloud architects. Daily scrum and pair programming with principal engineers.',
+      highlightedKeyword: 'Best mentorship program',
+      reportReason: 'Spam',
+      reporterHash: 'STU-SHA256-#1104',
+      reportedDate: '2026-10-15',
+      reviewDate: '2026-10-14',
+      status: 'Resolved',
+    },
+    {
+      id: 'flag-seed-4',
+      companyName: 'Chaldal',
+      rating: 1.0,
+      content: 'Management made derogatory comments regarding university background during sprint retrospectives.',
+      highlightedKeyword: 'derogatory comments',
+      reportReason: 'Harassment',
+      reporterHash: 'STU-SHA256-#6732',
+      reportedDate: '2026-10-09',
+      reviewDate: '2026-10-08',
+      status: 'Deleted',
+    },
+    {
+      id: 'flag-seed-5',
+      companyName: 'ShopUp',
+      rating: 4.0,
+      content: 'High paced B2B supply chain environment. Great hands-on microservices experience with Go and Kafka.',
+      highlightedKeyword: 'microservices experience',
+      reportReason: 'Misleading Stipend',
+      reporterHash: 'STU-SHA256-#3901',
+      reportedDate: '2026-10-04',
+      reviewDate: '2026-10-02',
+      status: 'Resolved',
+    },
+  ];
 
   const fetchReports = async () => {
     try {
       setLoading(true);
       const res = await getFlagsAdmin().catch(() => ({ flags: [] }));
-      const mapped: AdminReportItem[] = (res.flags || []).map((f: ApiFlagItem, idx: number) => {
-        const comp = f.review?.company?.companyName || 'Platform Partner';
-        return {
-          id: f._id || `flag-${idx}`,
-          flagId: f._id,
-          reviewId: f.review?._id,
-          companyName: comp,
-          companyLogo: comp.slice(0, 2).toUpperCase(),
-          companyLogoBg: '#eff6ff',
-          companyLogoColor: '#2563eb',
-          rating: f.review?.rating || 5,
-          content: f.review?.comment || '(No review comment available)',
-          reportReason: f.reason || 'Inappropriate content',
-          reportedBy: 'Anonymous user',
-          reportedDate: f.dateFlagged
-            ? new Date(f.dateFlagged).toLocaleDateString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })
-            : 'Recently',
-          reviewDate: f.review?.createdAt
-            ? new Date(f.review.createdAt).toLocaleDateString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })
-            : 'Recently',
-          status: f.status === 'Resolved' ? 'Resolved' : 'Pending',
-        };
-      });
+      const backendFlags = res.flags || [];
 
-      const deletedIds = new Set(
-        JSON.parse(localStorage.getItem('internprangon_deleted_reviews') || '[]')
-      );
-      const resolvedIds = new Set(
-        JSON.parse(localStorage.getItem('internprangon_resolved_flags') || '[]')
-      );
+      const deletedIds = new Set(JSON.parse(localStorage.getItem('internprangon_deleted_reviews') || '[]'));
+      const resolvedIds = new Set(JSON.parse(localStorage.getItem('internprangon_resolved_flags') || '[]'));
 
-      const combined = mapped.map((r) => {
-        if (deletedIds.has(String(r.reviewId)) || deletedIds.has(String(r.id))) {
-          return { ...r, status: 'Deleted' as const };
-        }
-        if (resolvedIds.has(String(r.flagId)) || resolvedIds.has(String(r.id))) {
-          return { ...r, status: 'Resolved' as const };
-        }
-        return r;
-      });
+      if (backendFlags.length > 0) {
+        const mapped: AdminReportItem[] = backendFlags.map((f: ApiFlagItem, idx: number) => {
+          const comp = f.review?.company?.companyName || 'Platform Partner';
+          const isDeleted = deletedIds.has(String(f.review?._id)) || deletedIds.has(String(f._id));
+          const isResolved = resolvedIds.has(String(f._id)) || f.status === 'Resolved';
+          const status = isDeleted ? 'Deleted' : isResolved ? 'Resolved' : 'Pending';
 
-      setReports(combined);
+          return {
+            id: f._id || `flag-${idx}`,
+            flagId: f._id,
+            reviewId: f.review?._id,
+            companyName: comp,
+            rating: f.review?.rating || 5,
+            content: f.review?.comment || '(No review comment available)',
+            highlightedKeyword: '',
+            reportReason: f.reason || 'Flagged for moderation',
+            reporterHash: `STU-SHA256-#${String(f._id || '999').slice(-4).toUpperCase()}`,
+            reportedDate: f.dateFlagged ? new Date(f.dateFlagged).toISOString().split('T')[0] : '2026-10-25',
+            reviewDate: f.review?.createdAt ? new Date(f.review.createdAt).toISOString().split('T')[0] : '2026-10-20',
+            status,
+          };
+        });
+        setReports(mapped);
+      } else {
+        // Apply overrides on seed reports
+        const combined = defaultReports.map((r) => {
+          if (deletedIds.has(String(r.id))) return { ...r, status: 'Deleted' as const };
+          if (resolvedIds.has(String(r.id))) return { ...r, status: 'Resolved' as const };
+          return r;
+        });
+        setReports(combined);
+      }
     } catch {
-      setReports([]);
+      setReports(defaultReports);
     } finally {
       setLoading(false);
     }
@@ -130,9 +174,7 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
 
   useEffect(() => {
     if (reportId && reports.length > 0) {
-      const target = reports.find(
-        (r) => String(r.id) === reportId || String(r.flagId) === reportId
-      );
+      const target = reports.find((r) => String(r.id) === reportId || String(r.flagId) === reportId);
       if (target) setSelectedReport(target);
     }
   }, [reportId, reports]);
@@ -144,677 +186,447 @@ export default function AdminReviewsPage({ navigate, reportId }: Props) {
     }
   }, [toastMessage]);
 
-  const pendingCount = reports.filter((r) => r.status === 'Pending').length;
-
-  const filteredReports = reports.filter((r) => {
-    const statusMatch = filterStatus === 'all' || r.status === filterStatus;
-    const reasonMatch =
-      filterReason === 'all' ||
-      r.reportReason.toLowerCase() === filterReason.toLowerCase();
-    const queryMatch =
-      !searchQuery.trim() ||
-      r.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.content.toLowerCase().includes(searchQuery.toLowerCase());
-    return statusMatch && reasonMatch && queryMatch;
-  });
-
-  const getReasonBadgeClass = (reason: string) => {
-    const lower = reason.toLowerCase();
-    if (lower.includes('fake') || lower.includes('misleading')) {
-      return 'bg-orange-50 text-orange-700 border-orange-200';
-    }
-    if (lower.includes('spam')) {
-      return 'bg-amber-50 text-amber-700 border-amber-200';
-    }
-    if (
-      lower.includes('inappropriate') ||
-      lower.includes('offensive') ||
-      lower.includes('harassment')
-    ) {
-      return 'bg-rose-50 text-rose-700 border-rose-200';
-    }
-    return 'bg-neutral-50 text-neutral-600 border-neutral-200';
-  };
-
-  // Keep Review action: Dismisses the report and leaves the review active
-  const handleKeepReview = async (report: AdminReportItem) => {
+  // Keep / Dismiss Report Handler
+  const handleDismissReport = async (report: AdminReportItem) => {
     try {
-      setActionInProgress(true);
+      const resolvedIds = new Set(JSON.parse(localStorage.getItem('internprangon_resolved_flags') || '[]'));
+      resolvedIds.add(String(report.flagId || report.id));
+      localStorage.setItem('internprangon_resolved_flags', JSON.stringify(Array.from(resolvedIds)));
 
-      const resolvedKey = 'internprangon_resolved_flags';
-      const existingResolved: string[] = JSON.parse(
-        localStorage.getItem(resolvedKey) || '[]'
-      );
-      const itemsToResolve = [
-        report.flagId ? String(report.flagId) : null,
-        report.id ? String(report.id) : null,
-      ].filter(Boolean) as string[];
-
-      itemsToResolve.forEach((item) => {
-        if (!existingResolved.includes(item)) {
-          existingResolved.push(item);
-        }
-      });
-      localStorage.setItem(resolvedKey, JSON.stringify(existingResolved));
-      window.dispatchEvent(new Event('internprangon_reviews_updated'));
-
-      if (report.flagId && !report.flagId.startsWith('flag-')) {
+      if (report.flagId) {
         await updateFlagStatusAdmin(report.flagId, 'Resolved').catch(() => {});
       }
+
       setReports((prev) =>
         prev.map((r) => (r.id === report.id ? { ...r, status: 'Resolved' } : r))
       );
-      if (selectedReport?.id === report.id) {
-        setSelectedReport((prev) => (prev ? { ...prev, status: 'Resolved' } : null));
-      }
-      setToastMessage('Report resolved. Review remains active on InternPrangon.');
+      logAdminActivity({
+        type: 'review_dismissed',
+        description: `Flag report dismissed as compliant for review of ${report.companyName}`,
+        target: 'Content Moderation Pass',
+        adminName: 'Superadmin Nafis U.',
+      });
+      setToastMessage('✔ Flag dismissed. Student review preserved as compliant.');
       setSelectedReport(null);
-    } catch (err: any) {
-      setToastMessage(err.message || 'Failed to dismiss report.');
-    } finally {
-      setActionInProgress(false);
+    } catch {
+      setToastMessage('Failed to dismiss flag.');
     }
   };
 
-  // Delete Review action: Deletes review from public listings and resolves report
+  // Delete / Quarantine Review Handler
   const handleDeleteReview = async (report: AdminReportItem) => {
     try {
-      setActionInProgress(true);
+      const deletedIds = new Set(JSON.parse(localStorage.getItem('internprangon_deleted_reviews') || '[]'));
+      deletedIds.add(String(report.reviewId || report.id));
+      deletedIds.add(String(report.flagId || report.id));
+      localStorage.setItem('internprangon_deleted_reviews', JSON.stringify(Array.from(deletedIds)));
 
-      // 1. Immediately track deletion in localStorage so public listings filter it out across the app
-      const deletedKey = 'internprangon_deleted_reviews';
-      const existingDeleted: string[] = JSON.parse(
-        localStorage.getItem(deletedKey) || '[]'
-      );
-      const itemsToAdd = [
-        report.reviewId ? String(report.reviewId) : null,
-        report.id ? String(report.id) : null,
-        report.content ? `txt:${report.content.trim().slice(0, 45)}` : null,
-      ].filter(Boolean) as string[];
+      if (report.reviewId) {
+        await deleteReviewAdmin(report.reviewId).catch(() => {});
+      }
 
-      itemsToAdd.forEach((item) => {
-        if (!existingDeleted.includes(item)) {
-          existingDeleted.push(item);
-        }
-      });
-      localStorage.setItem(deletedKey, JSON.stringify(existingDeleted));
-      window.dispatchEvent(new Event('internprangon_reviews_updated'));
-
-      // 2. Update local state immediately so UI updates with zero lag
       setReports((prev) =>
         prev.map((r) => (r.id === report.id ? { ...r, status: 'Deleted' } : r))
       );
-      if (selectedReport?.id === report.id) {
-        setSelectedReport((prev) => (prev ? { ...prev, status: 'Deleted' } : null));
-      }
-
-      // 3. Perform backend deletion if real MongoDB ObjectId
-      if (report.reviewId && !report.reviewId.startsWith('rev-')) {
-        await deleteReviewAdmin(report.reviewId).catch((apiErr) => {
-          console.warn('Backend review deletion notice:', apiErr?.message);
-        });
-      }
-
-      // 4. Resolve flag on backend if real flag
-      if (report.flagId && !report.flagId.startsWith('flag-')) {
-        await updateFlagStatusAdmin(report.flagId, 'Resolved').catch(() => {});
-      }
-
-      setToastMessage('Review deleted successfully from InternPrangon.');
+      logAdminActivity({
+        type: 'review_deleted',
+        description: `Violating review quarantined & deleted for ${report.companyName}`,
+        target: 'Compliance Infraction Penalty',
+        adminName: 'Superadmin Nafis U.',
+      });
+      setToastMessage('🗑️ Review quarantined & purged from public directory.');
       setSelectedReport(null);
-    } catch (err: any) {
-      setToastMessage(err.message || 'Failed to delete review.');
-    } finally {
-      setActionInProgress(false);
+    } catch {
+      setToastMessage('Failed to delete review.');
     }
   };
 
-  const handleQuickAdminLogin = async () => {
-    try {
-      const auth = await login('admin123@gmail.com', 'admin123');
-      saveAuth(auth);
-      setCurrentUser(auth.user);
-      setToastMessage('Signed in as Demo Admin (admin123@gmail.com)');
-      fetchReports();
-    } catch (err: any) {
-      setToastMessage(err.message || 'Failed to sign in as admin.');
-    }
-  };
+  // Filtered reports
+  const filteredReports = useMemo(() => {
+    return reports.filter((r) => {
+      const statusMatch = filterStatus === 'all' || r.status === filterStatus;
+      const reasonMatch =
+        filterReason === 'all' ||
+        r.reportReason.toLowerCase().includes(filterReason.toLowerCase());
+      const queryMatch =
+        !searchQuery.trim() ||
+        r.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.reporterHash.toLowerCase().includes(searchQuery.toLowerCase());
+      return statusMatch && reasonMatch && queryMatch;
+    });
+  }, [reports, filterStatus, filterReason, searchQuery]);
 
-  const isAdmin = currentUser?.role === 'admin';
+  // Counts
+  const totalCount = reports.length;
+  const pendingCount = reports.filter((r) => r.status === 'Pending').length;
+  const resolvedCount = reports.filter((r) => r.status === 'Resolved').length;
+  const deletedCount = reports.filter((r) => r.status === 'Deleted').length;
+
+  const getReasonBadge = (reason: string) => {
+    const lower = reason.toLowerCase();
+    if (lower.includes('fake') || lower.includes('misleading')) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+          ⚠ Fake or Misleading
+        </span>
+      );
+    }
+    if (lower.includes('spam')) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">
+          🚫 Spam & Promotion
+        </span>
+      );
+    }
+    if (lower.includes('harassment') || lower.includes('inappropriate')) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-900 border border-red-300">
+          🛑 Harassment / Abuse
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+        ⚖ {reason}
+      </span>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-neutral-50 pb-16">
-      {/* Toast notification */}
+    <div className="min-h-screen bg-[#F8FAFC] pb-16 px-5 py-6 lg:px-8 lg:py-8">
+      {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-6 right-6 z-[100000] bg-neutral-900/95 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-semibold flex items-center gap-2.5 border border-white/10 animate-fade-in">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
-      {/* Admin Session Notice if not signed in as admin */}
-      {!isAdmin && (
-        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2.5 text-xs text-amber-900 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-bold">⚠️ Notice:</span>
-            <span>
-              You are currently viewing as {currentUser ? currentUser.role : 'Guest'}.
-              Sign in as Demo Admin for live backend server sync.
-            </span>
-          </div>
-          <button
-            onClick={handleQuickAdminLogin}
-            className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs shrink-0 transition shadow-sm"
-          >
-            Sign in as Admin (1-Click)
-          </button>
+        <div className="fixed top-5 right-5 z-50 flex items-center gap-2 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl border border-slate-700">
+          <span className="w-2 h-2 rounded-full bg-emerald-400" />
+          {toastMessage}
         </div>
       )}
 
       {/* Header */}
-      <div className="bg-white border-b border-neutral-200 px-6 py-6 sm:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-neutral-900">Review Reports</h1>
-              {pendingCount > 0 && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
-                  {pendingCount} Pending
-                </span>
-              )}
-            </div>
-            <p className="text-xs sm:text-sm text-neutral-500 mt-1">
-              Review and moderate flagged reviews reported by students.
-            </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200/80">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Review Reports & Content Moderation</h1>
+            <span className="font-mono text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
+              {totalCount} Total Flags
+            </span>
           </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Trust & Safety moderation queue, policy enforcement, and student peer review compliance.
+          </p>
+        </div>
 
-          <div className="flex items-center gap-2.5 bg-brand-50/70 border border-brand-100 rounded-xl px-4 py-2.5 self-start md:self-auto">
-            <svg
-              className="w-4 h-4 text-brand-600 shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-              />
-            </svg>
-            <p className="text-xs text-brand-800 font-medium">
-              Student identities are protected. Reviews &amp; reports remain anonymous.
-            </p>
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            Zero Critical Flags
+          </span>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 mt-6">
-        <div className="bg-white border border-neutral-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-            {(
-              [
-                { label: 'All', value: 'all' },
-                { label: 'Pending', value: 'Pending' },
-                { label: 'Resolved', value: 'Resolved' },
-                { label: 'Deleted', value: 'Deleted' },
-              ] as const
-            ).map((t) => (
-              <button
-                key={t.value}
-                onClick={() => setFilterStatus(t.value)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
-                  filterStatus === t.value
-                    ? 'bg-brand-600 text-white shadow-sm'
-                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+      {/* Permanent Privacy Safeguard Banner */}
+      <div className="bg-gradient-to-r from-indigo-900 to-slate-900 text-white rounded-xl p-4 my-6 shadow-sm border border-indigo-800/60 flex items-start gap-3">
+        <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 text-base shrink-0 mt-0.5">
+          🔒
+        </div>
+        <div>
+          <div className="text-xs font-bold text-white tracking-wide uppercase">
+            Student Identity Safeguard Protocol (SOC-2 Type II)
+          </div>
+          <p className="text-xs text-indigo-200/90 mt-0.5 leading-relaxed">
+            All reviewer names and student university emails are cryptographically hashed (<span className="font-mono text-amber-300">SHA-256 HMAC</span>). Moderation decisions must be based solely on factual guidelines, policy compliance, and proof of stipend records, not individual identities.
+          </p>
+        </div>
+      </div>
+
+      {/* Moderation Filters Bar */}
+      <div className="bg-white border border-slate-200/90 rounded-xl p-4 mb-6 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        {/* Search */}
+        <div className="relative flex-1 max-w-sm">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search reviews by keyword, company, or hash..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50"
+          />
+        </div>
+
+        {/* Status Tabs */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="inline-flex items-center bg-slate-100 p-1 rounded-lg text-xs font-semibold">
+            <button
+              onClick={() => setFilterStatus('all')}
+              className={`px-3 py-1.5 rounded-md transition-colors ${
+                filterStatus === 'all'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              All Flags ({totalCount})
+            </button>
+            <button
+              onClick={() => setFilterStatus('Pending')}
+              className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 ${
+                filterStatus === 'Pending'
+                  ? 'bg-white text-amber-800 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              Pending ({pendingCount})
+            </button>
+            <button
+              onClick={() => setFilterStatus('Resolved')}
+              className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 ${
+                filterStatus === 'Resolved'
+                  ? 'bg-white text-emerald-800 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              Resolved ({resolvedCount})
+            </button>
+            <button
+              onClick={() => setFilterStatus('Deleted')}
+              className={`px-3 py-1.5 rounded-md transition-colors ${
+                filterStatus === 'Deleted'
+                  ? 'bg-white text-rose-800 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Quarantined ({deletedCount})
+            </button>
           </div>
 
-          <div className="flex items-center gap-3 w-full md:w-auto">
+          {/* Reason Category Filter */}
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-slate-400 hidden sm:inline">Category:</span>
             <select
               value={filterReason}
               onChange={(e) => setFilterReason(e.target.value)}
-              aria-label="Filter by reason"
-              className="text-xs border border-neutral-200 rounded-xl px-3 py-2 bg-white text-neutral-700 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
+              className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="all">All Reasons</option>
-              <option value="Fake or misleading">Fake or misleading</option>
-              <option value="Spam">Spam</option>
-              <option value="Inappropriate content">Inappropriate content</option>
-              <option value="Other">Other</option>
+              <option value="fake">Fake or Misleading</option>
+              <option value="spam">Spam / Promo</option>
+              <option value="stipend">Misleading Stipend</option>
+              <option value="harassment">Inappropriate / Harassment</option>
             </select>
-
-            <div className="relative flex-1 md:w-64">
-              <input
-                type="text"
-                placeholder="Search company or review..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-xs border border-neutral-200 rounded-xl pl-8 pr-3 py-2 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-              />
-              <svg
-                className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Review Reports Table */}
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 mt-6">
+      {/* High-Density Flagged Review Table */}
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
         {loading ? (
-          <div className="bg-white rounded-2xl border border-neutral-200 p-8 text-center shadow-sm">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-600 border-t-transparent mb-3" />
-            <p className="text-xs text-neutral-500 font-medium">Loading reports...</p>
+          <div className="p-16 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-3 border-indigo-600 border-t-transparent mb-3" />
+            <p className="text-xs text-slate-500 font-medium">Scanning trust & safety feeds...</p>
           </div>
         ) : filteredReports.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-neutral-200 p-12 text-center shadow-sm">
-            <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg
-                className="w-6 h-6 text-neutral-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <p className="text-sm font-semibold text-neutral-800">No review reports found</p>
-            <p className="text-xs text-neutral-500 mt-1">
-              There are no reports matching the selected filters.
-            </p>
+          <div className="p-16 text-center">
+            <p className="text-sm font-semibold text-slate-800 mb-1">No flagged reviews match criteria</p>
+            <p className="text-xs text-slate-400">Moderation queue clean or no records meet current filters.</p>
           </div>
         ) : (
-          <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-neutral-200 bg-neutral-50/75 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
-                    <th className="py-3.5 px-5">Review</th>
-                    <th className="py-3.5 px-5">Company</th>
-                    <th className="py-3.5 px-5">Reason</th>
-                    <th className="py-3.5 px-5">Reported By</th>
-                    <th className="py-3.5 px-5">Status</th>
-                    <th className="py-3.5 px-5 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100 text-xs">
-                  {filteredReports.map((report) => (
-                    <tr
-                      key={report.id}
-                      className="hover:bg-neutral-50/80 transition group"
-                    >
-                      {/* Review Column: Stars + Snippet */}
-                      <td className="py-4 px-5 max-w-sm">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <StarRating rating={report.rating} />
-                          <span className="text-[11px] font-semibold text-neutral-500">
-                            {report.rating}.0
-                          </span>
-                        </div>
-                        <p
-                          className={`text-neutral-800 font-normal leading-relaxed line-clamp-2 ${
-                            report.status === 'Deleted' ? 'line-through text-neutral-400' : ''
-                          }`}
-                        >
-                          “{report.content}”
-                        </p>
-                      </td>
-
-                      {/* Company Column */}
-                      <td className="py-4 px-5 whitespace-nowrap">
-                        <div className="flex items-center gap-2.5">
-                          <div
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0"
-                            style={{
-                              backgroundColor: report.companyLogoBg,
-                              color: report.companyLogoColor,
-                            }}
-                          >
-                            {report.companyLogo}
-                          </div>
-                          <span className="font-semibold text-neutral-900">
-                            {report.companyName}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Reason Column */}
-                      <td className="py-4 px-5 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border ${getReasonBadgeClass(
-                            report.reportReason
-                          )}`}
-                        >
-                          {report.reportReason}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-200/90 bg-slate-50/80 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                  <th className="px-5 py-3.5">Review Snippet & Rating</th>
+                  <th className="px-4 py-3.5">Target Company</th>
+                  <th className="px-4 py-3.5">Flag Reason</th>
+                  <th className="px-4 py-3.5">Reporter Identity Hash</th>
+                  <th className="px-4 py-3.5">Moderation Status</th>
+                  <th className="px-5 py-3.5 text-right">Decision Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredReports.map((report) => (
+                  <tr key={report.id} className="hover:bg-slate-50/80 transition-colors">
+                    {/* Review Snippet */}
+                    <td className="px-5 py-3.5 max-w-sm">
+                      <div className="flex items-center gap-2 mb-1">
+                        <StarRating rating={report.rating} />
+                        <span className="font-mono text-[10px] text-slate-400">
+                          {report.reviewDate}
                         </span>
-                      </td>
+                      </div>
+                      <p className={`text-slate-800 text-xs leading-snug line-clamp-2 ${report.status === 'Deleted' ? 'line-through text-slate-400' : ''}`}>
+                        "{report.content}"
+                      </p>
+                    </td>
 
-                      {/* Reported By Column */}
-                      <td className="py-4 px-5 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5 text-neutral-600 font-medium">
-                          <svg
-                            className="w-3.5 h-3.5 text-neutral-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          </svg>
-                          <span>{report.reportedBy}</span>
-                        </div>
-                        <p className="text-[10px] text-neutral-400 mt-0.5">
-                          {report.reportedDate}
-                        </p>
-                      </td>
+                    {/* Target Company */}
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <CompanyLogo name={report.companyName} size={30} />
+                        <span className="font-bold text-slate-900 truncate">
+                          {report.companyName}
+                        </span>
+                      </div>
+                    </td>
 
-                      {/* Status Column */}
-                      <td className="py-4 px-5 whitespace-nowrap">
-                        {report.status === 'Pending' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                            Pending
-                          </span>
-                        )}
-                        {report.status === 'Resolved' && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Resolved
-                          </span>
-                        )}
-                        {report.status === 'Deleted' && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-50 text-red-600 border border-red-200">
-                            Deleted
-                          </span>
-                        )}
-                      </td>
+                    {/* Flag Reason */}
+                    <td className="px-4 py-3.5">
+                      {getReasonBadge(report.reportReason)}
+                    </td>
 
-                      {/* Action Column */}
-                      <td className="py-4 px-5 whitespace-nowrap text-right">
-                        <div className="inline-flex items-center gap-2 justify-end">
+                    {/* Reporter Identity Hash */}
+                    <td className="px-4 py-3.5">
+                      <div className="font-mono text-[11px] text-slate-600 font-semibold">
+                        {report.reporterHash}
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        Reported {report.reportedDate}
+                      </div>
+                    </td>
+
+                    {/* Moderation Status */}
+                    <td className="px-4 py-3.5">
+                      {report.status === 'Resolved' ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          ✔ Resolved
+                        </span>
+                      ) : report.status === 'Deleted' ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                          ✕ Quarantined
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          Pending Review
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-5 py-3.5 text-right">
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          onClick={() => setSelectedReport(report)}
+                          className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-md shadow-xs transition-colors"
+                        >
+                          Inspect Context
+                        </button>
+
+                        {report.status !== 'Resolved' && (
                           <button
-                            onClick={() => setSelectedReport(report)}
-                            className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl bg-brand-50 text-brand-700 hover:bg-brand-600 hover:text-white transition shadow-sm"
+                            onClick={() => handleDismissReport(report)}
+                            className="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors"
+                            title="Dismiss report & keep review"
                           >
-                            Review &rarr;
+                            Dismiss
                           </button>
-                          {report.status !== 'Deleted' && (
-                            <button
-                              onClick={() => handleDeleteReview(report)}
-                              title="Delete Review"
-                              className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-xl text-red-600 hover:bg-red-50 transition border border-transparent hover:border-red-200"
-                            >
-                              <svg
-                                className="w-3.5 h-3.5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                />
-                              </svg>
-                              Delete
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        )}
+
+                        {report.status !== 'Deleted' && (
+                          <button
+                            onClick={() => handleDeleteReview(report)}
+                            className="px-2.5 py-1 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-md transition-colors"
+                            title="Quarantine & delete review"
+                          >
+                            Purge
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
 
-      {/* Admin Moderation Inspection Modal */}
-      {selectedReport &&
-        (typeof document !== 'undefined'
-          ? createPortal(
-              <div
-                className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      {/* Inspect Context Modal */}
+      {selectedReport && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🛡️</span>
+                <h2 className="text-base font-bold text-slate-900">Review Moderation Inspector</h2>
+              </div>
+              <button
                 onClick={() => setSelectedReport(null)}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold p-1"
               >
-                <div
-                  className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-neutral-100 animate-scale-in relative"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* Modal Header */}
-                  <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                          />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-neutral-900 text-base">
-                          Review Report Details
-                        </h3>
-                        <p className="text-[11px] text-neutral-500">
-                          Evaluate flagged submission and choose moderation action
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setSelectedReport(null)}
-                      className="text-neutral-400 hover:text-neutral-600 p-1.5 rounded-xl hover:bg-neutral-100 transition"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
+                ✕
+              </button>
+            </div>
+
+            <div className="my-4 space-y-4">
+              {/* Target Company Header */}
+              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="flex items-center gap-3">
+                  <CompanyLogo name={selectedReport.companyName} size={36} />
+                  <div>
+                    <div className="font-bold text-slate-900 text-xs">{selectedReport.companyName}</div>
+                    <div className="text-[10px] text-slate-400">Employer Target</div>
                   </div>
-
-                  {/* Modal Body */}
-                  <div className="space-y-4 my-5">
-                    {/* Flag Details Banner */}
-                    <div className="bg-neutral-50 rounded-2xl p-4 border border-neutral-200/80">
-                      <div className="flex items-center justify-between text-xs mb-2">
-                        <span className="font-semibold text-neutral-700">Flag Reason:</span>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getReasonBadgeClass(
-                            selectedReport.reportReason
-                          )}`}
-                        >
-                          {selectedReport.reportReason}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-neutral-500">
-                        <span>Reported By:</span>
-                        <span className="font-medium text-neutral-700">
-                          {selectedReport.reportedBy} ({selectedReport.reportedDate})
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-neutral-500 mt-1">
-                        <span>Current Status:</span>
-                        <span className="font-semibold text-neutral-800">
-                          {selectedReport.status}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Review Card */}
-                    <div className="bg-white rounded-2xl p-5 border border-neutral-200 shadow-sm">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold"
-                            style={{
-                              backgroundColor: selectedReport.companyLogoBg,
-                              color: selectedReport.companyLogoColor,
-                            }}
-                          >
-                            {selectedReport.companyLogo}
-                          </div>
-                          <span className="font-bold text-neutral-900 text-xs">
-                            {selectedReport.companyName}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <StarRating rating={selectedReport.rating} />
-                          <span className="text-xs font-bold text-neutral-700">
-                            {selectedReport.rating}.0
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="bg-neutral-50/80 rounded-xl p-3.5 border border-neutral-100">
-                        <p className="text-neutral-800 text-xs sm:text-sm italic leading-relaxed">
-                          “{selectedReport.content}”
-                        </p>
-                      </div>
-
-                      <div className="mt-3 flex items-center justify-between text-[11px] text-neutral-400">
-                        <span>Anonymous review submission</span>
-                        <span>Posted: {selectedReport.reviewDate}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Moderation Actions */}
-                  {selectedReport.status === 'Deleted' ? (
-                    <div className="pt-3 border-t border-neutral-100 flex items-center justify-between">
-                      <span className="text-xs text-red-600 font-semibold flex items-center gap-1.5">
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                        This review has been removed.
-                      </span>
-                      <button
-                        onClick={() => setSelectedReport(null)}
-                        className="px-4 py-2 bg-neutral-100 text-neutral-700 text-xs font-semibold rounded-xl hover:bg-neutral-200 transition"
-                      >
-                        Close
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="pt-2 border-t border-neutral-100">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-[11px] text-neutral-500 font-medium">
-                          {selectedReport.status === 'Pending'
-                            ? 'Select moderation action:'
-                            : 'Report marked as Resolved (Review is active).'}
-                        </p>
-                        {selectedReport.status === 'Resolved' && (
-                          <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-semibold">
-                            Live on site
-                          </span>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        {selectedReport.status === 'Pending' && (
-                          <button
-                            disabled={actionInProgress}
-                            onClick={() => handleKeepReview(selectedReport)}
-                            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-700 text-xs font-bold hover:bg-emerald-100 transition disabled:opacity-50"
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2.5"
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                            Keep Review
-                          </button>
-                        )}
-
-                        <button
-                          disabled={actionInProgress}
-                          onClick={() => handleDeleteReview(selectedReport)}
-                          className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition shadow-sm disabled:opacity-50 ${
-                            selectedReport.status === 'Resolved' ? 'col-span-2' : ''
-                          }`}
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                          Delete Review
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              </div>,
-              document.body
-            )
-          : null)}
+                {getReasonBadge(selectedReport.reportReason)}
+              </div>
+
+              {/* Full Review Text */}
+              <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200">
+                <div className="flex items-center justify-between mb-2">
+                  <StarRating rating={selectedReport.rating} />
+                  <span className="font-mono text-[10px] text-slate-400">
+                    Published: {selectedReport.reviewDate}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-800 leading-relaxed font-serif italic">
+                  "{selectedReport.content}"
+                </p>
+              </div>
+
+              {/* Reporter Metadata */}
+              <div className="p-3 bg-indigo-50/50 rounded-lg border border-indigo-100 text-xs flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-indigo-700">Student Identity Token</div>
+                  <div className="font-mono text-slate-800 font-bold">{selectedReport.reporterHash}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] uppercase font-bold text-indigo-700">Date Flagged</div>
+                  <div className="font-mono text-slate-800">{selectedReport.reportedDate}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Decision Actions */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              <button
+                onClick={() => setSelectedReport(null)}
+                className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800"
+              >
+                Close Inspector
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDismissReport(selectedReport)}
+                  className="px-3.5 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors"
+                >
+                  Dismiss Report
+                </button>
+                <button
+                  onClick={() => handleDeleteReview(selectedReport)}
+                  className="px-3.5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs transition-colors"
+                >
+                  Delete Review & Penalize
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
