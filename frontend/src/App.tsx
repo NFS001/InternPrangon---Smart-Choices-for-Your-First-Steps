@@ -6,14 +6,14 @@ import StudentSidebar from './components/student/StudentSidebar';
 import CompanySidebar from './components/company/CompanySidebar';
 
 import HomePage from './pages/HomePage';
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
 import InternshipsPage from './pages/InternshipsPage';
 import InternshipDetailPage from './pages/InternshipDetailPage';
 import CompaniesPage from './pages/CompaniesPage';
 import CompanyDetailPage from './pages/CompanyDetailPage';
 import ReviewsPage from './pages/ReviewsPage';
 import AboutPage from './pages/AboutPage';
+
+import AuthModal, { type AuthMode, type UserRole } from './components/auth/AuthModal';
 
 import AdminSidebar          from './components/admin/AdminSidebar';
 import AdminDashboardPage    from './pages/admin/AdminDashboardPage';
@@ -37,8 +37,7 @@ import ContributorsPage from './pages/student/ContributorsPage';
 import WriteReviewPage from './pages/student/WriteReviewPage';
 import { clearAuth, getSavedUser, login, register, saveAuth, type ApiUser } from './api/client';
 
-const PUBLIC_PAGES  = ['home', 'internships', 'internship-detail', 'companies', 'company-detail', 'reviews', 'about'];
-const AUTH_PAGES    = ['login', 'register'];
+const PUBLIC_PAGES  = ['home', 'internships', 'internship-detail', 'companies', 'company-detail', 'reviews', 'about', 'login', 'register'];
 const STUDENT_PAGES = ['dashboard', 'profile', 'saved', 'applications', 'notifications', 'contributors', 'write-review'];
 const COMPANY_PAGES = ['co-dashboard', 'co-applicants', 'co-internships', 'co-profile', 'co-verification'];
 const ADMIN_PAGES   = ['admin-dashboard', 'admin-companies', 'admin-verifications', 'admin-reviews', 'admin-activity'];
@@ -46,7 +45,7 @@ const ADMIN_PAGES   = ['admin-dashboard', 'admin-companies', 'admin-verification
 export default function App() {
   const [page, setPage] = useState(() => {
     const hash = window.location.hash.replace('#', '').trim();
-    if (hash) return hash;
+    if (hash && hash !== 'login' && hash !== 'register') return hash;
     return 'home';
   });
   const [pageData, setPageData] = useState<Record<string, unknown>>({});
@@ -55,9 +54,32 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
+  // Unified Auth Modal state
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>('login');
+  const [userRole, setUserRole] = useState<UserRole>('student');
+
+  const openAuth = (mode: AuthMode = 'login', role: UserRole = 'student') => {
+    setAuthMode(mode);
+    setUserRole(role);
+    setAuthError('');
+    setIsAuthOpen(true);
+  };
+
   const isNavigatingRef = useRef(false);
 
   const navigate: Navigate = (newPage, data = {}) => {
+    // Intercept login and register navigation to pop up modal
+    if (newPage === 'login') {
+      openAuth('login');
+      return;
+    }
+    if (newPage === 'register') {
+      const targetRole = (data.as as UserRole) || 'student';
+      openAuth('signup', targetRole);
+      return;
+    }
+
     if (newPage === page && JSON.stringify(data) === JSON.stringify(pageData)) return;
     isNavigatingRef.current = true;
     setPageData(data);
@@ -72,10 +94,19 @@ export default function App() {
     }, 160);
   };
 
+  // Hash change listener
   useEffect(() => {
     const handleHash = () => {
       if (isNavigatingRef.current) return;
       const hash = window.location.hash.replace('#', '').trim();
+      if (hash === 'login') {
+        openAuth('login');
+        return;
+      }
+      if (hash === 'register') {
+        openAuth('signup', 'student');
+        return;
+      }
       if (hash && hash !== page) {
         setPage(hash);
         setPageData({});
@@ -85,6 +116,16 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHash);
   }, [page]);
 
+  // Check initial hash for auth trigger
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '').trim();
+    if (hash === 'login') {
+      openAuth('login');
+    } else if (hash === 'register') {
+      openAuth('signup', 'student');
+    }
+  }, []);
+
   async function handleLogin(email: string, password: string) {
     setAuthError('');
     setAuthLoading(true);
@@ -92,6 +133,7 @@ export default function App() {
       const auth = await login(email, password);
       saveAuth(auth);
       setCurrentUser(auth.user);
+      setIsAuthOpen(false);
       navigateForRole(auth.user.role);
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : 'Login failed.');
@@ -107,6 +149,7 @@ export default function App() {
       const auth = await register(name, email, password, role);
       saveAuth(auth);
       setCurrentUser(auth.user);
+      setIsAuthOpen(false);
       navigateForRole(auth.user.role);
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : 'Registration failed.');
@@ -130,7 +173,6 @@ export default function App() {
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const isPublic  = PUBLIC_PAGES.includes(page);
-  const isAuth    = AUTH_PAGES.includes(page);
   const isStudent = STUDENT_PAGES.includes(page);
   const isCompany = COMPANY_PAGES.includes(page);
   const isAdmin   = ADMIN_PAGES.includes(page);
@@ -144,24 +186,19 @@ export default function App() {
           onNavigate={navigate}
           loggedIn={Boolean(currentUser)}
           onLogout={handleLogout}
+          onOpenAuth={(mode) => openAuth(mode)}
         />
-      )}
-
-      {/* Auth pages — minimal wrapper */}
-      {isAuth && (
-        <div
-          style={{ opacity: transitioning ? 0 : 1, transition: 'opacity 0.16s ease' }}
-        >
-          {page === 'login'    && <LoginPage navigate={navigate} onLogin={navigateForRole} onSubmit={handleLogin} error={authError} loading={authLoading} />}
-          {page === 'register' && <RegisterPage navigate={navigate} onLogin={navigateForRole} onSubmit={handleRegister} error={authError} loading={authLoading} as={(pageData.as as 'student' | 'company') ?? 'student'} />}
-        </div>
       )}
 
       {/* Student layout */}
       {isStudent && (
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen bg-[#F8FAFC] relative selection:bg-indigo-500 selection:text-white">
+          {/* Subtle Ambient Background Aura Glows */}
+          <div className="fixed top-0 left-1/3 w-[650px] h-[380px] bg-indigo-500/8 rounded-full blur-[140px] pointer-events-none -z-10" />
+          <div className="fixed top-96 right-1/4 w-[500px] h-[340px] bg-orange-500/8 rounded-full blur-[140px] pointer-events-none -z-10" />
+
           <StudentSidebar currentPage={page} navigate={navigate} onLogout={handleLogout} currentUser={currentUser} />
-          <main className="flex-1 min-w-0 bg-[#fafaf9] pb-16 md:pb-0"
+          <main className="flex-1 min-w-0 bg-transparent pb-16 md:pb-0 font-sans"
             style={{ opacity: transitioning ? 0 : 1, transition: 'opacity 0.16s ease' }}
           >
             {page === 'dashboard'    && <DashboardPage    navigate={navigate} currentUser={currentUser} />}
@@ -177,9 +214,13 @@ export default function App() {
 
       {/* Company layout */}
       {isCompany && (
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen bg-[#F8FAFC] relative selection:bg-indigo-500 selection:text-white">
+          {/* Subtle Ambient Background Aura Glows */}
+          <div className="fixed top-0 left-1/3 w-[650px] h-[380px] bg-indigo-500/8 rounded-full blur-[140px] pointer-events-none -z-10" />
+          <div className="fixed top-96 right-1/4 w-[500px] h-[340px] bg-orange-500/8 rounded-full blur-[140px] pointer-events-none -z-10" />
+
           <CompanySidebar currentPage={page} navigate={navigate} onLogout={handleLogout} currentUser={currentUser} />
-          <main className="flex-1 min-w-0 bg-[#fafaf9] pb-16 md:pb-0"
+          <main className="flex-1 min-w-0 bg-transparent pb-16 md:pb-0 font-sans"
             style={{ opacity: transitioning ? 0 : 1, transition: 'opacity 0.16s ease' }}
           >
             {page === 'co-dashboard'    && <CoDashboardPage    navigate={navigate} />}
@@ -195,7 +236,7 @@ export default function App() {
       {isAdmin && (
         <div className="flex min-h-screen">
           <AdminSidebar currentPage={page} navigate={navigate} onLogout={handleLogout} />
-          <main className="flex-1 min-w-0 bg-neutral-50 pb-16 md:pb-0"
+          <main className="flex-1 min-w-0 bg-[#F8FAFC] pb-16 md:pb-0"
             style={{ opacity: transitioning ? 0 : 1, transition: 'opacity 0.16s ease' }}
           >
             {page === 'admin-dashboard'      && <AdminDashboardPage    navigate={navigate} />}
@@ -210,15 +251,38 @@ export default function App() {
       {/* Public pages */}
       {isPublic && (
         <div style={{ opacity: transitioning ? 0 : 1, transform: transitioning ? 'translateY(6px)' : 'translateY(0)', transition: 'opacity 0.16s ease, transform 0.16s ease' }}>
-          {page === 'home'              && <HomePage navigate={navigate} loggedIn={Boolean(currentUser)} />}
+          {(page === 'home' || page === 'login' || page === 'register') && (
+            <HomePage navigate={navigate} loggedIn={Boolean(currentUser)} />
+          )}
           {page === 'internships'       && <InternshipsPage navigate={navigate} initialSearch={(pageData.search as string) || (pageData.category as string) || ''} initialCategory={pageData.category as string} />}
           {page === 'internship-detail' && <InternshipDetailPage navigate={navigate} id={pageData.id as number | string | undefined} backendId={pageData.backendId as string | undefined} internshipData={pageData.internshipData as any} />}
           {page === 'companies'         && <CompaniesPage navigate={navigate} initialSearch={pageData.search as string} />}
-          {page === 'company-detail'    && <CompanyDetailPage navigate={navigate} id={pageData.id as number | string | undefined} companyId={pageData.companyId as string | number | undefined} companyData={pageData.companyData as any} />}
-          {page === 'reviews'           && <ReviewsPage navigate={navigate} />}
+          {page === 'company-detail'    && <CompanyDetailPage navigate={navigate} slug={(pageData.slug as string) || ''} backendId={pageData.backendId as string | undefined} />}
+          {page === 'reviews'           && <ReviewsPage navigate={navigate} initialCompany={pageData.company as string} />}
           {page === 'about'             && <AboutPage navigate={navigate} />}
         </div>
       )}
+
+      {/* Unified Auth Modal Dialog */}
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => {
+          setIsAuthOpen(false);
+          setAuthError('');
+        }}
+        mode={authMode}
+        onModeChange={setAuthMode}
+        role={userRole}
+        onRoleChange={setUserRole}
+        onLoginSubmit={handleLogin}
+        onRegisterSubmit={handleRegister}
+        onQuickSsoSuccess={(role) => {
+          setIsAuthOpen(false);
+          navigateForRole(role);
+        }}
+        error={authError}
+        loading={authLoading}
+      />
     </div>
   );
 }
