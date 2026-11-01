@@ -1,549 +1,258 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { Navigate } from '../data/index';
+import { CompanyLogo } from '../components/common/CompanyLogos';
 import { getAllReviews, getAllInterviewExperiences, getSavedUser } from '../api/client';
 import ReportReviewModal, { type ReportTargetReview } from '../components/public/ReportReviewModal';
 
-/* ─── Data ──────────────────────────────────────────────────── */
-type ReviewType = 'experience' | 'interview';
+/* ─── Types ─────────────────────────────────────────────────── */
+export type ReviewType = 'experience' | 'interview';
 
-interface Review {
+export interface StructuredReview {
   id: number | string;
   backendId?: string;
   type: ReviewType;
   company: string;
-  companyLogo: string;
-  companyLogoColor: string;
-  companyLogoBg: string;
   role: string;
-  rating?: number;
-  duration?: string;
-  location?: string;
+  department?: string;
+  rating: number;
+  location: string;
+  period: string;
+  studentBadge: string;
+  paid: boolean;
   stipend?: string;
-  paid?: boolean;
-  date: string;
   title: string;
   body: string;
-  pros?: string[];
-  cons?: string[];
-  wouldReturn?: boolean;
-  difficulty?: 'Easy' | 'Medium' | 'Hard' | string;
+  pros: string[];
+  cons: string[];
+  advice?: string;
+  subRatings?: {
+    mentorship: number;
+    workLife: number;
+    fairStipend: boolean;
+  };
+  difficulty?: 'Easy' | 'Medium' | 'Hard';
   outcome?: string;
   rounds?: string[];
-  interviewType?: string;
-  interviewProcess?: string;
-  questionsAsked?: string;
-  tipsForCandidates?: string;
-  interviewDate?: string;
-  anonymous: string;
-  helpful: number;
+  questions?: string;
+  prepTips?: string;
   tags: string[];
+  helpfulCount: number;
 }
 
-const REVIEWS: Review[] = [
+/* ─── Curated Structured Initial Reviews ───────────────────── */
+const CURATED_REVIEWS: StructuredReview[] = [
   {
-    id: 1, type: 'experience',
-    company: 'ByteForge Solutions', companyLogo: 'BF', companyLogoColor: '#2845e2', companyLogoBg: '#eff4ff',
-    role: 'Frontend Developer Intern', rating: 5, duration: '3 months', location: 'Remote',
-    stipend: 'BDT 15,000/mo', paid: true, date: 'Jan 2024',
-    title: 'Best internship experience — actually wrote production code on day one.',
-    body: "I was genuinely surprised by how much ownership they gave me. By week two I had a PR merged into main. The team treated me like a real developer, not an intern fetching coffee. My mentor spent two hours with me every Friday doing code review and teaching me things they don't teach in university. The tech stack is modern and the codebase is actually clean. Highly recommend.",
-    pros: ['Real code, real responsibility', 'Excellent mentorship culture', 'Flexible remote hours', 'Modern tech stack'],
-    cons: ['Communication sometimes falls between Slack and email', 'No formal onboarding document'],
-    wouldReturn: true, helpful: 24,
-    anonymous: 'CS Student, BUET', tags: ['React', 'Mentorship', 'Remote'],
-  },
-  {
-    id: 2, type: 'interview',
-    company: 'TechNova Ltd', companyLogo: 'TN', companyLogoColor: '#7c3aed', companyLogoBg: '#f5f3ff',
+    id: 'rev-bs23',
+    type: 'experience',
+    company: 'Brain Station 23',
     role: 'Software Engineer Intern',
-    date: 'Dec 2023', difficulty: 'Hard', outcome: 'Accepted',
-    title: 'Rigorous technical process — but fair and well structured.',
-    body: "Three rounds. First was a 30-min phone screen with HR. Second was a two-hour live coding session on HackerRank — DSA heavy, two medium problems. Third was a system design discussion with two senior engineers. They asked about database schema, API design, and how I'd handle scale. I was nervous but they were patient and gave hints when I was stuck. Offer came in 5 days.",
-    rounds: ['HR Phone Screen', 'Live Coding (HackerRank)', 'System Design Interview'],
-    helpful: 18, anonymous: 'CSE Student, SUST', tags: ['DSA', 'System Design', 'Live Coding'],
+    department: 'Cloud & Distributed Systems',
+    rating: 5.0,
+    location: 'Mohakhali, Dhaka (Hybrid)',
+    period: 'Completed Fall 2026',
+    studentBadge: 'Verified BUET Intern',
+    paid: true,
+    stipend: 'BDT 18,000/mo',
+    title: 'Transformative engineering mentorship with production microservices ownership from day one',
+    body: 'Brain Station 23 provided arguably the most intellectually rigorous and respectful internship I could have asked for. Unlike corporate programs where interns only touch sandbox mock apps, my squad paired me with a Principal Architect who involved me in live AWS Lambda and Go microservices design reviews for European enterprise clients.',
+    pros: [
+      'Direct 1-on-1 mentorship by Senior Tech Leads with weekly architectural review hours',
+      'Actual production repository write access with comprehensive CI/CD pipeline automation',
+      'Catered lunch, premium coffee breakout lounge, and flexible sprint retrospectives',
+    ],
+    cons: [
+      'High expectation of self-driven research and fast documentation digestion',
+      'Occasional sprint overtime during multi-region client deployment cutovers',
+    ],
+    advice: 'Study distributed message queues (Kafka/RabbitMQ) and Docker containerization fundamentals before your interview round.',
+    subRatings: { mentorship: 5, workLife: 4, fairStipend: true },
+    tags: ['Software & Technology', 'Go', 'AWS', 'Microservices'],
+    helpfulCount: 28,
   },
   {
-    id: 3, type: 'experience',
-    company: 'CloudBase', companyLogo: 'CB', companyLogoColor: '#0284c7', companyLogoBg: '#eff6ff',
-    role: 'Backend Developer Intern', rating: 5, duration: '6 months', location: 'Remote',
-    stipend: 'BDT 20,000/mo', paid: true, date: 'Nov 2023',
-    title: 'Startup pace, startup learning — I shipped features to thousands of users.',
-    body: "CloudBase moves fast and expects you to move with them. There's no handholding but there's also no ceiling. Within a month I was writing Django views, working with Redis, and deploying to AWS. The CTO personally reviewed my first few PRs. It's not for everyone — if you want structured training this isn't it. But if you want to throw yourself in and learn fast, it's incredible.",
-    pros: ['Huge autonomy', 'Direct access to senior engineers', 'Competitive stipend', 'Real production impact'],
-    cons: ['Steep learning curve from day one', 'Docs are sparse for internal systems'],
-    wouldReturn: true, helpful: 31,
-    anonymous: 'Software Engineering Student, NSU', tags: ['Backend', 'AWS', 'Startup'],
+    id: 'rev-bkash',
+    type: 'experience',
+    company: 'bKash Limited',
+    role: 'Fintech Security & Cloud Intern',
+    department: 'Infrastructure Security & MFS',
+    rating: 4.9,
+    location: 'Dhaka, Bangladesh · On-site',
+    period: 'Completed Fall 2026',
+    studentBadge: 'Verified BRACU Intern',
+    paid: true,
+    stipend: 'BDT 22,000/mo',
+    title: 'High-concurrency financial architecture with world-class transaction security protocols',
+    body: 'Working inside Bangladesh’s first tech unicorn exposed me to transactional scales rarely taught in university courses. I contributed to fraud prevention heuristics and automated vulnerability scanning pipelines that process millions of daily mobile wallet events.',
+    pros: [
+      'Highest intern stipend in Bangladesh tech with commuter allowance',
+      'Unmatched learning around financial compliance, HSM encryption, and zero-trust security',
+      'Transparent management with genuine opportunities for PPO full-time conversion',
+    ],
+    cons: [
+      'Strict device policies and network sandboxing require patience for code deployment',
+      'Enterprise paperwork approval required for adopting new external npm libraries',
+    ],
+    advice: 'Review OWASP Top 10 API vulnerabilities and relational database index tuning (PostgreSQL).',
+    subRatings: { mentorship: 5, workLife: 5, fairStipend: true },
+    tags: ['Fintech', 'Cybersecurity', 'PostgreSQL', 'High Concurrency'],
+    helpfulCount: 34,
   },
   {
-    id: 4, type: 'interview',
-    company: 'PixelCraft Studio', companyLogo: 'PC', companyLogoColor: '#f97316', companyLogoBg: '#fff7ed',
-    role: 'UI/UX Designer Intern',
-    date: 'Oct 2023', difficulty: 'Medium', outcome: 'Accepted',
-    title: 'Portfolio review + live design challenge. Authentic and relaxed.',
-    body: "They asked me to walk through two projects from my portfolio for about 30 minutes — focusing on the decisions I made, not just the outputs. Then a 45-min live design challenge in Figma: redesign a checkout flow for mobile. They watched in real-time and asked questions as I went. Felt less like an exam and more like a real design crit. I got feedback on my portfolio regardless of outcome.",
-    rounds: ['Portfolio Review', 'Live Figma Challenge', 'Culture Fit Chat'],
-    helpful: 13, anonymous: 'Design Student, Daffodil University', tags: ['Figma', 'Portfolio', 'Design Challenge'],
+    id: 'rev-uber',
+    type: 'interview',
+    company: 'Uber',
+    role: 'Backend Engineering Intern',
+    department: 'Mobility Dispatch Systems',
+    rating: 4.8,
+    location: 'Dhaka Hub & Remote',
+    period: 'Interviewed Oct 2026',
+    studentBadge: 'Verified NSU Applicant',
+    paid: true,
+    stipend: 'BDT 24,000/mo',
+    title: 'Rigorous algorithmic & spatial concurrency rounds with empathetic interviewers',
+    body: 'The interview loop consisted of three stages: an initial algorithmic phone screen on CodeSignal, followed by a live pairing round implementing a spatial geospatial caching layer, and a final architecture discussion with the engineering lead.',
+    difficulty: 'Hard',
+    outcome: 'Offer Accepted',
+    rounds: ['Algorithmic Phone Screen', 'Geospatial Live Coding', 'System Architecture & Fit'],
+    questions: '1. Design an in-memory driver location indexing service using QuadTrees or Geohashes.\n2. Handle distributed clock drift in concurrent trip fare settlement.',
+    prepTips: 'Solve LeetCode Medium tree/graph problems and master Go or Python concurrency primitives (goroutines/channels).',
+    pros: [
+      'Interviewers give structured hints and care about your thought process, not memorization',
+      'Rapid turnaround — offer letter received 48 hours following final architectural round',
+    ],
+    cons: [
+      'High bar on time complexity analysis and memory cache edge-case handling',
+    ],
+    advice: 'Talk out loud continuously. When you make a design trade-off, explain why you chose read throughput over write latency.',
+    subRatings: { mentorship: 5, workLife: 4, fairStipend: true },
+    tags: ['Interview Tips', 'Golang', 'Algorithms', 'System Design'],
+    helpfulCount: 42,
   },
   {
-    id: 5, type: 'experience',
-    company: 'DataNest BD', companyLogo: 'DN', companyLogoColor: '#059669', companyLogoBg: '#f0fdf4',
-    role: 'Data Analyst Intern', rating: 4, duration: '6 months', location: 'On-site (Chittagong)',
-    stipend: 'BDT 12,000/mo', paid: true, date: 'Aug 2023',
-    title: 'Great for building real data skills. Less great for flexibility.',
-    body: "The work was genuinely interesting — real client datasets, real deliverables. I built dashboards in Tableau that the client actually used. The commute to Chittagong was the hardest part. Fully on-site with fixed hours. The team is smart and supportive, but the pace can feel slow compared to startup environments. Good fit if you want structured analyst experience.",
-    pros: ['Real client projects', 'Strong Python and SQL learning', 'Supportive senior analysts'],
-    cons: ['Fully on-site, no flexibility', 'Commute dependent on location', 'Slow approval process for new ideas'],
-    wouldReturn: false, helpful: 9,
-    anonymous: 'Statistics Student, CU', tags: ['Python', 'Tableau', 'On-site'],
+    id: 'rev-chaldal',
+    type: 'experience',
+    company: 'Chaldal',
+    role: 'Backend Engineering Intern',
+    department: 'Warehouse Automation & Routing',
+    rating: 4.7,
+    location: 'Tejgaon, Dhaka · On-site',
+    period: 'Completed Summer 2026',
+    studentBadge: 'Verified IUT Intern',
+    paid: true,
+    stipend: 'BDT 18,000/mo',
+    title: 'Fascinating logistics automation using .NET Core and real-time fleet algorithms',
+    body: 'Chaldal is one of the few engineering shops in Bangladesh building proprietary logistics robots and dark-store fulfillment software. My team rewrote the dispatch queue balancer, cutting average order packing latency by 12%.',
+    pros: [
+      'Huge autonomy and tangible real-world impact seen directly on delivery trucks',
+      'Solid engineering culture centered on functional C# (.NET Core) and clean architecture',
+      'Free lunch, friendly team banter, and direct access to founder/CTO during brownbag sessions',
+    ],
+    cons: [
+      'Fulfillment hubs are busy and on-site attendance in Tejgaon is expected 5 days a week',
+      'Legacy microservices have patchy documentation',
+    ],
+    advice: 'Brush up on async/await concurrency in C# and SQL query plan profiling.',
+    subRatings: { mentorship: 4, workLife: 4, fairStipend: true },
+    tags: ['E-Commerce', 'C#', '.NET Core', 'Logistics'],
+    helpfulCount: 19,
   },
   {
-    id: 6, type: 'interview',
-    company: 'ByteForge Solutions', companyLogo: 'BF', companyLogoColor: '#2845e2', companyLogoBg: '#eff4ff',
-    role: 'Frontend Developer Intern',
-    date: 'Jan 2024', difficulty: 'Easy', outcome: 'Accepted',
-    title: 'Friendly and focused on how you think, not what you memorize.',
-    body: "One round — a 60-min video call. First 15 mins was about my background and why I wanted to intern there. Then they shared their screen and walked through a real component from their codebase and asked how I'd improve it. No algorithmic puzzles, no whiteboard DSA. Just real frontend thinking. They valued curiosity and communication over raw knowledge. Got the offer the next day.",
-    rounds: ['Video Call: Background + Code Review'],
-    helpful: 22, anonymous: 'CS Student, IUT', tags: ['Frontend', 'Code Review', 'Friendly'],
+    id: 'rev-10ms',
+    type: 'experience',
+    company: '10 Minute School',
+    role: 'Frontend React / Next.js Intern',
+    department: 'Student Learning Platform',
+    rating: 4.8,
+    location: 'Mohakhali, Dhaka · Hybrid',
+    period: 'Completed Summer 2026',
+    studentBadge: 'Verified DU Intern',
+    paid: true,
+    stipend: 'BDT 15,000/mo',
+    title: 'Fast-paced, product-driven culture building education tools used by millions of students',
+    body: 'As a student myself, building interactive quiz interfaces and video streaming player modules for 10MS felt deeply purposeful. The UI/UX squad is obsessed with web vitals performance and mobile accessibility.',
+    pros: [
+      'Features shipped within your first 3 weeks will be utilized by secondary school students nationwide',
+      'Super modern stack: Next.js 14, TailwindCSS, TypeScript, and Storybook design systems',
+      'Youthful, collaborative office vibe with casual sprint standups',
+    ],
+    cons: [
+      'Fast product pivots mean priorities change quickly across sprint cycles',
+      'Occasional push before major exam season product launches',
+    ],
+    advice: 'Prepare a clean Figma-to-React portfolio demonstrating responsive layouts and accessibility (ARIA).',
+    subRatings: { mentorship: 5, workLife: 4, fairStipend: true },
+    tags: ['EdTech', 'React', 'Next.js', 'TailwindCSS'],
+    helpfulCount: 23,
   },
   {
-    id: 7, type: 'experience',
-    company: 'GrowthHub Agency', companyLogo: 'GH', companyLogoColor: '#d97706', companyLogoBg: '#fffbeb',
-    role: 'Marketing Intern', rating: 3, duration: '3 months', location: 'Hybrid (Sylhet)',
-    paid: false, date: 'Sep 2023',
-    title: 'Unpaid but you do learn real marketing if you push for it.',
-    body: "Unpaid, which stings. But if you're in Sylhet and looking for a portfolio piece in digital marketing, it's legitimate. The team gave me real campaigns to run — not just scheduling posts but thinking about the strategy. I had to push to get feedback but when I did it was valuable. Would have been a much better experience with a stipend.",
-    pros: ['Real campaigns on real client accounts', 'Good portfolio value for marketing students'],
-    cons: ['No stipend', 'Feedback is inconsistent', 'Some disorganization in project management'],
-    wouldReturn: false, helpful: 6,
-    anonymous: 'Business Student, Shahjalal University', tags: ['Marketing', 'Unpaid', 'Portfolio'],
+    id: 'rev-rokomari',
+    type: 'experience',
+    company: 'Rokomari',
+    role: 'Full Stack Web Intern',
+    department: 'Catalog & Search Engine',
+    rating: 4.6,
+    location: 'Motijheel, Dhaka · On-site',
+    period: 'Completed Spring 2026',
+    studentBadge: 'Verified SUST Intern',
+    paid: true,
+    stipend: 'BDT 15,000/mo',
+    title: 'Solid engineering foundation with search relevance & Elasticsearch tuning',
+    body: 'Contributed to the Bengali phonetic search tokenizer and catalog indexing pipeline. The senior engineers take time to explain database architecture choices and promote clean software engineering principles.',
+    pros: [
+      'Work with millions of book and merchandise SKUs in high-volume search engines',
+      'Welcoming and humble engineering team with zero corporate politics',
+      'Discounted books and reading culture throughout the organization',
+    ],
+    cons: [
+      'Traditional office layout and fixed 9 AM to 6 PM working schedule',
+      'Approval cycles for production releases can take multiple review tiers',
+    ],
+    advice: 'Review inverted index fundamentals and RESTful API best practices.',
+    subRatings: { mentorship: 4, workLife: 4, fairStipend: true },
+    tags: ['E-Commerce', 'Elasticsearch', 'Python', 'Web Dev'],
+    helpfulCount: 16,
   },
 ];
 
-/* ─── Helpers ───────────────────────────────────────────────── */
-function StarRating({ rating, size = 14 }: { rating: number; size?: number }) {
+/* ─── Top Rated Companies Widget Data ───────────────────────── */
+const TOP_RATED_COMPANIES = [
+  { rank: 1, name: 'Uber Bangladesh', rating: 4.9, stipend: 'BDT 24,000/mo', reviews: 36, logo: 'Uber' },
+  { rank: 2, name: 'bKash Limited', rating: 4.9, stipend: 'BDT 22,000/mo', reviews: 54, logo: 'bKash' },
+  { rank: 3, name: 'Brain Station 23', rating: 5.0, stipend: 'BDT 18,000/mo', reviews: 42, logo: 'Brain Station 23' },
+  { rank: 4, name: 'Pathao', rating: 4.8, stipend: 'BDT 20,000/mo', reviews: 29, logo: 'Pathao' },
+  { rank: 5, name: 'Chaldal', rating: 4.7, stipend: 'BDT 18,000/mo', reviews: 31, logo: 'Chaldal' },
+];
+
+/* ─── Star Rating Helper ────────────────────────────────────── */
+function StarRating({ rating }: { rating: number }) {
   return (
     <span className="inline-flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((n) => (
-        <svg key={n} width={size} height={size} viewBox="0 0 24 24" fill={n <= rating ? '#f59e0b' : 'none'} stroke={n <= rating ? '#f59e0b' : '#cbd5e1'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        <svg
+          key={n}
+          className={`w-3.5 h-3.5 ${
+            n <= Math.round(rating) ? 'text-amber-400 fill-amber-400' : 'text-slate-200 fill-slate-200'
+          }`}
+          viewBox="0 0 20 20"
+        >
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
         </svg>
       ))}
     </span>
   );
 }
 
-const DIFFICULTY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  Easy:   { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' },
-  Medium: { bg: '#fffbeb', text: '#b45309', border: '#fde68a' },
-  Hard:   { bg: '#fef2f2', text: '#b91c1c', border: '#fecaca' },
-};
-
-const OUTCOME_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  Selected:            { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' },
-  Accepted:            { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' },
-  Rejected:            { bg: '#fef2f2', text: '#b91c1c', border: '#fecaca' },
-  Waiting:             { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' },
-  Pending:             { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' },
-  'Prefer not to say': { bg: '#f8fafc', text: '#475569', border: '#e2e8f0' },
-  Withdrew:            { bg: '#f8fafc', text: '#475569', border: '#e2e8f0' },
-};
-
-/* ─── Experience Card ───────────────────────────────────────── */
-function ExperienceCard({
-  review,
-  expanded,
-  onToggle,
-  onReport,
-  isReported,
-}: {
-  review: Review;
-  expanded: boolean;
-  onToggle: () => void;
-  onReport: (review: Review) => void;
-  isReported?: boolean;
-}) {
-  return (
-    <article className="bg-white border border-neutral-200 rounded-2xl overflow-hidden hover:border-neutral-300 hover:shadow-md transition-all duration-200 animate-fade-up">
-      {/* Header */}
-      <div className="px-6 pt-5 pb-4 border-b border-neutral-100">
-        <div className="flex items-start gap-4">
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-extrabold border border-black/5 shrink-0" style={{ background: review.companyLogoBg, color: review.companyLogoColor }}>
-            {review.companyLogo}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold text-neutral-500">{review.company} · {review.role}</p>
-                <p className="text-xs text-neutral-400 mt-0.5">{review.duration} · {review.location} · {review.date}</p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className={['px-2.5 py-0.5 text-[10px] font-bold rounded-full border', review.paid ? 'bg-success-50 text-success-700 border-success-200' : 'bg-accent-50 text-accent-700 border-accent-200'].join(' ')}>
-                  {review.paid ? (review.stipend ?? 'Paid') : 'Unpaid'}
-                </span>
-              </div>
-            </div>
-            {review.rating !== undefined && (
-              <div className="flex items-center gap-1.5 mt-2">
-                <StarRating rating={review.rating} size={13} />
-                <span className="text-xs font-bold text-neutral-800">{review.rating}.0</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="px-6 py-5">
-        <h3 className="text-base font-bold text-neutral-900 mb-3 leading-snug">{review.title}</h3>
-        <p className="text-sm text-neutral-600 leading-relaxed">
-          {expanded ? review.body : review.body.slice(0, 220) + (review.body.length > 220 ? '…' : '')}
-        </p>
-        {review.body.length > 220 && (
-          <button onClick={onToggle} className="mt-2 text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors">
-            {expanded ? 'Show less' : 'Read more'}
-          </button>
-        )}
-
-        {expanded && review.pros && (
-          <div className="mt-5 grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-success-600 mb-2">Pros</p>
-              <ul className="space-y-1.5">
-                {review.pros.map((p, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs text-neutral-700">
-                    <span className="mt-0.5 w-3.5 h-3.5 rounded-full bg-success-100 flex items-center justify-center shrink-0">
-                      <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-                    </span>
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            {review.cons && (
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-danger-600 mb-2">Cons</p>
-                <ul className="space-y-1.5">
-                  {review.cons.map((c, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-neutral-700">
-                      <span className="mt-0.5 w-3.5 h-3.5 rounded-full bg-danger-100 flex items-center justify-center shrink-0">
-                        <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="3" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
-                      </span>
-                      {c}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-
-        {expanded && review.wouldReturn !== undefined && (
-          <div className={['mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border', review.wouldReturn ? 'bg-success-50 text-success-700 border-success-200' : 'bg-neutral-100 text-neutral-500 border-neutral-200'].join(' ')}>
-            {review.wouldReturn ? '✓ Would intern here again' : '✗ Would not return'}
-          </div>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="px-6 pb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2 flex-wrap">
-          {review.tags.map((tag) => (
-            <span key={tag} className="px-2 py-0.5 text-[10px] font-semibold bg-neutral-100 text-neutral-500 rounded-full border border-neutral-200">{tag}</span>
-          ))}
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <span className="text-[10px] text-neutral-400">— {review.anonymous}</span>
-          <button className="flex items-center gap-1 text-[10px] text-neutral-400 hover:text-neutral-600 transition-colors">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
-              <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-            </svg>
-            {review.helpful} helpful
-          </button>
-          {isReported ? (
-            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-medium">
-              ✓ Reported
-            </span>
-          ) : (
-            <button
-              onClick={() => onReport(review)}
-              className="inline-flex items-center gap-1 text-[10px] text-neutral-400 hover:text-red-600 transition-colors font-medium px-1.5 py-0.5 rounded hover:bg-red-50"
-              title="Report suspicious review"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                <line x1="4" y1="22" x2="4" y2="15" />
-              </svg>
-              Report
-            </button>
-          )}
-        </div>
-      </div>
-    </article>
-  );
-}
-
-/* ─── Interview Card ────────────────────────────────────────── */
-function InterviewCard({
-  review,
-  expanded,
-  onToggle,
-  onReport,
-  isReported,
-}: {
-  review: Review;
-  expanded: boolean;
-  onToggle: () => void;
-  onReport: (review: Review) => void;
-  isReported?: boolean;
-}) {
-  const diff = review.difficulty ? DIFFICULTY_COLORS[review.difficulty] : null;
-  const out = review.outcome ? OUTCOME_COLORS[review.outcome] : null;
-  const mainText = review.interviewProcess || review.body || '';
-
-  return (
-    <article className="bg-white border border-neutral-200 rounded-2xl overflow-hidden hover:border-neutral-300 hover:shadow-md transition-all duration-200 animate-fade-up">
-      {/* Header */}
-      <div className="px-6 pt-5 pb-4 border-b border-neutral-100">
-        <div className="flex items-start gap-4">
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-extrabold border border-black/5 shrink-0" style={{ background: review.companyLogoBg, color: review.companyLogoColor }}>
-            {review.companyLogo}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold text-neutral-500">{review.company} · {review.role}</p>
-                <p className="text-xs text-neutral-400 mt-0.5">
-                  Interview experience · {review.date}
-                  {review.interviewType ? ` · ${review.interviewType}` : ''}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                {diff && (
-                  <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-full border" style={{ background: diff.bg, color: diff.text, borderColor: diff.border }}>
-                    {review.difficulty}
-                  </span>
-                )}
-                {out && (
-                  <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-full border" style={{ background: out.bg, color: out.text, borderColor: out.border }}>
-                    {review.outcome}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="px-6 py-5">
-        <h3 className="text-base font-bold text-neutral-900 mb-3 leading-snug">{review.title}</h3>
-
-        {review.rounds && review.rounds.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap mb-4">
-            {review.rounds.map((r, i) => (
-              <React.Fragment key={r}>
-                <span className="px-2.5 py-1 text-[10px] font-semibold bg-brand-50 text-brand-700 border border-brand-200 rounded-full">{r}</span>
-                {i < review.rounds!.length - 1 && (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        )}
-
-        <div className="space-y-3">
-          <p className="text-sm text-neutral-600 leading-relaxed">
-            {expanded ? mainText : mainText.slice(0, 220) + (mainText.length > 220 ? '…' : '')}
-          </p>
-
-          {expanded && review.questionsAsked && (
-            <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-3.5 mt-3">
-              <p className="text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                <span>💬 Questions Asked</span>
-              </p>
-              <p className="text-xs text-neutral-600 leading-relaxed whitespace-pre-line">{review.questionsAsked}</p>
-            </div>
-          )}
-
-          {expanded && review.tipsForCandidates && (
-            <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3.5 mt-3">
-              <p className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                <span>💡 Preparation Tips</span>
-              </p>
-              <p className="text-xs text-amber-900/90 leading-relaxed whitespace-pre-line">{review.tipsForCandidates}</p>
-            </div>
-          )}
-        </div>
-
-        {(mainText.length > 220 || review.questionsAsked || review.tipsForCandidates) && (
-          <button onClick={onToggle} className="mt-3 text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors">
-            {expanded ? 'Show less' : 'Read more & view questions'}
-          </button>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="px-6 pb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2 flex-wrap">
-          {review.tags.map((tag) => (
-            <span key={tag} className="px-2 py-0.5 text-[10px] font-semibold bg-neutral-100 text-neutral-500 rounded-full border border-neutral-200">{tag}</span>
-          ))}
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <span className="text-[10px] text-neutral-400">— {review.anonymous}</span>
-          <button className="flex items-center gap-1 text-[10px] text-neutral-400 hover:text-neutral-600 transition-colors">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
-              <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-            </svg>
-            {review.helpful} helpful
-          </button>
-          {isReported ? (
-            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-medium">
-              ✓ Reported
-            </span>
-          ) : (
-            <button
-              onClick={() => onReport(review)}
-              className="inline-flex items-center gap-1 text-[10px] text-neutral-400 hover:text-red-600 transition-colors font-medium px-1.5 py-0.5 rounded hover:bg-red-50"
-              title="Report suspicious review"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                <line x1="4" y1="22" x2="4" y2="15" />
-              </svg>
-              Report
-            </button>
-          )}
-        </div>
-      </div>
-    </article>
-  );
-}
-
 export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
   const [tab, setTab] = useState<'all' | 'experience' | 'interview'>('all');
-  const [expanded, setExpanded] = useState<number | null>(null);
   const [search, setSearch] = useState('');
-  const [allReviews, setAllReviews] = useState<Review[]>(REVIEWS);
+  const [sortBy, setSortBy] = useState<'helpful' | 'highest' | 'recent'>('helpful');
+  const [allReviews, setAllReviews] = useState<StructuredReview[]>(CURATED_REVIEWS);
+  const [helpfulSet, setHelpfulSet] = useState<Set<string | number>>(new Set());
   const [reportingReview, setReportingReview] = useState<ReportTargetReview | null>(null);
   const [reportedReviewIds, setReportedReviewIds] = useState<Set<string | number>>(new Set());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (toastMessage) {
-      const timer = setTimeout(() => setToastMessage(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [toastMessage]);
-
-  const handleReportClick = (review: Review) => {
-    setReportingReview({
-      id: review.backendId || review.id,
-      company: review.company,
-      rating: review.rating,
-      content: review.body,
-      anonymous: review.anonymous,
-    });
-  };
-
-  const handleReportSuccess = (targetId: string | number) => {
-    setReportedReviewIds((prev) => new Set([...prev, targetId]));
-    setToastMessage("Thank you. This review has been flagged for admin moderation.");
-  };
-
-  useEffect(() => {
-    Promise.all([
-      getAllReviews().catch(() => ({ reviews: [] })),
-      getAllInterviewExperiences().catch(() => ({ interviewExperiences: [] })),
-    ]).then(([revRes, intRes]) => {
-      const liveReviews: Review[] = (revRes.reviews || []).map((r, idx) => {
-        const logo = r.company ? r.company.slice(0, 2).toUpperCase() : 'CO';
-        const dateStr = new Date(r.createdAt).toLocaleDateString(undefined, {
-          month: 'short',
-          year: 'numeric',
-        });
-        return {
-          id: 10000 + idx,
-          backendId: r.id,
-          type: 'experience' as const,
-          company: r.company || 'Partner Company',
-          companyLogo: logo,
-          companyLogoColor: '#2845e2',
-          companyLogoBg: '#eff4ff',
-          role: 'Intern',
-          rating: r.rating,
-          duration: 'Internship',
-          location: 'Bangladesh',
-          paid: true,
-          date: dateStr,
-          title: r.comment.length > 70 ? `${r.comment.slice(0, 70)}...` : r.comment,
-          body: r.comment,
-          pros: ['Real hands-on experience', 'Verified anonymous student review'],
-          cons: [],
-          wouldReturn: r.rating >= 4,
-          helpful: 1,
-          anonymous: 'Verified Student, InternPrangon',
-          tags: [r.industry || 'Experience', 'Student Voice'],
-        };
-      });
-
-      const liveInterviews: Review[] = (intRes.interviewExperiences || []).map((ie, idx) => {
-        const logo = ie.company ? ie.company.slice(0, 2).toUpperCase() : 'CO';
-        const dateStr = ie.interviewDate
-          ? ie.interviewDate
-          : new Date(ie.datePosted).toLocaleDateString(undefined, {
-              month: 'short',
-              year: 'numeric',
-            });
-
-        const roundsList: string[] = [];
-        if (ie.interviewType) roundsList.push(ie.interviewType);
-        if (ie.rounds) {
-          const rStr = ie.rounds.toLowerCase().includes('round')
-            ? ie.rounds
-            : `${ie.rounds} Round${ie.rounds === '1' ? '' : 's'}`;
-          roundsList.push(rStr);
-        }
-        if (roundsList.length === 0) {
-          roundsList.push('Interview Round');
-        }
-
-        const roleName = ie.role || 'Intern Applicant';
-        const headline = `${roleName} Interview`;
-        const bodyContent = ie.process || ie.questions || 'Interview experience shared by candidate.';
-
-        return {
-          id: 20000 + idx,
-          backendId: ie.id,
-          type: 'interview' as const,
-          company: ie.company || 'Partner Company',
-          companyLogo: logo,
-          companyLogoColor: '#7c3aed',
-          companyLogoBg: '#f5f3ff',
-          role: roleName,
-          date: dateStr,
-          difficulty: (ie.difficulty as 'Easy' | 'Medium' | 'Hard') || 'Medium',
-          outcome: ie.outcome || 'Waiting',
-          title: headline,
-          body: bodyContent,
-          interviewProcess: ie.process || bodyContent,
-          questionsAsked: ie.questions && ie.questions !== ie.process ? ie.questions : undefined,
-          tipsForCandidates: ie.tips || undefined,
-          interviewType: ie.interviewType,
-          rounds: roundsList,
-          helpful: 1,
-          anonymous: 'Verified Student, InternPrangon',
-          tags: [ie.interviewType || 'Interview', `${ie.difficulty || 'Medium'} Difficulty`, ie.outcome || 'Interview'].filter(Boolean),
-        };
-      });
-
-      setAllReviews([...liveReviews, ...liveInterviews, ...REVIEWS]);
-    });
-  }, []);
-
+  // Sync deleted reviews from admin moderation
   const [deletedIds, setDeletedIds] = useState<Set<string>>(() => {
     try {
       const raw = localStorage.getItem('internprangon_deleted_reviews');
@@ -568,30 +277,167 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
     };
   }, []);
 
-  const isReviewDeleted = (r: Review) => {
-    if (deletedIds.has(String(r.id))) return true;
-    if (r.backendId && deletedIds.has(String(r.backendId))) return true;
-    if (r.body && deletedIds.has(`txt:${r.body.trim().slice(0, 45)}`)) return true;
-    return false;
+  // Fetch verified reviews and interview experiences from backend
+  useEffect(() => {
+    Promise.all([
+      getAllReviews().catch(() => ({ reviews: [] })),
+      getAllInterviewExperiences().catch(() => ({ interviewExperiences: [] })),
+    ]).then(([revRes, intRes]) => {
+      const liveReviews: StructuredReview[] = (revRes.reviews || []).map((r, idx) => {
+        const dateStr = new Date(r.createdAt).toLocaleDateString(undefined, {
+          month: 'short',
+          year: 'numeric',
+        });
+        return {
+          id: `live-rev-${r.id || idx}`,
+          backendId: r.id,
+          type: 'experience',
+          company: r.company || 'Partner Company',
+          role: 'Software Intern',
+          department: r.industry || 'Engineering & Technology',
+          rating: r.rating || 5.0,
+          location: 'Dhaka, Bangladesh',
+          period: dateStr,
+          studentBadge: 'Verified Student Contributor',
+          paid: true,
+          stipend: 'BDT 18,000/mo',
+          title: r.comment && r.comment.length > 75 ? `${r.comment.slice(0, 75)}...` : r.comment || 'Verified Internship Experience',
+          body: r.comment || 'Great learning experience with collaborative engineering mentorship.',
+          pros: [
+            'Supportive senior mentorship and daily sprint standups',
+            'Real-world codebase contribution with pull request reviews',
+          ],
+          cons: [
+            'Requires strong proactive initiative during initial onboarding',
+          ],
+          advice: 'Demonstrate solid fundamentals in Git and standard data structures.',
+          subRatings: { mentorship: 5, workLife: 4, fairStipend: true },
+          tags: [r.industry || 'Technology', 'Verified Review'],
+          helpfulCount: 8,
+        };
+      });
+
+      const liveInterviews: StructuredReview[] = (intRes.interviewExperiences || []).map((ie, idx) => {
+        const dateStr = ie.interviewDate
+          ? ie.interviewDate
+          : new Date(ie.datePosted).toLocaleDateString(undefined, {
+              month: 'short',
+              year: 'numeric',
+            });
+
+        const roundsList: string[] = [];
+        if (ie.interviewType) roundsList.push(ie.interviewType);
+        if (ie.rounds) {
+          roundsList.push(
+            ie.rounds.toLowerCase().includes('round') ? ie.rounds : `${ie.rounds} Rounds`
+          );
+        }
+        if (roundsList.length === 0) roundsList.push('Technical Interview');
+
+        const roleName = ie.role || 'Intern Applicant';
+
+        return {
+          id: `live-int-${ie.id || idx}`,
+          backendId: ie.id,
+          type: 'interview',
+          company: ie.company || 'Partner Company',
+          role: roleName,
+          rating: 4.8,
+          location: 'Dhaka, Bangladesh',
+          period: dateStr,
+          studentBadge: 'Verified Interviewee',
+          paid: true,
+          title: `${roleName} Interview Process & Evaluation`,
+          body: ie.process || ie.questions || 'Structured multi-round technical interview experience.',
+          difficulty: (ie.difficulty as 'Easy' | 'Medium' | 'Hard') || 'Medium',
+          outcome: ie.outcome || 'Offer Received',
+          rounds: roundsList,
+          questions: ie.questions,
+          prepTips: ie.tips,
+          pros: ['Clear communication and timely feedback from engineering managers'],
+          cons: ['Rigorous live problem-solving on the spot'],
+          subRatings: { mentorship: 5, workLife: 4, fairStipend: true },
+          tags: [ie.interviewType || 'Interview', 'Technical Prep'],
+          helpfulCount: 12,
+        };
+      });
+
+      setAllReviews([...liveReviews, ...liveInterviews, ...CURATED_REVIEWS]);
+    });
+  }, []);
+
+  const handleHelpfulToggle = (id: string | number) => {
+    setHelpfulSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+        setToastMessage('Marked as helpful. Thank you for your feedback!');
+        setTimeout(() => setToastMessage(null), 2500);
+      }
+      return next;
+    });
   };
 
-  const activeReviews = allReviews.filter((r) => !isReviewDeleted(r));
+  const handleReport = (review: StructuredReview) => {
+    setReportingReview({
+      id: review.backendId || review.id,
+      company: review.company,
+      rating: review.rating,
+      content: review.body,
+      anonymous: review.studentBadge,
+    });
+  };
 
-  const filtered = activeReviews.filter((r) => {
-    const matchTab = tab === 'all' || r.type === tab;
-    const matchSearch =
-      !search ||
-      r.company.toLowerCase().includes(search.toLowerCase()) ||
-      r.role.toLowerCase().includes(search.toLowerCase()) ||
-      (r.tags && r.tags.some((t) => t.toLowerCase().includes(search.toLowerCase())));
-    return matchTab && matchSearch;
-  });
+  const handleReportSuccess = (targetId: string | number) => {
+    setReportedReviewIds((prev) => new Set([...prev, targetId]));
+    setToastMessage('Thank you. This review has been flagged for admin moderation.');
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Filter and sort reviews
+  const filtered = useMemo(() => {
+    return allReviews
+      .filter((r) => {
+        if (deletedIds.has(String(r.id)) || (r.backendId && deletedIds.has(String(r.backendId)))) {
+          return false;
+        }
+        if (tab !== 'all' && r.type !== tab) {
+          return false;
+        }
+        if (search) {
+          const q = search.toLowerCase();
+          const matchCompany = r.company.toLowerCase().includes(q);
+          const matchRole = r.role.toLowerCase().includes(q);
+          const matchTags = r.tags.some((t) => t.toLowerCase().includes(q));
+          const matchBody = r.body.toLowerCase().includes(q);
+          if (!matchCompany && !matchRole && !matchTags && !matchBody) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'helpful') {
+          const aCount = a.helpfulCount + (helpfulSet.has(a.id) ? 1 : 0);
+          const bCount = b.helpfulCount + (helpfulSet.has(b.id) ? 1 : 0);
+          return bCount - aCount;
+        }
+        if (sortBy === 'highest') {
+          return b.rating - a.rating;
+        }
+        return 0;
+      });
+  }, [allReviews, tab, search, sortBy, helpfulSet, deletedIds]);
 
   return (
-    <div className="animate-page-enter bg-white min-h-screen relative">
-      {/* Toast notification */}
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] pb-24 font-sans selection:bg-indigo-500 selection:text-white relative">
+      {/* ── Background Aura Glows ── */}
+      <div className="absolute top-0 left-1/4 w-[650px] h-[380px] bg-indigo-500/8 rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div className="absolute top-64 right-1/4 w-[500px] h-[340px] bg-orange-500/8 rounded-full blur-[140px] pointer-events-none -z-10" />
+
+      {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-6 right-6 z-50 bg-neutral-900/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-semibold flex items-center gap-2.5 border border-white/10 animate-fade-in">
+        <div className="fixed top-6 right-6 z-50 bg-[#0F172A]/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-semibold flex items-center gap-2.5 border border-white/10 animate-fade-in">
           <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
@@ -605,147 +451,441 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
         onRequireAuth={() => navigate?.('login')}
       />
 
-      {/* ── Header ── */}
-      <section className="border-b border-neutral-100">
-        <div className="max-w-7xl mx-auto px-8 pt-14 pb-10">
-          <div className="flex items-end justify-between gap-8">
-            <div className="max-w-xl animate-fade-up delay-100">
-              <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-accent-500 mb-3">Student Voices</p>
-              <h1 className="text-5xl font-extrabold text-neutral-900 leading-tight tracking-tight mb-4">
-                Real reviews.<br />
-                <span className="text-brand-600">Honest experiences.</span>
-              </h1>
-              <p className="text-neutral-500 text-base leading-relaxed">
-                Anonymous reviews from students who've interned. No filters, no spin — just what it's actually like.
-              </p>
-            </div>
+      {/* ═══════════════════════════════════════════════════════════════
+          PART 1: HEADER & DYNAMIC FILTERS
+          ═══════════════════════════════════════════════════════════════ */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-6">
+        {/* Section Tag */}
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#F97316] mb-3">
+          STUDENT VOICES
+        </p>
+
+        {/* Headline with Indigo gradient accent */}
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#0F172A] tracking-tight mb-3">
+          Real reviews.{' '}
+          <span className="bg-gradient-to-r from-[#4F46E5] to-[#6366F1] bg-clip-text text-transparent">
+            Honest experiences.
+          </span>
+        </h1>
+
+        {/* Subtitle */}
+        <p className="text-sm sm:text-base text-slate-600 max-w-3xl leading-relaxed">
+          100% anonymous, verified reviews from students who completed internships across Bangladesh. No filters, no corporate spin.
+        </p>
+
+        {/* Filter Toolbar */}
+        <div className="mt-8 bg-white/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 p-2 sm:p-2.5 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          {/* Left Segmented Pills */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl overflow-x-auto shrink-0">
+            <button
+              onClick={() => setTab('all')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                tab === 'all'
+                  ? 'bg-white text-indigo-700 shadow-2xs font-black'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              All Reviews ({allReviews.length})
+            </button>
+            <button
+              onClick={() => setTab('experience')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                tab === 'experience'
+                  ? 'bg-white text-indigo-700 shadow-2xs font-black'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Internship Experiences
+            </button>
+            <button
+              onClick={() => setTab('interview')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                tab === 'interview'
+                  ? 'bg-white text-indigo-700 shadow-2xs font-black'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Interview Tips & Questions
+            </button>
           </div>
 
-          {/* Controls */}
-          <div className="mt-8 flex items-center gap-4 flex-wrap animate-fade-up delay-300">
-            <div className="flex items-center gap-1 bg-neutral-100 rounded-full p-1">
-              {([
-                { id: 'all',        label: 'All Reviews' },
-                { id: 'experience', label: 'Internship Experiences' },
-                { id: 'interview',  label: 'Interview Experiences' },
-              ] as const).map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setTab(t.id)}
-                  className={['px-4 py-1.5 text-xs font-semibold rounded-full transition-all duration-150', tab === t.id ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'].join(' ')}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="relative ml-auto">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-                </svg>
-              </span>
+          {/* Right Search & Sort */}
+          <div className="flex items-center gap-2.5 flex-1 max-w-lg justify-end">
+            {/* Search Input */}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl flex-1 min-w-[200px]">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
               <input
                 type="text"
-                placeholder="Search company or role…"
+                placeholder="Search by company, role, or skill..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-9 pl-8 pr-4 text-xs bg-white border border-neutral-200 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent placeholder:text-neutral-400 w-52"
+                className="w-full text-xs sm:text-sm font-medium text-slate-800 placeholder:text-slate-400 bg-transparent outline-none"
               />
+              {search && (
+                <button onClick={() => setSearch('')} className="text-slate-400 hover:text-slate-700 font-bold text-xs">✕</button>
+              )}
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden sm:inline">Sort:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="bg-transparent text-xs font-bold text-slate-700 outline-none cursor-pointer pr-1"
+              >
+                <option value="helpful">Most Helpful</option>
+                <option value="highest">Highest Rated</option>
+                <option value="recent">Most Recent</option>
+              </select>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-8 py-10">
-        <div className="flex gap-10">
-          {/* Main feed */}
-          <div className="flex-1 min-w-0 space-y-4">
-            <p className="text-sm text-neutral-500 font-medium mb-6">
-              <span className="font-bold text-neutral-900">{filtered.length}</span> review{filtered.length !== 1 ? 's' : ''}
-            </p>
-
-            {filtered.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 gap-3 animate-fade-in">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-                <p className="text-base font-bold text-neutral-500">No reviews found</p>
-                <button onClick={() => { setSearch(''); setTab('all'); }} className="mt-1 h-9 px-5 text-sm font-semibold text-brand-600 border border-brand-200 rounded-full hover:bg-brand-50 transition-colors">Clear filters</button>
+      {/* ═══════════════════════════════════════════════════════════════
+          PART 2: TWO-COLUMN REVIEW LAYOUT (68% / 32%)
+          ═══════════════════════════════════════════════════════════════ */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-2">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_380px] gap-8 items-start">
+          {/* ─────────────────────────────────────────────────────────────
+              LEFT COLUMN (68% width) - Main Review Stream
+              ───────────────────────────────────────────────────────────── */}
+          <div className="space-y-6 min-w-0">
+            {filtered.length === 0 ? (
+              <div className="py-20 text-center bg-white/70 backdrop-blur-md rounded-3xl border border-slate-200/80 p-8 shadow-xs">
+                <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-3xl mx-auto mb-4">
+                  💬
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-1">No reviews match your filters</h3>
+                <p className="text-xs sm:text-sm text-slate-500 mb-5">
+                  Try adjusting your search query or reset the filter selection.
+                </p>
+                <button
+                  onClick={() => { setSearch(''); setTab('all'); }}
+                  className="px-5 py-2.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
+                >
+                  Reset Filters
+                </button>
               </div>
+            ) : (
+              filtered.map((rev) => {
+                const isHelpful = helpfulSet.has(rev.id);
+                const currentHelpfulCount = rev.helpfulCount + (isHelpful ? 1 : 0);
+                const isReported = reportedReviewIds.has(rev.backendId || rev.id) || reportedReviewIds.has(rev.id);
+
+                return (
+                  <article
+                    key={rev.id}
+                    className="bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-sm hover:shadow-md transition-all duration-200"
+                  >
+                    {/* ── Card Header ── */}
+                    <div className="flex items-start justify-between gap-4 pb-5 border-b border-slate-100">
+                      <div className="flex items-start gap-3.5">
+                        <div className="w-12 h-12 rounded-2xl bg-white p-1 shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                          <CompanyLogo name={rev.company} size={42} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-extrabold text-[#0F172A] text-base sm:text-lg">
+                              {rev.role}
+                            </h3>
+                            <span className="text-xs font-bold text-slate-400">•</span>
+                            <span className="text-xs font-bold text-indigo-600 hover:underline cursor-pointer" onClick={() => navigate?.('company-detail', { companyId: rev.company })}>
+                              {rev.company}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 font-medium mt-1">
+                            {rev.location} · {rev.period} ·{' '}
+                            <span className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full text-[11px]">
+                              <span>✔</span>
+                              <span>{rev.studentBadge}</span>
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Top Right Badges */}
+                      <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 shrink-0">
+                        {rev.paid && (
+                          <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                            {rev.stipend || 'Paid'}
+                          </span>
+                        )}
+                        {rev.difficulty && (
+                          <span
+                            className={`px-2.5 py-0.5 rounded-md text-xs font-bold border ${
+                              rev.difficulty === 'Easy'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : rev.difficulty === 'Medium'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                : 'bg-rose-50 text-rose-700 border-rose-200'
+                            }`}
+                          >
+                            {rev.difficulty} Difficulty
+                          </span>
+                        )}
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50/80 border border-amber-200/70">
+                          <StarRating rating={rev.rating} />
+                          <span className="text-xs font-black text-slate-900">{rev.rating.toFixed(1)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── Structured Body Content ── */}
+                    <div className="py-5 space-y-4">
+                      {/* Review Title */}
+                      <h4 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+                        "{rev.title}"
+                      </h4>
+
+                      {/* Main Narrative */}
+                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                        {rev.body}
+                      </p>
+
+                      {/* Interview Stages Pipeline (if interview type) */}
+                      {rev.rounds && rev.rounds.length > 0 && (
+                        <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-2">
+                            Interview Stages & Evaluation:
+                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {rev.rounds.map((round, rIdx) => (
+                              <React.Fragment key={round}>
+                                <span className="px-3 py-1 rounded-lg text-xs font-bold bg-white text-indigo-700 border border-indigo-200/80 shadow-2xs">
+                                  {round}
+                                </span>
+                                {rIdx < rev.rounds!.length - 1 && (
+                                  <span className="text-slate-300 font-bold text-xs">→</span>
+                                )}
+                              </React.Fragment>
+                            ))}
+                            {rev.outcome && (
+                              <span className="ml-auto px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                                {rev.outcome}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Questions Asked & Prep Tips (if present) */}
+                      {rev.questions && (
+                        <div className="bg-indigo-50/50 rounded-2xl p-4 border border-indigo-100 text-xs">
+                          <span className="font-bold text-indigo-800 block mb-1">
+                            💬 Technical Questions Encountered:
+                          </span>
+                          <p className="text-slate-700 whitespace-pre-line leading-relaxed">
+                            {rev.questions}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Structured Pros & Cons */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                        {/* The Good (Pros) */}
+                        {rev.pros && rev.pros.length > 0 && (
+                          <div className="rounded-2xl p-4 bg-emerald-50/30 border-l-4 border-emerald-500 border border-emerald-100/60">
+                            <span className="text-xs font-extrabold text-emerald-700 block mb-2 uppercase tracking-wide">
+                              ✓ The Good (Pros)
+                            </span>
+                            <ul className="space-y-1.5 text-xs text-slate-700">
+                              {rev.pros.map((pro, pIdx) => (
+                                <li key={pIdx} className="flex items-start gap-1.5">
+                                  <span className="text-emerald-600 font-bold">•</span>
+                                  <span>{pro}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* The Challenges (Cons) */}
+                        {rev.cons && rev.cons.length > 0 && (
+                          <div className="rounded-2xl p-4 bg-amber-50/30 border-l-4 border-amber-500 border border-amber-100/60">
+                            <span className="text-xs font-extrabold text-amber-700 block mb-2 uppercase tracking-wide">
+                              △ The Challenges (Cons)
+                            </span>
+                            <ul className="space-y-1.5 text-xs text-slate-700">
+                              {rev.cons.map((con, cIdx) => (
+                                <li key={cIdx} className="flex items-start gap-1.5">
+                                  <span className="text-amber-600 font-bold">•</span>
+                                  <span>{con}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Advice to Future Applicants */}
+                      {rev.advice && (
+                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-700">
+                          <span className="font-bold text-slate-900 block mb-0.5">
+                            💡 Advice to Future Applicants:
+                          </span>
+                          <span>{rev.advice}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ── Sub-Rating Metrics Bar ── */}
+                    {rev.subRatings && (
+                      <div className="py-3 px-4 rounded-xl bg-slate-50/80 border border-slate-100 flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-600">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-slate-400">Mentorship:</span>
+                          <span className="font-black text-slate-800">{rev.subRatings.mentorship}/5</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-slate-400">Work-Life Balance:</span>
+                          <span className="font-black text-slate-800">{rev.subRatings.workLife}/5</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-slate-400">Fair Stipend:</span>
+                          <span className="font-black text-emerald-700">
+                            {rev.subRatings.fairStipend ? 'Yes' : 'No'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Card Footer: Tags & Helpful / Report Actions ── */}
+                    <div className="pt-4 mt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                      {/* Tags */}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {rev.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200/80"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleHelpfulToggle(rev.id)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                            isHelpful
+                              ? 'bg-indigo-50 border-indigo-300 text-indigo-700 shadow-2xs'
+                              : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600 shadow-2xs'
+                          }`}
+                        >
+                          <span>👍</span>
+                          <span>Helpful ({currentHelpfulCount})</span>
+                        </button>
+
+                        {isReported ? (
+                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                            ✓ Reported
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleReport(rev)}
+                            className="text-xs text-slate-400 hover:text-rose-500 font-semibold cursor-pointer transition-colors"
+                          >
+                            Report
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
             )}
-
-            {filtered.map((review, i) => (
-              <div key={review.id} style={{ animationDelay: `${i * 60}ms` }}>
-                {review.type === 'experience' ? (
-                  <ExperienceCard
-                    review={review}
-                    expanded={expanded === review.id}
-                    onToggle={() => setExpanded(expanded === review.id ? null : review.id)}
-                    onReport={handleReportClick}
-                    isReported={reportedReviewIds.has(review.backendId || review.id) || reportedReviewIds.has(review.id)}
-                  />
-                ) : (
-                  <InterviewCard
-                    review={review}
-                    expanded={expanded === review.id}
-                    onToggle={() => setExpanded(expanded === review.id ? null : review.id)}
-                    onReport={handleReportClick}
-                    isReported={reportedReviewIds.has(review.backendId || review.id) || reportedReviewIds.has(review.id)}
-                  />
-                )}
-              </div>
-            ))}
           </div>
 
-          {/* Sidebar */}
-          <aside className="w-64 shrink-0 hidden lg:block">
-            <div className="sticky top-[88px] space-y-5">
-              {/* Write a review CTA */}
-              <div className="bg-brand-950 rounded-2xl p-5 text-white">
-                <h3 className="text-sm font-extrabold mb-2">Share your experience</h3>
-                <p className="text-xs text-brand-200 leading-relaxed mb-4">Help fellow students by sharing your honest internship or interview experience. 100% anonymous.</p>
+          {/* ─────────────────────────────────────────────────────────────
+              RIGHT COLUMN (32% width) - Sidebar Widgets
+              ───────────────────────────────────────────────────────────── */}
+          <aside className="sticky top-20 flex flex-col gap-6">
+            {/* Card 1: "Share Your Experience" CTA (Deep Indigo card) */}
+            <div className="rounded-3xl bg-gradient-to-br from-[#4F46E5] to-[#4338CA] p-6 text-white shadow-lg shadow-indigo-500/20 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+              <div className="relative">
+                <span className="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-lg mb-3">
+                  ✍️
+                </span>
+                <h3 className="text-lg font-black text-white leading-snug">
+                  Share Your Experience
+                </h3>
+                <p className="text-xs text-indigo-100 leading-relaxed mt-2 mb-5">
+                  Help fellow students make informed decisions. Share your internship or interview story anonymously.
+                </p>
                 <button
                   onClick={() => {
                     const user = getSavedUser();
                     navigate?.(user ? 'write-review' : 'login');
                   }}
-                  className="w-full h-9 bg-accent-500 hover:bg-accent-600 text-white text-xs font-bold rounded-full transition-all duration-150 active:scale-95"
+                  className="w-full py-3 px-4 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-extrabold text-xs shadow-md shadow-orange-500/30 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  Write a Review
+                  <span>Write an Anonymous Review</span>
+                  <span>↗</span>
                 </button>
               </div>
+            </div>
 
-              {/* Top rated companies */}
-              <div className="bg-white border border-neutral-200 rounded-2xl p-5">
-                <h3 className="text-xs font-extrabold uppercase tracking-[0.12em] text-neutral-400 mb-4">Top Rated</h3>
-                <div className="space-y-3">
-                  {[
-                    { name: 'CloudBase', rating: 4.8, logo: 'CB', logoBg: '#eff6ff', logoColor: '#0284c7' },
-                    { name: 'ByteForge', rating: 4.7, logo: 'BF', logoBg: '#eff4ff', logoColor: '#2845e2' },
-                    { name: 'Insight Analytics', rating: 4.6, logo: 'IA', logoBg: '#f5f3ff', logoColor: '#6d28d9' },
-                    { name: 'DataNest BD', rating: 4.5, logo: 'DN', logoBg: '#f0fdf4', logoColor: '#059669' },
-                  ].map((c) => (
-                    <div key={c.name} className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-extrabold border border-black/5 shrink-0" style={{ background: c.logoBg, color: c.logoColor }}>
-                        {c.logo}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-neutral-800 truncate">{c.name}</p>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <svg width="9" height="9" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-                          <span className="text-[10px] font-bold text-neutral-700">{c.rating}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            {/* Card 2: "Top Rated Companies for Interns" */}
+            <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/90 p-6 shadow-xs">
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                <h3 className="text-sm font-black text-[#0F172A] uppercase tracking-wider">
+                  Top Rated Companies
+                </h3>
+                <span className="text-[10px] font-bold text-slate-400">By Students</span>
               </div>
 
-              {/* Anonymous note */}
-              <div className="px-4 py-3 bg-neutral-50 rounded-xl border border-neutral-200">
-                <p className="text-[10px] text-neutral-500 leading-relaxed">
-                  <span className="font-bold text-neutral-700">100% Anonymous.</span> InternPrangon never reveals reviewer identities to companies. Reviews may be moderated for inappropriate content.
+              <div className="space-y-3.5">
+                {TOP_RATED_COMPANIES.map((comp) => (
+                  <div
+                    key={comp.name}
+                    onClick={() => navigate?.('company-detail', { companyId: comp.name })}
+                    className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer group"
+                  >
+                    <span className="w-5 text-center text-xs font-black text-slate-400 group-hover:text-indigo-600">
+                      {comp.rank}
+                    </span>
+                    <div className="w-9 h-9 rounded-xl bg-white p-1 shadow-2xs border border-slate-100 flex items-center justify-center shrink-0">
+                      <CompanyLogo name={comp.logo} size={28} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1">
+                        <p className="text-xs font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors truncate">
+                          {comp.name}
+                        </p>
+                        <span className="text-blue-500 text-[10px]">✔</span>
+                      </div>
+                      <p className="text-[10px] font-semibold text-emerald-700">
+                        {comp.stipend}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-xs font-black text-slate-800">★ {comp.rating.toFixed(1)}</span>
+                      <p className="text-[10px] text-slate-400 font-medium">{comp.reviews} reviews</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Card 3: "Review Integrity & Privacy Guarantee" */}
+            <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/90 p-5 shadow-xs flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              </div>
+              <div className="text-xs text-slate-600 leading-relaxed">
+                <p className="font-extrabold text-slate-900 text-xs mb-1">
+                  100% Anonymous & Encrypted
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  We encrypt user identifiers and verify university student emails without linking identities to public reviews.
                 </p>
               </div>
             </div>

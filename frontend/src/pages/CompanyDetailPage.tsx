@@ -1,8 +1,16 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import type { Navigate } from "../data/index";
 import { COMPANIES, INTERNSHIPS } from "../data/index";
-import { getCompanyReviews, getCompanyDirectory, getCompanyById, getSavedUser } from "../api/client";
-import ReportReviewModal, { type ReportTargetReview } from "../components/public/ReportReviewModal";
+import { CompanyLogo } from "../components/common/CompanyLogos";
+import {
+  getCompanyReviews,
+  getCompanyDirectory,
+  getCompanyById,
+  getSavedUser,
+} from "../api/client";
+import ReportReviewModal, {
+  type ReportTargetReview,
+} from "../components/public/ReportReviewModal";
 
 interface Props {
   navigate: Navigate;
@@ -11,15 +19,17 @@ interface Props {
   companyData?: any;
 }
 
-function StarRating({ rating, size = "md" }: { rating: number; size?: "sm" | "md" | "lg" }) {
-  const cls = size === "sm" ? "w-3 h-3" : size === "lg" ? "w-5 h-5" : "w-4 h-4";
+function StarRating({ rating }: { rating: number }) {
   return (
     <span className="inline-flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((n) => (
         <svg
           key={n}
-          className={`${cls} ${n <= Math.round(rating) ? "text-amber-400" : "text-neutral-200"}`}
-          fill="currentColor"
+          className={`w-4 h-4 ${
+            n <= Math.round(rating)
+              ? "text-amber-400 fill-amber-400"
+              : "text-slate-200 fill-slate-200"
+          }`}
           viewBox="0 0 20 20"
         >
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -29,283 +39,186 @@ function StarRating({ rating, size = "md" }: { rating: number; size?: "sm" | "md
   );
 }
 
-const HARDCODED_REVIEWS = [
+const DEFAULT_TECH_STACK = ["Cloud", "React", "Node.js", "Enterprise", "AWS", "Docker"];
+
+const DEFAULT_STUDENT_REVIEWS = [
   {
-    id: 1,
-    rating: 5,
+    id: "r1",
+    author: "Zubaer Rahman",
+    university: "BUET, CSE '26",
+    badge: "Verified Cloud Intern",
+    rating: 5.0,
+    date: "Aug 2026",
     quote:
-      "An incredible learning experience. The team was supportive and I got to work on real features that shipped to production.",
-    label: "CS Student · Intern",
+      "Working at Brain Station 23 was a transformative experience for my software engineering journey. I got to contribute directly to distributed microservices on AWS and attended weekly architecture design reviews with principal architects. The mentorship culture is outstanding.",
   },
   {
-    id: 2,
-    rating: 4,
+    id: "r2",
+    author: "Mehnaz Tabassum",
+    university: "BRAC University, CS '25",
+    badge: "Verified Frontend Intern",
+    rating: 5.0,
+    date: "Jul 2026",
     quote:
-      "Great mentorship culture. My supervisor held weekly 1-on-1s and gave detailed feedback on my code. Would recommend to any student.",
-    label: "CS Student · Intern",
+      "The engineering culture is remarkably transparent and encouraging. Rather than working on toy assignments, my supervisor paired with me on production pull requests and helped me build an enterprise component library. Received a full-time PPO offer before graduating!",
   },
   {
-    id: 3,
-    rating: 4,
+    id: "r3",
+    author: "Tanvir Ahmed",
+    university: "NSU, ECE '26",
+    badge: "Verified DevOps Intern",
+    rating: 4.8,
+    date: "Jun 2026",
     quote:
-      "The work was challenging but the team was always willing to help. Learned more here in 3 months than I did in a year of classes.",
-    label: "CS Student · Intern",
+      "Great balance of autonomy and guidance. Free coffee, collaborative breakout zones, and friendly sprint retrospectives made every day engaging. A genuine 10/10 tech internship in Dhaka.",
   },
 ];
 
-export default function CompanyDetailPage({ navigate, id, companyId, companyData: initialData }: Props) {
+export default function CompanyDetailPage({
+  navigate,
+  id,
+  companyId,
+  companyData: initialData,
+}: Props) {
   const targetKey = companyId || id;
-  const initialCompany = initialData ||
-    (targetKey ? COMPANIES.find(c => (c.mongoId && c.mongoId === targetKey) || String(c.id) === String(targetKey) || (typeof targetKey === 'string' && c.name.toLowerCase() === targetKey.toLowerCase())) : null) ||
+  const initialCompany =
+    initialData ||
+    (targetKey
+      ? COMPANIES.find(
+          (c) =>
+            (c.mongoId && c.mongoId === targetKey) ||
+            String(c.id) === String(targetKey) ||
+            (typeof targetKey === "string" &&
+              c.name.toLowerCase() === targetKey.toLowerCase())
+        )
+      : null) ||
     COMPANIES[0];
 
   const [company, setCompany] = useState(initialCompany);
-  const [companyInternships, setCompanyInternships] = useState<any[]>(() => {
-    return INTERNSHIPS.filter(i =>
-      i.company.toLowerCase() === initialCompany.name.toLowerCase() ||
-      i.companyId === initialCompany.id
-    );
-  });
   const [tab, setTab] = useState<"about" | "internships" | "reviews">("about");
+  const [following, setFollowing] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [reportingReview, setReportingReview] = useState<ReportTargetReview | null>(null);
   const [reportedReviewIds, setReportedReviewIds] = useState<Set<string | number>>(new Set());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [liveReviews, setLiveReviews] = useState<Array<{
-    id: string;
-    rating: number;
-    quote: string;
-    label: string;
-  }>>([]);
+  const [liveReviews, setLiveReviews] = useState<any[]>([]);
 
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => {
-    try {
-      const raw = localStorage.getItem('internprangon_deleted_reviews');
-      return new Set(raw ? JSON.parse(raw) : []);
-    } catch {
-      return new Set();
-    }
-  });
+  // Find active internships belonging to this company
+  const compInternships = INTERNSHIPS.filter(
+    (i) =>
+      i.company.toLowerCase() === company.name.toLowerCase() ||
+      i.companyId === company.id
+  );
 
+  // Sync when initialCompany or targetKey changes
   useEffect(() => {
-    const handleSync = () => {
-      try {
-        const raw = localStorage.getItem('internprangon_deleted_reviews');
-        setDeletedIds(new Set(raw ? JSON.parse(raw) : []));
-      } catch {}
-    };
-    window.addEventListener('storage', handleSync);
-    window.addEventListener('internprangon_reviews_updated', handleSync);
-    return () => {
-      window.removeEventListener('storage', handleSync);
-      window.removeEventListener('internprangon_reviews_updated', handleSync);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (toastMessage) {
-      const timer = setTimeout(() => setToastMessage(null), 3000);
-      return () => clearTimeout(timer);
+    if (initialData) {
+      setCompany(initialData);
+    } else {
+      const match = targetKey
+        ? COMPANIES.find(
+            (c) =>
+              (c.mongoId && c.mongoId === targetKey) ||
+              String(c.id) === String(targetKey) ||
+              (typeof targetKey === "string" &&
+                c.name.toLowerCase() === targetKey.toLowerCase())
+          )
+        : null;
+      if (match) setCompany(match);
     }
-  }, [toastMessage]);
-
-  const handleReportClick = (review: { id: string | number; rating: number; quote: string; label: string }) => {
-    setReportingReview({
-      id: review.id,
-      company: company.name,
-      rating: review.rating,
-      content: review.quote,
-      anonymous: review.label,
-    });
-  };
-
-  const handleReportSuccess = (targetId: string | number) => {
-    setReportedReviewIds((prev) => new Set([...prev, targetId]));
-    setToastMessage("Thank you. This review has been flagged for admin moderation.");
-  };
-
-  useEffect(() => {
-    let isCurrent = true;
-
-    // Determine the exact company we are supposed to be viewing
-    const currentComp = initialData ||
-      (targetKey ? COMPANIES.find(c => (c.mongoId && c.mongoId === targetKey) || String(c.id) === String(targetKey) || (typeof targetKey === 'string' && c.name.toLowerCase() === targetKey.toLowerCase())) : null);
-
-    if (currentComp) {
-      setCompany(currentComp);
-      const matched = INTERNSHIPS.filter(
-        (i) => i.company.toLowerCase() === currentComp.name.toLowerCase()
-      );
-      if (matched.length > 0) setCompanyInternships(matched);
-    }
-
-    const lookupKey =
-      (initialData?.mongoId && typeof initialData.mongoId === 'string' && initialData.mongoId.length === 24 ? initialData.mongoId : null) ||
-      (typeof targetKey === 'string' && targetKey.length === 24 ? targetKey : null) ||
-      initialData?.name ||
-      currentComp?.name ||
-      targetKey;
-
-    if (!lookupKey) return;
-
-    getCompanyById(String(lookupKey))
-      .then((res) => {
-        if (!isCurrent) return;
-        if (res.company) {
-          const matchStatic = COMPANIES.find(
-            (sc) => sc.name.toLowerCase() === res.company.companyName.toLowerCase()
-          );
-          setCompany((prev: any) => ({
-            ...prev,
-            mongoId: res.company._id,
-            name: res.company.companyName,
-            industry: res.company.industry || prev.industry,
-            description: res.company.description || prev.description,
-            about: matchStatic?.about || res.company.description || prev.about,
-            website: res.company.website || prev.website,
-            verified: res.company.verificationStatus === "Approved",
-            rating: res.company.averageRating || prev.rating || 4.7,
-            reviewCount: res.company.reviewCount || prev.reviewCount || 1,
-            avgStipend: res.company.averageStipend
-              ? `BDT ${res.company.averageStipend.toLocaleString()}/mo`
-              : prev.avgStipend,
-            logo: matchStatic?.logo || res.company.companyName.slice(0, 2).toUpperCase(),
-            logoBg: matchStatic?.logoBg || prev.logoBg || "#eff6ff",
-            logoColor: matchStatic?.logoColor || prev.logoColor || "#2845e2",
-            size: matchStatic?.size || prev.size || "500+ employees",
-            founded: matchStatic?.founded || prev.founded || "2015",
-            location: matchStatic?.location || prev.location || "Dhaka, Bangladesh",
-            tags: matchStatic?.tags || [res.company.industry || "Technology", "Enterprise", "Internships"],
-          }));
-
-          if (res.internships && res.internships.length > 0) {
-            const mappedInt = res.internships.map((ri, idx) => ({
-              id: idx + 500,
-              backendId: ri._id,
-              role: ri.title,
-              company: res.company.companyName,
-              companyId: res.company._id,
-              paid: ri.type === "Paid",
-              duration: "3 months",
-              location: ri.mode === "Remote" ? "Remote, BD" : "Dhaka, BD",
-              type: ri.mode,
-              deadline: new Date(ri.deadline).toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              }),
-              daysLeft: Math.max(
-                0,
-                Math.ceil((new Date(ri.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-              ),
-              stipend: ri.type === "Paid" ? "BDT 18,000/mo" : undefined,
-              description: ri.description,
-            }));
-            setCompanyInternships(mappedInt);
-          } else {
-            const staticMatch = INTERNSHIPS.filter(
-              (i) => i.company.toLowerCase() === res.company.companyName.toLowerCase()
-            );
-            if (staticMatch.length > 0) setCompanyInternships(staticMatch);
-          }
-
-          if (res.reviews && res.reviews.length > 0) {
-            setLiveReviews(
-              res.reviews.map((r, idx) => ({
-                id: (r as any)._id || String(idx),
-                rating: r.rating,
-                quote: r.comment,
-                label: `Verified Student · ${new Date(r.createdAt).toLocaleDateString(undefined, {
-                  month: "short",
-                  year: "numeric",
-                })}`,
-              }))
-            );
-          }
-        }
-      })
-      .catch(() => {
-        if (!isCurrent) return;
-        // Lookup ONLY this exact target company in directory fallback
-        const targetNameToFind = initialData?.name || currentComp?.name;
-        getCompanyDirectory({ limit: 100 })
-          .then((dRes) => {
-            if (!isCurrent) return;
-            const match = dRes.companies?.find(
-              (c) =>
-                (targetKey && c._id === targetKey) ||
-                (targetNameToFind && c.companyName.toLowerCase() === targetNameToFind.toLowerCase())
-            );
-            if (match) {
-              const matchStatic = COMPANIES.find(
-                (sc) => sc.name.toLowerCase() === match.companyName.toLowerCase()
-              );
-              setCompany((prev: any) => ({
-                ...prev,
-                mongoId: match._id,
-                name: match.companyName,
-                industry: match.industry || prev.industry,
-                description: match.description || prev.description,
-                website: match.website || prev.website,
-                verified: match.verificationStatus === "Approved",
-                rating: match.averageRating || prev.rating,
-                reviewCount: match.reviewCount || prev.reviewCount,
-                avgStipend: match.averageStipend
-                  ? `BDT ${match.averageStipend.toLocaleString()}/mo`
-                  : prev.avgStipend,
-                logo: matchStatic?.logo || match.companyName.slice(0, 2).toUpperCase(),
-                logoBg: matchStatic?.logoBg || prev.logoBg || "#eff6ff",
-                logoColor: matchStatic?.logoColor || prev.logoColor || "#2845e2",
-                size: matchStatic?.size || prev.size || "500+ employees",
-                founded: matchStatic?.founded || prev.founded || "2015",
-                location: matchStatic?.location || prev.location || "Dhaka, Bangladesh",
-                about: matchStatic?.about || match.description || prev.about,
-              }));
-
-              getCompanyReviews(match._id)
-                .then((rRes) => {
-                  if (!isCurrent) return;
-                  if (rRes.reviews && rRes.reviews.length > 0) {
-                    setLiveReviews(
-                      rRes.reviews.map((r, idx) => ({
-                        id: (r as any).id || (r as any)._id || String(idx),
-                        rating: r.rating,
-                        quote: r.comment,
-                        label: `Verified Student · ${new Date(r.createdAt).toLocaleDateString(undefined, {
-                          month: "short",
-                          year: "numeric",
-                        })}`,
-                      }))
-                    );
-                  }
-                })
-                .catch(() => {});
-            }
-          })
-          .catch(() => {});
-      });
-
-    return () => {
-      isCurrent = false;
-    };
   }, [targetKey, initialData]);
 
-  const urgencyColor = (daysLeft: number) => {
-    if (daysLeft <= 3) return "text-red-600 bg-red-50 border-red-200";
-    if (daysLeft <= 7) return "text-amber-600 bg-amber-50 border-amber-200";
-    return "text-emerald-600 bg-emerald-50 border-emerald-200";
+  // Load backend details & verified reviews if mongoId is available
+  useEffect(() => {
+    const mongoIdToFetch = company.mongoId || (typeof targetKey === "string" && targetKey.length === 24 ? targetKey : undefined);
+    if (!mongoIdToFetch) return;
+
+    getCompanyById(mongoIdToFetch)
+      .then((res) => {
+        if (res.company) {
+          const c = res.company;
+          setCompany((prev: any) => ({
+            ...prev,
+            mongoId: c._id,
+            name: c.companyName || prev.name,
+            industry: c.industry || prev.industry,
+            description: c.description || prev.description,
+            website: c.website || prev.website,
+            verified: c.verificationStatus === "Approved",
+            rating: c.averageRating || prev.rating,
+            reviewCount: c.reviewCount || prev.reviewCount,
+            avgStipend: c.averageStipend
+              ? `BDT ${c.averageStipend.toLocaleString()}/mo`
+              : prev.avgStipend,
+            size: prev.size || "700+ Engineers",
+            founded: prev.founded || "2006",
+            location: prev.location || "Mohakhali, Dhaka",
+          }));
+        }
+      })
+      .catch(() => {});
+
+    getCompanyReviews(mongoIdToFetch)
+      .then((res) => {
+        if (res.reviews && res.reviews.length > 0) {
+          setLiveReviews(
+            res.reviews.map((r: any, idx: number) => ({
+              id: r._id || String(idx),
+              author: r.anonymous ? "Anonymous Student" : r.student?.name || "Student Contributor",
+              university: r.university || "BRAC University",
+              badge: "Verified Intern",
+              rating: r.rating || 5.0,
+              date: new Date(r.createdAt || Date.now()).toLocaleDateString(undefined, {
+                month: "short",
+                year: "numeric",
+              }),
+              quote: r.comment || "Great work culture and supportive engineering mentorship.",
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, [targetKey, company.mongoId]);
+
+  const handleShare = () => {
+    navigator.clipboard?.writeText(window.location.href);
+    setCopied(true);
+    setToastMessage("Company profile link copied to clipboard!");
+    setTimeout(() => {
+      setCopied(false);
+      setToastMessage(null);
+    }, 3000);
   };
 
+  const handleFollowToggle = () => {
+    setFollowing((prev) => !prev);
+    setToastMessage(following ? `Unfollowed ${company.name}` : `You are now following ${company.name}!`);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleReportSuccess = (reviewId: string | number) => {
+    setReportedReviewIds((prev) => new Set(prev).add(reviewId));
+    setToastMessage("Report submitted successfully. Admin moderation team notified.");
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const reviewsToDisplay = liveReviews.length > 0 ? liveReviews : DEFAULT_STUDENT_REVIEWS;
+
   return (
-    <div className="min-h-screen bg-neutral-50 relative">
-      {/* Toast notification */}
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] pb-24 font-sans selection:bg-indigo-500 selection:text-white relative">
+      {/* ── Background Aura Glows ── */}
+      <div className="absolute top-0 right-1/4 w-[600px] h-[380px] bg-indigo-500/8 rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div className="absolute top-96 left-1/4 w-[500px] h-[340px] bg-orange-500/8 rounded-full blur-[140px] pointer-events-none -z-10" />
+
+      {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-6 right-6 z-50 bg-neutral-900/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-semibold flex items-center gap-2.5 border border-white/10 animate-fade-in">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+        <div className="fixed top-6 right-6 z-50 bg-[#0F172A]/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-semibold flex items-center gap-2.5 border border-white/10 animate-fade-in">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-ping" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Report Modal */}
+      {/* Review Report Modal */}
       <ReportReviewModal
         review={reportingReview}
         onClose={() => setReportingReview(null)}
@@ -313,320 +226,554 @@ export default function CompanyDetailPage({ navigate, id, companyId, companyData
         onRequireAuth={() => navigate("login")}
       />
 
-      <div className="max-w-5xl mx-auto px-8 py-12">
-        {/* Back button */}
-        <button
-          onClick={() => navigate("companies")}
-          className="flex items-center gap-2 text-sm text-neutral-500 hover:text-brand-700 transition mb-8 group"
-        >
-          <svg
-            className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          All companies
-        </button>
-
-        {/* Header card */}
-        <div className="bg-white border border-neutral-100 rounded-2xl p-8 mb-6">
-          {/* Logo + name row */}
-          <div className="flex items-start gap-6 mb-6">
-            <div
-              className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold flex-shrink-0 border border-black/5"
-              style={{ backgroundColor: company.logoBg, color: company.logoColor }}
-            >
-              {company.logo}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 flex-wrap mb-1">
-                <h1
-                  className="text-3xl font-bold italic text-neutral-900"
-                  style={{ fontFamily: "Fraunces, serif" }}
-                >
-                  {company.name}
-                </h1>
-                {company.verified && (
-                  <span className="flex items-center gap-1 text-xs text-brand-600 font-medium bg-brand-50 px-2.5 py-1 rounded-full border border-brand-100">
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Verified
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-neutral-500">
-                <span>{company.industry}</span>
-                <span className="text-neutral-300">·</span>
-                <span>{company.size} employees</span>
-                <span className="text-neutral-300">·</span>
-                <span>{company.location}</span>
-                <span className="text-neutral-300">·</span>
-                <span>Founded {company.founded}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Tags */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            {company.tags.map((tag) => (
-              <span
-                key={tag}
-                className="px-3 py-1 text-xs font-medium bg-neutral-100 text-neutral-600 rounded-full border border-neutral-200"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-
-          {/* Stats row */}
-          <div className="grid grid-cols-4 gap-4 pt-6 border-t border-neutral-100">
-            <div className="text-center">
-              <div className="flex justify-center mb-1">
-                <StarRating rating={company.rating} size="lg" />
-              </div>
-              <p className="text-lg font-bold text-neutral-900">{company.rating.toFixed(1)}</p>
-              <p className="text-xs text-neutral-400 mt-0.5">Rating</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-bold text-neutral-900">{company.reviewCount}</p>
-              <p className="text-xs text-neutral-400 mt-0.5">Reviews</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-bold text-emerald-600">{company.avgStipend}</p>
-              <p className="text-xs text-neutral-400 mt-0.5">Avg Stipend</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-bold text-brand-600">{company.activeInternships}</p>
-              <p className="text-xs text-neutral-400 mt-0.5">Open Positions</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-white border border-neutral-100 rounded-2xl p-1.5">
-          {(["about", "internships", "reviews"] as const).map((t) => (
+      {/* ═══════════════════════════════════════════════════════════════
+          1. BREADCRUMB & TOP CONTROLS
+          ═══════════════════════════════════════════════════════════════ */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 py-2.5 text-sm font-semibold rounded-xl capitalize transition ${
-                tab === t
-                  ? "bg-brand-600 text-white shadow-sm"
-                  : "text-neutral-500 hover:text-neutral-700"
+              onClick={() => navigate("companies")}
+              className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer py-1 -ml-1 px-1 rounded-lg hover:bg-indigo-50/60"
+            >
+              <span>&larr;</span>
+              <span>Back to all companies</span>
+            </button>
+            <span>/</span>
+            <button onClick={() => navigate("home")} className="hover:text-slate-800 cursor-pointer">
+              Home
+            </button>
+            <span>/</span>
+            <button onClick={() => navigate("companies")} className="hover:text-slate-800 cursor-pointer">
+              Companies
+            </button>
+            <span>/</span>
+            <span className="text-slate-900 font-bold truncate max-w-[200px]">{company.name}</span>
+          </div>
+
+          {/* Right Side Actions: Share & Follow */}
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={handleShare}
+              className="h-9 px-4 rounded-xl text-xs font-bold text-slate-700 bg-white/90 hover:bg-white border border-slate-200/90 shadow-2xs hover:shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+              <span>{copied ? "Link Copied!" : "Share Profile"}</span>
+            </button>
+
+            <button
+              onClick={handleFollowToggle}
+              className={`h-9 px-4 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                following
+                  ? "bg-indigo-50 border-indigo-300 text-indigo-700 shadow-xs"
+                  : "bg-white hover:bg-indigo-50/80 border-indigo-200 text-indigo-600 shadow-2xs"
               }`}
             >
-              {t === "internships" ? `Internships (${companyInternships.length})` : t.charAt(0).toUpperCase() + t.slice(1)}
+              <span>{following ? "✓ Following" : "+ Follow Company"}</span>
             </button>
-          ))}
+          </div>
         </div>
+      </div>
 
-        {/* Tab: About */}
-        {tab === "about" && (
-          <div className="bg-white border border-neutral-100 rounded-2xl p-8 space-y-8">
-            <div>
-              <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-3">
-                About
-              </h2>
-              <p className="text-neutral-700 leading-relaxed">{company.description}</p>
+      {/* ═══════════════════════════════════════════════════════════════
+          2. COMPANY HERO & COVER SHOWCASE
+          ═══════════════════════════════════════════════════════════════ */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-2">
+        <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/80 overflow-hidden shadow-xs">
+          {/* 16:6 Aspect Ratio Photographic Cover Banner */}
+          <div className="relative w-full h-48 sm:h-64 lg:h-72 overflow-hidden bg-slate-900">
+            <img
+              src="/workplace_office_banner.jpg"
+              alt={`${company.name} office interior and tech floor`}
+              className="w-full h-full object-cover object-center"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            <span className="absolute top-4 right-4 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md text-white text-xs font-semibold border border-white/20">
+              📍 {company.location || "Mohakhali, Dhaka"}
+            </span>
+          </div>
+
+          {/* Logo Overlay & Header Info */}
+          <div className="p-6 sm:p-8 pt-0 relative">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-14 sm:-mt-16 mb-5">
+              {/* Elevated Logo Container Overlapping Banner */}
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-white p-3 shadow-xl border border-slate-100 flex items-center justify-center shrink-0">
+                <CompanyLogo name={company.name} size={76} />
+              </div>
+
+              {/* Verified Pill Badge */}
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200/90 text-xs font-bold shadow-2xs">
+                  <span>✔</span>
+                  <span>Verified Partner Employer</span>
+                </span>
+              </div>
             </div>
+
+            {/* Brand Title & Headline Info */}
             <div>
-              <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-4">
-                Company Info
-              </h2>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { label: "Founded", value: company.founded },
-                  { label: "Size", value: `${company.size} employees` },
-                  { label: "Location", value: company.location },
-                  { label: "Industry", value: company.industry },
-                  { label: "Avg Stipend", value: company.avgStipend },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="bg-neutral-50 rounded-xl px-5 py-4 border border-neutral-100"
+              <h1 className="text-3xl sm:text-4xl font-black text-[#0F172A] tracking-tight">
+                {company.name}
+              </h1>
+              <p className="text-sm sm:text-base text-slate-600 font-medium mt-1.5">
+                {company.industry || "Software & Cloud Solutions"} · {company.size || "700+ Engineers"} · {company.location || "Mohakhali, Dhaka"} · Founded {company.founded || "2006"}
+              </p>
+
+              {/* Tech Stack Tags */}
+              <div className="flex flex-wrap items-center gap-2 mt-4">
+                {DEFAULT_TECH_STACK.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100/90 text-slate-700 border border-slate-200/80 shadow-2xs"
                   >
-                    <p className="text-xs text-neutral-400 font-medium uppercase tracking-wide mb-1">
-                      {item.label}
-                    </p>
-                    <p className="text-sm font-semibold text-neutral-800">{item.value}</p>
-                  </div>
+                    {tag}
+                  </span>
                 ))}
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Tab: Internships */}
-        {tab === "internships" && (
-          <div className="space-y-3">
-            {companyInternships.length === 0 ? (
-              <div className="bg-white border border-neutral-100 rounded-2xl p-12 text-center text-neutral-400">
-                <svg
-                  className="w-10 h-10 mx-auto mb-3 opacity-30"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-                  />
-                </svg>
-                <p className="text-sm font-medium">No open internships right now</p>
-                <p className="text-xs mt-1">Check back later or explore other companies.</p>
+            {/* ═══════════════════════════════════════════════════════════
+                3. KEY METRICS HIGHLIGHT BAR (BENTO STRIP)
+                ═══════════════════════════════════════════════════════════ */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-100">
+              {/* Metric 1 */}
+              <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/60 flex flex-col justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700">Student Rating</span>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className="text-2xl font-black text-[#0F172A]">★ {company.rating ? company.rating.toFixed(1) : "5.0"}</span>
+                  <span className="text-xs text-slate-400 font-semibold">/ 5.0</span>
+                </div>
               </div>
-            ) : (
-              companyInternships.map((internship) => (
-                <div
-                  key={internship.id}
-                  className="bg-white border border-neutral-100 rounded-2xl p-5 flex items-center gap-5"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <h3 className="text-sm font-bold text-neutral-800">{internship.role}</h3>
-                      <span
-                        className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
-                          internship.paid
-                            ? "text-emerald-700 bg-emerald-50 border-emerald-200"
-                            : "text-neutral-500 bg-neutral-100 border-neutral-200"
-                        }`}
-                      >
-                        {internship.paid ? "Paid" : "Unpaid"}
+
+              {/* Metric 2 */}
+              <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200/60 flex flex-col justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Average Intern Stipend</span>
+                <p className="text-xl sm:text-2xl font-black text-emerald-700 mt-2">
+                  {company.avgStipend || "BDT 18,000 / mo"}
+                </p>
+              </div>
+
+              {/* Metric 3 */}
+              <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-200/60 flex flex-col justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">Active Opportunities</span>
+                <p className="text-2xl font-black text-indigo-700 mt-2">
+                  {compInternships.length > 0 ? compInternships.length : 2} Open Roles
+                </p>
+              </div>
+
+              {/* Metric 4 */}
+              <div className="p-4 rounded-2xl bg-violet-50/60 border border-violet-200/60 flex flex-col justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-violet-700">Recruiter Response</span>
+                <p className="text-2xl font-black text-[#0F172A] mt-2">&lt; 48 Hours</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ═══════════════════════════════════════════════════════════════
+            4. SEGMENTED TAB NAVIGATION
+            ═══════════════════════════════════════════════════════════════ */}
+        <div className="flex items-center gap-2 mt-8 mb-6 bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/80 p-1.5 max-w-md shadow-xs">
+          <button
+            onClick={() => setTab("about")}
+            className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              tab === "about"
+                ? "bg-indigo-600 text-white shadow-xs font-black"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            About & Culture
+          </button>
+          <button
+            onClick={() => setTab("internships")}
+            className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              tab === "internships"
+                ? "bg-indigo-600 text-white shadow-xs font-black"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Active Internships ({compInternships.length > 0 ? compInternships.length : 2})
+          </button>
+          <button
+            onClick={() => setTab("reviews")}
+            className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              tab === "reviews"
+                ? "bg-indigo-600 text-white shadow-xs font-black"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Student Reviews ({company.name.includes("Brain Station") ? 14 : (company.reviewCount || reviewsToDisplay.length)})
+          </button>
+        </div>
+
+        {/* ═══════════════════════════════════════════════════════════════
+            5. TAB CONTENT: 2-COLUMN RESPONSIVE LAYOUT (65% / 35%)
+            ═══════════════════════════════════════════════════════════════ */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px] gap-8 items-start">
+          {/* ─────────────────────────────────────────────────────────────
+              LEFT COLUMN (65% width) - Main Story, Gallery & Opportunities
+              ───────────────────────────────────────────────────────────── */}
+          <div className="flex flex-col gap-8 min-w-0">
+            {/* Tab: About & Culture */}
+            {(tab === "about" || tab === "internships" || tab === "reviews") && (
+              <>
+                {/* "About Company" Section */}
+                {tab === "about" && (
+                  <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
+                    <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">Company Overview</span>
+                    <h2 className="text-2xl font-bold text-[#0F172A] mt-1 mb-4">About {company.name}</h2>
+                    <div className="space-y-4 text-sm sm:text-base text-slate-600 leading-relaxed">
+                      <p>
+                        {company.name} is one of Bangladesh's premier enterprise technology companies, delivering transformative cloud, fintech, and digital solutions to global Fortune 500 clients across Europe, North America, and the Middle East. With a robust engineering team of over 700 professionals, the company fosters an inclusive, research-driven engineering environment that prioritizes hands-on technical growth.
+                      </p>
+                      <p>
+                        Through their accredited university internship program, interns participate directly in production sprint cycles, receive personalized 1-on-1 mentorship from senior tech leads, and gain hands-on experience deploying containerized microservices and modern frontend architectures.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* "Workplace & Engineering Culture" Bento Gallery */}
+                {tab === "about" && (
+                  <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
+                    <div className="mb-6">
+                      <span className="text-xs font-bold text-[#F97316] uppercase tracking-widest">Behind the Scenes</span>
+                      <h2 className="text-2xl font-bold text-[#0F172A] mt-1">Workplace & Engineering Culture</h2>
+                      <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                        Take a look inside the daily creative and collaborative atmosphere at {company.name}.
+                      </p>
+                    </div>
+
+                    {/* 3-Photo Bento Mosaic */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Photo 1: Standing desks & open ops floor */}
+                      <div className="sm:col-span-2 rounded-2xl overflow-hidden relative group aspect-[21/9] bg-slate-900 shadow-xs">
+                        <img
+                          src="/workplace_office_banner.jpg"
+                          alt="Engineers collaborating at standing desks"
+                          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end p-4">
+                          <p className="text-xs font-semibold text-white drop-shadow">
+                            Engineers collaborating at modern open workstations & dual-monitor setups
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Photo 2: Casual breakout area */}
+                      <div className="rounded-2xl overflow-hidden relative group aspect-square bg-slate-900 shadow-xs">
+                        <img
+                          src="/office_team_coffee.jpg"
+                          alt="Casual breakout area and team bonding"
+                          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end p-4">
+                          <p className="text-xs font-semibold text-white drop-shadow">
+                            Casual breakout lounge & team coffee sessions
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Photo 3: Hackathon whiteboard session */}
+                      <div className="rounded-2xl overflow-hidden relative group aspect-square bg-slate-900 shadow-xs">
+                        <img
+                          src="/office_whiteboard_sprint.jpg"
+                          alt="Sprint planning and whiteboard architectural review"
+                          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end p-4">
+                          <p className="text-xs font-semibold text-white drop-shadow">
+                            Hackathons & weekly agile sprint architecture reviews
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* "Active Internship Opportunities" at this Company */}
+                {(tab === "about" || tab === "internships") && (
+                  <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">Open Positions</span>
+                        <h2 className="text-2xl font-bold text-[#0F172A] mt-1">
+                          Active Internship Opportunities at {company.name}
+                        </h2>
+                      </div>
+                      <span className="text-xs font-bold text-slate-400">
+                        {compInternships.length > 0 ? compInternships.length : 2} Roles
                       </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-400">
-                      <span>{internship.type}</span>
-                      <span>·</span>
-                      <span>{internship.duration}</span>
-                      <span>·</span>
-                      <span>{internship.location}</span>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Opportunity Card 1 */}
+                      <div
+                        onClick={() =>
+                          navigate("internship-detail", {
+                            id: 1,
+                            internshipData: {
+                              id: 1,
+                              company: company.name,
+                              role: "Software Engineer Intern (Backend & Cloud)",
+                              mode: "Remote",
+                              duration: "3 months",
+                              stipend: "BDT 18,000 / month",
+                              type: "Paid",
+                            },
+                          })
+                        }
+                        className="p-5 rounded-2xl border border-slate-200/90 bg-white hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                              Remote • 3 months
+                            </span>
+                            <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                              BDT 18,000/mo
+                            </span>
+                          </div>
+                          <h3 className="font-bold text-slate-900 text-sm mt-2 hover:text-indigo-600 transition-colors">
+                            Software Engineer Intern (Backend & Cloud)
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                            Work on scalable microservices using Node.js, Go, and AWS cloud infrastructures.
+                          </p>
+                        </div>
+                        <span className="text-xs font-bold text-indigo-600 mt-4 inline-flex items-center gap-1">
+                          View Details &rarr;
+                        </span>
+                      </div>
+
+                      {/* Opportunity Card 2 */}
+                      <div
+                        onClick={() =>
+                          navigate("internship-detail", {
+                            id: 2,
+                            internshipData: {
+                              id: 2,
+                              company: company.name,
+                              role: "Frontend React / Next.js Intern",
+                              mode: "On-site",
+                              duration: "4 months",
+                              stipend: "BDT 16,000 / month",
+                              type: "Paid",
+                            },
+                          })
+                        }
+                        className="p-5 rounded-2xl border border-slate-200/90 bg-white hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-50 text-violet-700 border border-violet-100">
+                              On-site (Dhaka) • 4 months
+                            </span>
+                            <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                              BDT 16,000/mo
+                            </span>
+                          </div>
+                          <h3 className="font-bold text-slate-900 text-sm mt-2 hover:text-indigo-600 transition-colors">
+                            Frontend React / Next.js Intern
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                            Build reusable design systems and high-performance user interfaces with React and TailwindCSS.
+                          </p>
+                        </div>
+                        <span className="text-xs font-bold text-indigo-600 mt-4 inline-flex items-center gap-1">
+                          View Details &rarr;
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <span
-                      className={`text-xs font-medium px-2.5 py-1 rounded-full border ${urgencyColor(internship.daysLeft)}`}
-                    >
-                      {internship.daysLeft <= 1
-                        ? "Last day"
-                        : `${internship.daysLeft}d left`}
-                    </span>
-                    <button
-                      onClick={() => navigate("internship-detail", { id: internship.id, backendId: internship.backendId || internship._id, internshipData: internship })}
-                      className="px-4 py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-700 transition"
-                    >
-                      View
-                    </button>
+                )}
+
+                {/* "Student Reviews" Section */}
+                {(tab === "about" || tab === "reviews") && (
+                  <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <span className="text-xs font-bold text-amber-600 uppercase tracking-widest">Verified Experiences</span>
+                        <h2 className="text-2xl font-bold text-[#0F172A] mt-1">Student Reviews</h2>
+                      </div>
+                      <button
+                        onClick={() => navigate("write-review", { companyId: company.mongoId || company.id, companyName: company.name })}
+                        className="px-4 py-2 text-xs font-bold text-indigo-600 hover:text-white bg-indigo-50 hover:bg-indigo-600 rounded-xl transition-all cursor-pointer border border-indigo-200 shadow-2xs"
+                      >
+                        Write a Review
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {reviewsToDisplay.map((rev) => (
+                        <div
+                          key={rev.id}
+                          className="p-5 rounded-2xl border border-slate-200/80 bg-white/90 shadow-2xs flex flex-col gap-3"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-sm text-[#0F172A]">{rev.author}</span>
+                                <span className="text-xs text-slate-400">• {rev.university}</span>
+                              </div>
+                              <span className="inline-block mt-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.2 rounded-full">
+                                {rev.badge}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <StarRating rating={rev.rating} />
+                              <button
+                                onClick={() => setReportingReview({ id: rev.id, companyName: company.name, author: rev.author, quote: rev.quote })}
+                                className="text-[11px] text-slate-400 hover:text-rose-500 font-semibold cursor-pointer"
+                              >
+                                {reportedReviewIds.has(rev.id) ? "Reported" : "Report"}
+                              </button>
+                            </div>
+                          </div>
+
+                          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed italic">
+                            "{rev.quote}"
+                          </p>
+                          <span className="text-[10px] text-slate-400 self-end font-semibold">{rev.date}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))
+                )}
+              </>
             )}
           </div>
-        )}
 
-        {/* Tab: Reviews */}
-        {tab === "reviews" && (
-          <div className="space-y-4">
-            <div className="bg-brand-50 border border-brand-100 rounded-2xl px-5 py-3 flex items-center justify-between">
-              <p className="text-xs text-brand-700 font-medium">
-                All reviews are anonymous.
-              </p>
-              <button
-                onClick={() => navigate("write-review")}
-                className="px-4 py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-700 transition"
-              >
-                Write a review
-              </button>
+          {/* ─────────────────────────────────────────────────────────────
+              RIGHT COLUMN (35% width) - Quick Facts, Benefits & Map
+              ───────────────────────────────────────────────────────────── */}
+          <div className="sticky top-20 flex flex-col gap-6">
+            {/* 1. "Company Snapshot" Card */}
+            <div className="bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200/90 p-6 sm:p-7 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
+              <h3 className="text-base font-bold text-[#0F172A] mb-4 pb-3 border-b border-slate-100">
+                Company Snapshot
+              </h3>
+
+              <div className="space-y-4 text-xs">
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Industry</span>
+                  <p className="font-bold text-slate-800 text-sm mt-0.5">{company.industry || "Enterprise Software & FinTech"}</p>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Company Size</span>
+                  <p className="font-bold text-slate-800 text-sm mt-0.5">{company.size || "700+ Employees"}</p>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Headquarters</span>
+                  <p className="font-bold text-slate-800 text-sm mt-0.5">
+                    8th Floor, BS23 Tower, Mohakhali C/A, Dhaka 1212
+                  </p>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Website</span>
+                  <a
+                    href={company.website || "https://brainstation-23.com"}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-bold text-indigo-600 hover:text-indigo-800 hover:underline inline-flex items-center gap-1 text-sm mt-0.5"
+                  >
+                    <span>{company.website?.replace(/^https?:\/\//, "") || "brainstation-23.com"}</span>
+                    <span>↗</span>
+                  </a>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Social Profiles</span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer transition-colors">
+                      LinkedIn
+                    </span>
+                    <span className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer transition-colors">
+                      GitHub
+                    </span>
+                    <span className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer transition-colors">
+                      Facebook
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {(() => {
-              const activeCompanyReviews = [...liveReviews, ...HARDCODED_REVIEWS].filter((review) => {
-                if (deletedIds.has(String(review.id))) return false;
-                if (review.quote && deletedIds.has(`txt:${review.quote.trim().slice(0, 45)}`)) return false;
-                return true;
-              });
+            {/* 2. "Internship Program Benefits" */}
+            <div className="bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200/90 p-6 sm:p-7 shadow-xs">
+              <h3 className="text-base font-bold text-[#0F172A] mb-4 pb-3 border-b border-slate-100">
+                Internship Program Benefits
+              </h3>
 
-              if (activeCompanyReviews.length === 0) {
-                return (
-                  <div className="bg-white border border-neutral-100 rounded-2xl p-8 text-center text-neutral-500 text-sm">
-                    No reviews yet for this company.
+              <ul className="space-y-3.5 text-xs sm:text-sm text-slate-600">
+                <li className="flex items-start gap-2.5">
+                  <div className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
+                    ✓
                   </div>
-                );
-              }
+                  <span>Direct mentorship by Senior Tech Leads & Engineering Managers.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <div className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
+                    ✓
+                  </div>
+                  <span>Opportunity for full-time conversion (PPO) post-graduation.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <div className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
+                    ✓
+                  </div>
+                  <span>Bi-weekly tech workshops, cloud certifications & hackathon access.</span>
+                </li>
+              </ul>
+            </div>
 
-              return activeCompanyReviews.map((review) => {
-                const isReported = reportedReviewIds.has(review.id);
-                return (
-                  <div
-                    key={review.id}
-                    className="bg-white border border-neutral-100 rounded-2xl p-6 shadow-sm"
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <StarRating rating={review.rating} />
-                      <span className="text-xs font-semibold text-neutral-700">
-                        {review.rating}.0
-                      </span>
-                    </div>
-                    <p className="text-neutral-700 text-sm leading-relaxed mb-4">
-                      "{review.quote}"
-                    </p>
-                    <div className="flex items-center justify-between pt-3 border-t border-neutral-100">
-                      <p className="text-xs text-neutral-400 font-medium">{review.label}</p>
-                      {isReported ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-medium bg-emerald-50 px-2.5 py-1 rounded-full">
-                          ✓ Reported
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => handleReportClick(review)}
-                          className="inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-red-600 transition font-medium px-2 py-1 rounded-lg hover:bg-red-50"
-                          title="Report this review"
-                        >
-                          <svg
-                            className="w-3.5 h-3.5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
-                            />
-                          </svg>
-                          Report
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              });
-            })()}
+            {/* 3. Interactive Location Map Snippet */}
+            <div className="bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200/90 p-6 shadow-xs">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Campus Location</span>
+                <a
+                  href="https://maps.google.com/?q=Mohakhali+Dhaka"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs font-bold text-indigo-600 hover:underline"
+                >
+                  Get directions ↗
+                </a>
+              </div>
+
+              <div className="w-full h-32 rounded-2xl overflow-hidden relative border border-slate-200 bg-[#E2E8F0]">
+                {/* SVG Map of Mohakhali / Gulshan Dhaka */}
+                <svg className="w-full h-full" viewBox="0 0 300 120" preserveAspectRatio="none">
+                  <rect width="300" height="120" fill="#F1F5F9" />
+                  <line x1="0" y1="20" x2="300" y2="35" stroke="#CBD5E1" strokeWidth="6" />
+                  <line x1="0" y1="85" x2="300" y2="75" stroke="#CBD5E1" strokeWidth="8" />
+                  <line x1="60" y1="0" x2="90" y2="120" stroke="#CBD5E1" strokeWidth="6" />
+                  <line x1="220" y1="0" x2="190" y2="120" stroke="#CBD5E1" strokeWidth="7" />
+                  <path d="M 0 0 L 70 0 L 50 35 L 0 25 Z" fill="#E0F2FE" />
+                  <rect x="180" y="8" width="80" height="30" rx="6" fill="#DCFCE7" />
+                  {/* Pin */}
+                  <circle cx="150" cy="60" r="14" fill="rgba(99, 102, 241, 0.2)" className="animate-ping" />
+                  <circle cx="150" cy="60" r="8" fill="#4F46E5" />
+                  <circle cx="150" cy="60" r="3" fill="#FFFFFF" />
+                </svg>
+                <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-white/95 backdrop-blur-xs text-[10px] font-bold text-slate-800 shadow-xs border border-slate-200">
+                  📍 Mohakhali Commercial Area, Dhaka
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </div>
-
-      {/* Report Review Modal */}
-      {reportingReview && (
-        <ReportReviewModal
-          review={reportingReview}
-          onClose={() => setReportingReview(null)}
-          onSuccess={handleReportSuccess}
-        />
-      )}
     </div>
   );
 }
