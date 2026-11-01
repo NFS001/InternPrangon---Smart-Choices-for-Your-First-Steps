@@ -4,9 +4,16 @@ const path = require('path');
 const multer = require('multer');
 
 const MAX_RESUME_SIZE = 5 * 1024 * 1024;
-const uploadDirectory = path.join(__dirname, '..', 'uploads', 'resumes');
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const uploadDirectory = isServerless
+    ? path.join('/tmp', 'uploads', 'resumes')
+    : path.join(__dirname, '..', 'uploads', 'resumes');
 
-fs.mkdirSync(uploadDirectory, { recursive: true });
+try {
+    fs.mkdirSync(uploadDirectory, { recursive: true });
+} catch (e) {
+    console.warn('Could not create upload directory:', e.message);
+}
 
 const storage = multer.diskStorage({
     destination: (req, file, callback) => {
