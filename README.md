@@ -1,17 +1,31 @@
 # 🎓 InternPrangon — Smart Choices for Your First Steps
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-internprangon.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://internprangon.vercel.app)
 [![React](https://img.shields.io/badge/Frontend-React%2019%20%7C%20TypeScript%20%7C%20Vite-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind%20CSS%20v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Node.js](https://img.shields.io/badge/Backend-Node.js%20%7C%20Express-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![MongoDB](https://img.shields.io/badge/Database-MongoDB%20Atlas%20%7C%20Mongoose-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Deployment](https://img.shields.io/badge/Platform-Vercel-black?style=for-the-badge&logo=vercel&logoColor=white)](https://internprangon.vercel.app)
 [![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)](#)
 [![CSE470](https://img.shields.io/badge/Course-CSE470%20Software%20Engineering-blue?style=for-the-badge)](#)
 
+> 🌐 **Live Website**: [https://internprangon.vercel.app](https://internprangon.vercel.app)
+>
 > **InternPrangon** is a transparent, community-driven internship discovery and hiring platform built for university students and verified employers. It bridges the gap between ambitious students seeking meaningful career starts and enterprises recruiting top talent through verified company workspaces, authentic salary/stipend benchmarks, separated peer review streams, and a streamlined CV application pipeline.
 
 ---
 
+## 🌐 Live Deployment
+
+- **Production URL**: [https://internprangon.vercel.app](https://internprangon.vercel.app)
+- **API Status / Health Check**: [https://internprangon.vercel.app/api](https://internprangon.vercel.app/api)
+- **Hosting Platform**: Vercel (Multi-Service Architecture: Vite Frontend + Express Backend)
+- **Database**: MongoDB Atlas Cloud
+
+---
+
 ## 📑 Table of Contents
+- [Live Deployment](#-live-deployment)
 - [Project Overview](#-project-overview)
 - [Key Features](#-key-features)
   - [For Students](#-for-students)
