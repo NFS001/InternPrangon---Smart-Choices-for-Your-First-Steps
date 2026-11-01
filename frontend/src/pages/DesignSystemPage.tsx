@@ -5,37 +5,21 @@ import React, { useState, useEffect, useRef } from 'react';
    Stage 1: Brand Direction & Component Library
    ═══════════════════════════════════════════════════════════════ */
 
-/* ─── Logo Mark SVG ────────────────────────────────────────── */
-export function LogoMark({ size = 40, variant = 'color' }: { size?: number; variant?: 'color' | 'white' | 'dark' }) {
-  const bg = variant === 'white' ? 'white' : variant === 'dark' ? '#2e1065' : '#7c3aed';
-  const fill1 = variant === 'white' ? '#7c3aed' : variant === 'dark' ? '#c4b5fd' : 'white';
-  const fill2 = variant === 'white' ? '#f59e0b' : '#fbbf24';
-  const r = size * 0.25;
-  return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden="true">
-      <rect width="40" height="40" rx={r} fill={bg} />
-      {/* Three ascending bars — career steps */}
-      <rect x="8"  y="25" width="7" height="8"  rx="1.5" fill={fill1} opacity="0.55" />
-      <rect x="17" y="18" width="7" height="15" rx="1.5" fill={fill1} opacity="0.78" />
-      <rect x="26" y="10" width="7" height="23" rx="1.5" fill={fill1} />
-      {/* Amber accent dot top-right of tallest bar */}
-      <circle cx="29.5" cy="8" r="2.5" fill={fill2} />
-    </svg>
-  );
-}
+/* ─── Logo Mark SVG & Brand Identity ──────────────────────── */
+import { LogoMark } from '../components/ds/Logo';
+export { LogoMark };
 
 /* ─── Wordmark ─────────────────────────────────────────────── */
 function Wordmark({ size = 'md', variant = 'default' }: { size?: 'sm' | 'md' | 'lg' | 'xl'; variant?: 'default' | 'white' }) {
   const sz = { sm: 'text-base', md: 'text-xl', lg: 'text-3xl', xl: 'text-5xl' }[size];
   const dark = variant === 'white' ? 'text-white' : 'text-neutral-900';
-  const violet = variant === 'white' ? 'text-brand-300' : 'text-brand-600';
   return (
     <div className={`flex items-center gap-0 font-extrabold tracking-tight ${sz}`}>
       <span className={`font-display italic ${dark}`} style={{ fontVariationSettings: "'opsz' 144, 'wght' 800" }}>
         Intern
       </span>
-      <span className={`font-sans not-italic ${violet}`}>Prangon</span>
-      <span className="w-[0.2em] h-[0.2em] rounded-full bg-accent-400 ml-[0.1em] mb-[0.3em] shrink-0" />
+      <span className="font-sans not-italic bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 bg-clip-text text-transparent ml-[2px]">Prangon</span>
+      <span className="w-[0.22em] h-[0.22em] rounded-full bg-gradient-to-r from-orange-500 to-amber-500 ml-[0.12em] mb-[0.25em] shrink-0 shadow-sm shadow-orange-500/30" />
     </div>
   );
 }

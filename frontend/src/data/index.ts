@@ -227,11 +227,11 @@ export interface Company {
 export const COMPANIES: Company[] = [
   {
     id: 1, mongoId: '6a9da65e5fb860cbfae8a39c', name: 'Brain Station 23', logo: 'BS', logoColor: '#2845e2', logoBg: '#eff4ff',
-    industry: 'Software & Cloud Solutions', location: 'Dhaka, BD', size: '500+ employees', founded: '2006',
+    industry: 'Software & Cloud Solutions', location: 'Mohakhali, Dhaka', size: '700+ Engineers', founded: '2006',
     description: 'Global software solutions company with 700+ engineers building cloud and enterprise systems.',
     about: 'Brain Station 23 is a global IT solution provider and digital transformation partner headquartered in Dhaka with 700+ engineers. Known across Bangladesh for its outstanding engineering mentorship culture, interns work directly with senior architects on enterprise cloud and AI systems.',
-    rating: 4.8, reviewCount: 42, activeInternships: 2, avgStipend: 'BDT 18,000/mo',
-    tags: ['Cloud', 'React', 'Node.js', 'Enterprise', 'AWS'], verified: true, featured: true,
+    rating: 5.0, reviewCount: 24, activeInternships: 2, avgStipend: 'BDT 18,000/mo',
+    tags: ['Cloud', 'React', 'Node.js', 'Enterprise', 'AWS', 'Docker'], verified: true, featured: true,
     website: 'brainstation-23.com',
   },
   {
@@ -341,26 +341,47 @@ export const COMPANIES: Company[] = [
     rating: 4.4, reviewCount: 18, activeInternships: 1, avgStipend: 'BDT 15,000/mo',
     tags: ['Services', 'Marketplace', 'Product'], verified: true,
     website: 'sheba.xyz',
+  },
+  {
+    id: 14, mongoId: '6a9e0505360fc51f23045b9a', name: 'Uber Bangladesh', logo: 'UB', logoColor: '#000000', logoBg: '#f1f5f9',
+    industry: 'Software & Cloud Solutions', location: 'Dhaka, BD', size: '500+ employees', founded: '2016',
+    description: 'Global mobility and logistics technology platform operating high-availability cloud infrastructure in Dhaka.',
+    about: 'Uber develops innovative mobility and delivery systems connecting riders and drivers across Bangladesh. Interns participate in dispatch engine optimization, real-time analytics, and customer mobile apps.',
+    rating: 4.9, reviewCount: 36, activeInternships: 2, avgStipend: 'BDT 24,000/mo',
+    tags: ['Mobile', 'Go', 'Software & Cloud', 'Distributed Systems'], verified: true, featured: true,
+    website: 'uber.com/bd',
+  },
+  {
+    id: 15, mongoId: '6a9e0505360fc51f23045b9b', name: 'FinTech Hub', logo: 'FI', logoColor: '#4338ca', logoBg: '#eef2ff',
+    industry: 'Fintech', location: 'Dhaka, BD', size: '200–500', founded: '2018',
+    description: 'Specialized financial technology engineering studio building payment gateways and banking APIs.',
+    about: 'FinTech Hub architects modern digital banking APIs, open payment switches, and automated compliance tooling for commercial banks across South Asia.',
+    rating: 4.8, reviewCount: 24, activeInternships: 2, avgStipend: 'BDT 20,000/mo',
+    tags: ['Fintech', 'Security', 'Banking', 'Microservices'], verified: true, featured: true,
+    website: 'fintechhub.com.bd',
   }
 ];
 
 /* ─── Mock student profile ─────────────────────────────────────── */
 export const CURRENT_STUDENT = {
-  name: 'Riya Hossain',
-  initials: 'RH',
-  email: 'riya.hossain@student.buet.ac.bd',
-  university: 'BUET',
-  degree: 'BSc in Computer Science & Engineering',
-  year: '3rd Year',
-  location: 'Dhaka, Bangladesh',
-  bio: 'Passionate about building user interfaces and learning modern web technologies. Looking for a remote frontend or full-stack internship.',
-  skills: ['React', 'TypeScript', 'Node.js', 'Python', 'Figma', 'Git'],
-  points: 340,
-  badge: 'Explorer',
-  badgeTier: 2,
+  name: 'Nafis Uddin Chowdhury',
+  initials: 'NC',
+  avatar: '/team_nafis.jpg',
+  email: 'nafis.chowdhury@g.bracu.ac.bd',
+  university: 'BRAC University',
+  department: 'CSE',
+  degree: 'Bachelor of Science in Computer Science & Engineering',
+  year: 'Final Year (2026)',
+  location: 'Mohakhali, Dhaka, Bangladesh',
+  bio: 'Final-year Computer Science student at BRAC University specializing in full-stack web architectures, distributed systems, and cloud backend engineering.',
+  skills: ['React', 'TypeScript', 'Node.js', 'Python', 'C#', '.NET', 'FastAPI', 'PostgreSQL', 'MongoDB', 'Docker', 'AWS'],
+  points: 25,
+  badge: 'Newbie',
+  badgeTier: 1,
   profileComplete: 100,
-  savedIds: [1, 3, 6],
-  applicationIds: [1, 4, 6],
+  resumeName: 'Nafis_Uddin_Chowdhury_Resume_2026.pdf',
+  savedIds: [1],
+  applicationIds: [1, 2, 4],
 };
 
 /* ─── Mock applications ────────────────────────────────────────── */
