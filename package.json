@@ -1,10 +1,8 @@
 {
-  "name": "internprangon-platform",
+  "name": "internprangon-root",
   "version": "1.0.0",
-  "private": true,
   "scripts": {
-    "build": "cd frontend && npm install && npm run build",
-    "start": "node backend/server.js"
+    "build": "cd frontend && npm install && npm run build"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
