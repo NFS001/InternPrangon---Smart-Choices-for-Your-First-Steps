@@ -1,227 +1,286 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import type { Navigate } from '../data/index';
-import { CompanyLogo } from '../components/common/CompanyLogos';
-import { getAllReviews, getAllInterviewExperiences, getSavedUser } from '../api/client';
-import ReportReviewModal, { type ReportTargetReview } from '../components/public/ReportReviewModal';
+import React, { useState, useEffect, useMemo } from "react"
+import type { Navigate } from "../data/index"
+import { CompanyLogo } from "../components/common/CompanyLogos"
+import {
+  getAllReviews,
+  getAllInterviewExperiences,
+  getSavedUser,
+} from "../api/client"
+import ReportReviewModal, {
+  type ReportTargetReview,
+} from "../components/public/ReportReviewModal"
 
 /* ─── Types ─────────────────────────────────────────────────── */
-export type ReviewType = 'experience' | 'interview';
+export type ReviewType = "experience" | "interview"
 
 export interface StructuredReview {
-  id: number | string;
-  backendId?: string;
-  type: ReviewType;
-  company: string;
-  role: string;
-  department?: string;
-  rating: number;
-  location: string;
-  period: string;
-  studentBadge: string;
-  paid: boolean;
-  stipend?: string;
-  title: string;
-  body: string;
-  pros: string[];
-  cons: string[];
-  advice?: string;
+  id: number | string
+  backendId?: string
+  type: ReviewType
+  company: string
+  role: string
+  department?: string
+  rating: number
+  location: string
+  period: string
+  studentBadge: string
+  paid: boolean
+  stipend?: string
+  title: string
+  body: string
+  pros: string[]
+  cons: string[]
+  advice?: string
   subRatings?: {
-    mentorship: number;
-    workLife: number;
-    fairStipend: boolean;
-  };
-  difficulty?: 'Easy' | 'Medium' | 'Hard';
-  outcome?: string;
-  rounds?: string[];
-  questions?: string;
-  prepTips?: string;
-  tags: string[];
-  helpfulCount: number;
+    mentorship: number
+    workLife: number
+    fairStipend: boolean
+  }
+  difficulty?: "Easy" | "Medium" | "Hard"
+  outcome?: string
+  rounds?: string[]
+  questions?: string
+  prepTips?: string
+  tags: string[]
+  helpfulCount: number
 }
 
 /* ─── Curated Structured Initial Reviews ───────────────────── */
 const CURATED_REVIEWS: StructuredReview[] = [
   {
-    id: 'rev-bs23',
-    type: 'experience',
-    company: 'Brain Station 23',
-    role: 'Software Engineer Intern',
-    department: 'Cloud & Distributed Systems',
+    id: "rev-bs23",
+    type: "experience",
+    company: "Brain Station 23",
+    role: "Software Engineer Intern",
+    department: "Cloud & Distributed Systems",
     rating: 5.0,
-    location: 'Mohakhali, Dhaka (Hybrid)',
-    period: 'Completed Fall 2026',
-    studentBadge: 'Verified BUET Intern',
+    location: "Mohakhali, Dhaka (Hybrid)",
+    period: "Completed Fall 2026",
+    studentBadge: "Verified BUET Intern",
     paid: true,
-    stipend: 'BDT 18,000/mo',
-    title: 'Transformative engineering mentorship with production microservices ownership from day one',
-    body: 'Brain Station 23 provided arguably the most intellectually rigorous and respectful internship I could have asked for. Unlike corporate programs where interns only touch sandbox mock apps, my squad paired me with a Principal Architect who involved me in live AWS Lambda and Go microservices design reviews for European enterprise clients.',
+    stipend: "BDT 18,000/mo",
+    title:
+      "Transformative engineering mentorship with production microservices ownership from day one",
+    body: "Brain Station 23 provided arguably the most intellectually rigorous and respectful internship I could have asked for. Unlike corporate programs where interns only touch sandbox mock apps, my squad paired me with a Principal Architect who involved me in live AWS Lambda and Go microservices design reviews for European enterprise clients.",
     pros: [
-      'Direct 1-on-1 mentorship by Senior Tech Leads with weekly architectural review hours',
-      'Actual production repository write access with comprehensive CI/CD pipeline automation',
-      'Catered lunch, premium coffee breakout lounge, and flexible sprint retrospectives',
+      "Direct 1-on-1 mentorship by Senior Tech Leads with weekly architectural review hours",
+      "Actual production repository write access with comprehensive CI/CD pipeline automation",
+      "Catered lunch, premium coffee breakout lounge, and flexible sprint retrospectives",
     ],
     cons: [
-      'High expectation of self-driven research and fast documentation digestion',
-      'Occasional sprint overtime during multi-region client deployment cutovers',
+      "High expectation of self-driven research and fast documentation digestion",
+      "Occasional sprint overtime during multi-region client deployment cutovers",
     ],
-    advice: 'Study distributed message queues (Kafka/RabbitMQ) and Docker containerization fundamentals before your interview round.',
+    advice:
+      "Study distributed message queues (Kafka/RabbitMQ) and Docker containerization fundamentals before your interview round.",
     subRatings: { mentorship: 5, workLife: 4, fairStipend: true },
-    tags: ['Software & Technology', 'Go', 'AWS', 'Microservices'],
+    tags: ["Software & Technology", "Go", "AWS", "Microservices"],
     helpfulCount: 28,
   },
   {
-    id: 'rev-bkash',
-    type: 'experience',
-    company: 'bKash Limited',
-    role: 'Fintech Security & Cloud Intern',
-    department: 'Infrastructure Security & MFS',
+    id: "rev-bkash",
+    type: "experience",
+    company: "bKash Limited",
+    role: "Fintech Security & Cloud Intern",
+    department: "Infrastructure Security & MFS",
     rating: 4.9,
-    location: 'Dhaka, Bangladesh · On-site',
-    period: 'Completed Fall 2026',
-    studentBadge: 'Verified BRACU Intern',
+    location: "Dhaka, Bangladesh · On-site",
+    period: "Completed Fall 2026",
+    studentBadge: "Verified BRACU Intern",
     paid: true,
-    stipend: 'BDT 22,000/mo',
-    title: 'High-concurrency financial architecture with world-class transaction security protocols',
-    body: 'Working inside Bangladesh’s first tech unicorn exposed me to transactional scales rarely taught in university courses. I contributed to fraud prevention heuristics and automated vulnerability scanning pipelines that process millions of daily mobile wallet events.',
+    stipend: "BDT 22,000/mo",
+    title:
+      "High-concurrency financial architecture with world-class transaction security protocols",
+    body: "Working inside Bangladesh’s first tech unicorn exposed me to transactional scales rarely taught in university courses. I contributed to fraud prevention heuristics and automated vulnerability scanning pipelines that process millions of daily mobile wallet events.",
     pros: [
-      'Highest intern stipend in Bangladesh tech with commuter allowance',
-      'Unmatched learning around financial compliance, HSM encryption, and zero-trust security',
-      'Transparent management with genuine opportunities for PPO full-time conversion',
+      "Highest intern stipend in Bangladesh tech with commuter allowance",
+      "Unmatched learning around financial compliance, HSM encryption, and zero-trust security",
+      "Transparent management with genuine opportunities for PPO full-time conversion",
     ],
     cons: [
-      'Strict device policies and network sandboxing require patience for code deployment',
-      'Enterprise paperwork approval required for adopting new external npm libraries',
+      "Strict device policies and network sandboxing require patience for code deployment",
+      "Enterprise paperwork approval required for adopting new external npm libraries",
     ],
-    advice: 'Review OWASP Top 10 API vulnerabilities and relational database index tuning (PostgreSQL).',
+    advice:
+      "Review OWASP Top 10 API vulnerabilities and relational database index tuning (PostgreSQL).",
     subRatings: { mentorship: 5, workLife: 5, fairStipend: true },
-    tags: ['Fintech', 'Cybersecurity', 'PostgreSQL', 'High Concurrency'],
+    tags: ["Fintech", "Cybersecurity", "PostgreSQL", "High Concurrency"],
     helpfulCount: 34,
   },
   {
-    id: 'rev-uber',
-    type: 'interview',
-    company: 'Uber',
-    role: 'Backend Engineering Intern',
-    department: 'Mobility Dispatch Systems',
+    id: "rev-uber",
+    type: "interview",
+    company: "Uber",
+    role: "Backend Engineering Intern",
+    department: "Mobility Dispatch Systems",
     rating: 4.8,
-    location: 'Dhaka Hub & Remote',
-    period: 'Interviewed Oct 2026',
-    studentBadge: 'Verified NSU Applicant',
+    location: "Dhaka Hub & Remote",
+    period: "Interviewed Oct 2026",
+    studentBadge: "Verified NSU Applicant",
     paid: true,
-    stipend: 'BDT 24,000/mo',
-    title: 'Rigorous algorithmic & spatial concurrency rounds with empathetic interviewers',
-    body: 'The interview loop consisted of three stages: an initial algorithmic phone screen on CodeSignal, followed by a live pairing round implementing a spatial geospatial caching layer, and a final architecture discussion with the engineering lead.',
-    difficulty: 'Hard',
-    outcome: 'Offer Accepted',
-    rounds: ['Algorithmic Phone Screen', 'Geospatial Live Coding', 'System Architecture & Fit'],
-    questions: '1. Design an in-memory driver location indexing service using QuadTrees or Geohashes.\n2. Handle distributed clock drift in concurrent trip fare settlement.',
-    prepTips: 'Solve LeetCode Medium tree/graph problems and master Go or Python concurrency primitives (goroutines/channels).',
+    stipend: "BDT 24,000/mo",
+    title:
+      "Rigorous algorithmic & spatial concurrency rounds with empathetic interviewers",
+    body: "The interview loop consisted of three stages: an initial algorithmic phone screen on CodeSignal, followed by a live pairing round implementing a spatial geospatial caching layer, and a final architecture discussion with the engineering lead.",
+    difficulty: "Hard",
+    outcome: "Offer Accepted",
+    rounds: [
+      "Algorithmic Phone Screen",
+      "Geospatial Live Coding",
+      "System Architecture & Fit",
+    ],
+    questions:
+      "1. Design an in-memory driver location indexing service using QuadTrees or Geohashes.\n2. Handle distributed clock drift in concurrent trip fare settlement.",
+    prepTips:
+      "Solve LeetCode Medium tree/graph problems and master Go or Python concurrency primitives (goroutines/channels).",
     pros: [
-      'Interviewers give structured hints and care about your thought process, not memorization',
-      'Rapid turnaround — offer letter received 48 hours following final architectural round',
+      "Interviewers give structured hints and care about your thought process, not memorization",
+      "Rapid turnaround — offer letter received 48 hours following final architectural round",
     ],
     cons: [
-      'High bar on time complexity analysis and memory cache edge-case handling',
+      "High bar on time complexity analysis and memory cache edge-case handling",
     ],
-    advice: 'Talk out loud continuously. When you make a design trade-off, explain why you chose read throughput over write latency.',
+    advice:
+      "Talk out loud continuously. When you make a design trade-off, explain why you chose read throughput over write latency.",
     subRatings: { mentorship: 5, workLife: 4, fairStipend: true },
-    tags: ['Interview Tips', 'Golang', 'Algorithms', 'System Design'],
+    tags: ["Interview Tips", "Golang", "Algorithms", "System Design"],
     helpfulCount: 42,
   },
   {
-    id: 'rev-chaldal',
-    type: 'experience',
-    company: 'Chaldal',
-    role: 'Backend Engineering Intern',
-    department: 'Warehouse Automation & Routing',
+    id: "rev-chaldal",
+    type: "experience",
+    company: "Chaldal",
+    role: "Backend Engineering Intern",
+    department: "Warehouse Automation & Routing",
     rating: 4.7,
-    location: 'Tejgaon, Dhaka · On-site',
-    period: 'Completed Summer 2026',
-    studentBadge: 'Verified IUT Intern',
+    location: "Tejgaon, Dhaka · On-site",
+    period: "Completed Summer 2026",
+    studentBadge: "Verified IUT Intern",
     paid: true,
-    stipend: 'BDT 18,000/mo',
-    title: 'Fascinating logistics automation using .NET Core and real-time fleet algorithms',
-    body: 'Chaldal is one of the few engineering shops in Bangladesh building proprietary logistics robots and dark-store fulfillment software. My team rewrote the dispatch queue balancer, cutting average order packing latency by 12%.',
+    stipend: "BDT 18,000/mo",
+    title:
+      "Fascinating logistics automation using .NET Core and real-time fleet algorithms",
+    body: "Chaldal is one of the few engineering shops in Bangladesh building proprietary logistics robots and dark-store fulfillment software. My team rewrote the dispatch queue balancer, cutting average order packing latency by 12%.",
     pros: [
-      'Huge autonomy and tangible real-world impact seen directly on delivery trucks',
-      'Solid engineering culture centered on functional C# (.NET Core) and clean architecture',
-      'Free lunch, friendly team banter, and direct access to founder/CTO during brownbag sessions',
+      "Huge autonomy and tangible real-world impact seen directly on delivery trucks",
+      "Solid engineering culture centered on functional C# (.NET Core) and clean architecture",
+      "Free lunch, friendly team banter, and direct access to founder/CTO during brownbag sessions",
     ],
     cons: [
-      'Fulfillment hubs are busy and on-site attendance in Tejgaon is expected 5 days a week',
-      'Legacy microservices have patchy documentation',
+      "Fulfillment hubs are busy and on-site attendance in Tejgaon is expected 5 days a week",
+      "Legacy microservices have patchy documentation",
     ],
-    advice: 'Brush up on async/await concurrency in C# and SQL query plan profiling.',
+    advice:
+      "Brush up on async/await concurrency in C# and SQL query plan profiling.",
     subRatings: { mentorship: 4, workLife: 4, fairStipend: true },
-    tags: ['E-Commerce', 'C#', '.NET Core', 'Logistics'],
+    tags: ["E-Commerce", "C#", ".NET Core", "Logistics"],
     helpfulCount: 19,
   },
   {
-    id: 'rev-10ms',
-    type: 'experience',
-    company: '10 Minute School',
-    role: 'Frontend React / Next.js Intern',
-    department: 'Student Learning Platform',
+    id: "rev-10ms",
+    type: "experience",
+    company: "10 Minute School",
+    role: "Frontend React / Next.js Intern",
+    department: "Student Learning Platform",
     rating: 4.8,
-    location: 'Mohakhali, Dhaka · Hybrid',
-    period: 'Completed Summer 2026',
-    studentBadge: 'Verified DU Intern',
+    location: "Mohakhali, Dhaka · Hybrid",
+    period: "Completed Summer 2026",
+    studentBadge: "Verified DU Intern",
     paid: true,
-    stipend: 'BDT 15,000/mo',
-    title: 'Fast-paced, product-driven culture building education tools used by millions of students',
-    body: 'As a student myself, building interactive quiz interfaces and video streaming player modules for 10MS felt deeply purposeful. The UI/UX squad is obsessed with web vitals performance and mobile accessibility.',
+    stipend: "BDT 15,000/mo",
+    title:
+      "Fast-paced, product-driven culture building education tools used by millions of students",
+    body: "As a student myself, building interactive quiz interfaces and video streaming player modules for 10MS felt deeply purposeful. The UI/UX squad is obsessed with web vitals performance and mobile accessibility.",
     pros: [
-      'Features shipped within your first 3 weeks will be utilized by secondary school students nationwide',
-      'Super modern stack: Next.js 14, TailwindCSS, TypeScript, and Storybook design systems',
-      'Youthful, collaborative office vibe with casual sprint standups',
+      "Features shipped within your first 3 weeks will be utilized by secondary school students nationwide",
+      "Super modern stack: Next.js 14, TailwindCSS, TypeScript, and Storybook design systems",
+      "Youthful, collaborative office vibe with casual sprint standups",
     ],
     cons: [
-      'Fast product pivots mean priorities change quickly across sprint cycles',
-      'Occasional push before major exam season product launches',
+      "Fast product pivots mean priorities change quickly across sprint cycles",
+      "Occasional push before major exam season product launches",
     ],
-    advice: 'Prepare a clean Figma-to-React portfolio demonstrating responsive layouts and accessibility (ARIA).',
+    advice:
+      "Prepare a clean Figma-to-React portfolio demonstrating responsive layouts and accessibility (ARIA).",
     subRatings: { mentorship: 5, workLife: 4, fairStipend: true },
-    tags: ['EdTech', 'React', 'Next.js', 'TailwindCSS'],
+    tags: ["EdTech", "React", "Next.js", "TailwindCSS"],
     helpfulCount: 23,
   },
   {
-    id: 'rev-rokomari',
-    type: 'experience',
-    company: 'Rokomari',
-    role: 'Full Stack Web Intern',
-    department: 'Catalog & Search Engine',
+    id: "rev-rokomari",
+    type: "experience",
+    company: "Rokomari",
+    role: "Full Stack Web Intern",
+    department: "Catalog & Search Engine",
     rating: 4.6,
-    location: 'Motijheel, Dhaka · On-site',
-    period: 'Completed Spring 2026',
-    studentBadge: 'Verified SUST Intern',
+    location: "Motijheel, Dhaka · On-site",
+    period: "Completed Spring 2026",
+    studentBadge: "Verified SUST Intern",
     paid: true,
-    stipend: 'BDT 15,000/mo',
-    title: 'Solid engineering foundation with search relevance & Elasticsearch tuning',
-    body: 'Contributed to the Bengali phonetic search tokenizer and catalog indexing pipeline. The senior engineers take time to explain database architecture choices and promote clean software engineering principles.',
+    stipend: "BDT 15,000/mo",
+    title:
+      "Solid engineering foundation with search relevance & Elasticsearch tuning",
+    body: "Contributed to the Bengali phonetic search tokenizer and catalog indexing pipeline. The senior engineers take time to explain database architecture choices and promote clean software engineering principles.",
     pros: [
-      'Work with millions of book and merchandise SKUs in high-volume search engines',
-      'Welcoming and humble engineering team with zero corporate politics',
-      'Discounted books and reading culture throughout the organization',
+      "Work with millions of book and merchandise SKUs in high-volume search engines",
+      "Welcoming and humble engineering team with zero corporate politics",
+      "Discounted books and reading culture throughout the organization",
     ],
     cons: [
-      'Traditional office layout and fixed 9 AM to 6 PM working schedule',
-      'Approval cycles for production releases can take multiple review tiers',
+      "Traditional office layout and fixed 9 AM to 6 PM working schedule",
+      "Approval cycles for production releases can take multiple review tiers",
     ],
-    advice: 'Review inverted index fundamentals and RESTful API best practices.',
+    advice:
+      "Review inverted index fundamentals and RESTful API best practices.",
     subRatings: { mentorship: 4, workLife: 4, fairStipend: true },
-    tags: ['E-Commerce', 'Elasticsearch', 'Python', 'Web Dev'],
+    tags: ["E-Commerce", "Elasticsearch", "Python", "Web Dev"],
     helpfulCount: 16,
   },
-];
+]
 
 /* ─── Top Rated Companies Widget Data ───────────────────────── */
 const TOP_RATED_COMPANIES = [
-  { rank: 1, name: 'Uber Bangladesh', rating: 4.9, stipend: 'BDT 24,000/mo', reviews: 36, logo: 'Uber' },
-  { rank: 2, name: 'bKash Limited', rating: 4.9, stipend: 'BDT 22,000/mo', reviews: 54, logo: 'bKash' },
-  { rank: 3, name: 'Brain Station 23', rating: 5.0, stipend: 'BDT 18,000/mo', reviews: 42, logo: 'Brain Station 23' },
-  { rank: 4, name: 'Pathao', rating: 4.8, stipend: 'BDT 20,000/mo', reviews: 29, logo: 'Pathao' },
-  { rank: 5, name: 'Chaldal', rating: 4.7, stipend: 'BDT 18,000/mo', reviews: 31, logo: 'Chaldal' },
-];
+  {
+    rank: 1,
+    name: "Uber Bangladesh",
+    rating: 4.9,
+    stipend: "BDT 24,000/mo",
+    reviews: 36,
+    logo: "Uber",
+  },
+  {
+    rank: 2,
+    name: "bKash Limited",
+    rating: 4.9,
+    stipend: "BDT 22,000/mo",
+    reviews: 54,
+    logo: "bKash",
+  },
+  {
+    rank: 3,
+    name: "Brain Station 23",
+    rating: 5.0,
+    stipend: "BDT 18,000/mo",
+    reviews: 42,
+    logo: "Brain Station 23",
+  },
+  {
+    rank: 4,
+    name: "Pathao",
+    rating: 4.8,
+    stipend: "BDT 20,000/mo",
+    reviews: 29,
+    logo: "Pathao",
+  },
+  {
+    rank: 5,
+    name: "Chaldal",
+    rating: 4.7,
+    stipend: "BDT 18,000/mo",
+    reviews: 31,
+    logo: "Chaldal",
+  },
+]
 
 /* ─── Star Rating Helper ────────────────────────────────────── */
 function StarRating({ rating }: { rating: number }) {
@@ -231,7 +290,9 @@ function StarRating({ rating }: { rating: number }) {
         <svg
           key={n}
           className={`w-3.5 h-3.5 ${
-            n <= Math.round(rating) ? 'text-amber-400 fill-amber-400' : 'text-slate-200 fill-slate-200'
+            n <= Math.round(rating)
+              ? "text-amber-400 fill-amber-400"
+              : "text-slate-200 fill-slate-200"
           }`}
           viewBox="0 0 20 20"
         >
@@ -239,43 +300,48 @@ function StarRating({ rating }: { rating: number }) {
         </svg>
       ))}
     </span>
-  );
+  )
 }
 
 export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
-  const [tab, setTab] = useState<'all' | 'experience' | 'interview'>('all');
-  const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState<'helpful' | 'highest' | 'recent'>('helpful');
-  const [allReviews, setAllReviews] = useState<StructuredReview[]>(CURATED_REVIEWS);
-  const [helpfulSet, setHelpfulSet] = useState<Set<string | number>>(new Set());
-  const [reportingReview, setReportingReview] = useState<ReportTargetReview | null>(null);
-  const [reportedReviewIds, setReportedReviewIds] = useState<Set<string | number>>(new Set());
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [tab, setTab] = useState<"all" | "experience" | "interview">("all")
+  const [search, setSearch] = useState("")
+  const [sortBy, setSortBy] = useState<"helpful" | "highest" | "recent">(
+    "helpful",
+  )
+  const [allReviews, setAllReviews] =
+    useState<StructuredReview[]>(CURATED_REVIEWS)
+  const [helpfulSet, setHelpfulSet] = useState<Set<string | number>>(new Set())
+  const [reportingReview, setReportingReview] =
+    useState<ReportTargetReview | null>(null)
+  const [reportedReviewIds, setReportedReviewIds] =
+    useState<Set<string | number>>(new Set())
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   // Sync deleted reviews from admin moderation
   const [deletedIds, setDeletedIds] = useState<Set<string>>(() => {
     try {
-      const raw = localStorage.getItem('internprangon_deleted_reviews');
-      return new Set(raw ? JSON.parse(raw) : []);
+      const raw = localStorage.getItem("internprangon_deleted_reviews")
+      return new Set(raw ? JSON.parse(raw) : [])
     } catch {
-      return new Set();
+      return new Set()
     }
-  });
+  })
 
   useEffect(() => {
     const handleSync = () => {
       try {
-        const raw = localStorage.getItem('internprangon_deleted_reviews');
-        setDeletedIds(new Set(raw ? JSON.parse(raw) : []));
+        const raw = localStorage.getItem("internprangon_deleted_reviews")
+        setDeletedIds(new Set(raw ? JSON.parse(raw) : []))
       } catch {}
-    };
-    window.addEventListener('storage', handleSync);
-    window.addEventListener('internprangon_reviews_updated', handleSync);
+    }
+    window.addEventListener("storage", handleSync)
+    window.addEventListener("internprangon_reviews_updated", handleSync)
     return () => {
-      window.removeEventListener('storage', handleSync);
-      window.removeEventListener('internprangon_reviews_updated', handleSync);
-    };
-  }, []);
+      window.removeEventListener("storage", handleSync)
+      window.removeEventListener("internprangon_reviews_updated", handleSync)
+    }
+  }, [])
 
   // Fetch verified reviews and interview experiences from backend
   useEffect(() => {
@@ -283,102 +349,119 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
       getAllReviews().catch(() => ({ reviews: [] })),
       getAllInterviewExperiences().catch(() => ({ interviewExperiences: [] })),
     ]).then(([revRes, intRes]) => {
-      const liveReviews: StructuredReview[] = (revRes.reviews || []).map((r, idx) => {
-        const dateStr = new Date(r.createdAt).toLocaleDateString(undefined, {
-          month: 'short',
-          year: 'numeric',
-        });
-        return {
-          id: `live-rev-${r.id || idx}`,
-          backendId: r.id,
-          type: 'experience',
-          company: r.company || 'Partner Company',
-          role: 'Software Intern',
-          department: r.industry || 'Engineering & Technology',
-          rating: r.rating || 5.0,
-          location: 'Dhaka, Bangladesh',
-          period: dateStr,
-          studentBadge: 'Verified Student Contributor',
-          paid: true,
-          stipend: 'BDT 18,000/mo',
-          title: r.comment && r.comment.length > 75 ? `${r.comment.slice(0, 75)}...` : r.comment || 'Verified Internship Experience',
-          body: r.comment || 'Great learning experience with collaborative engineering mentorship.',
-          pros: [
-            'Supportive senior mentorship and daily sprint standups',
-            'Real-world codebase contribution with pull request reviews',
-          ],
-          cons: [
-            'Requires strong proactive initiative during initial onboarding',
-          ],
-          advice: 'Demonstrate solid fundamentals in Git and standard data structures.',
-          subRatings: { mentorship: 5, workLife: 4, fairStipend: true },
-          tags: [r.industry || 'Technology', 'Verified Review'],
-          helpfulCount: 8,
-        };
-      });
+      const liveReviews: StructuredReview[] = (revRes.reviews || []).map(
+        (r, idx) => {
+          const dateStr = new Date(r.createdAt).toLocaleDateString(undefined, {
+            month: "short",
+            year: "numeric",
+          })
+          return {
+            id: `live-rev-${r.id || idx}`,
+            backendId: r.id,
+            type: "experience",
+            company: r.company || "Partner Company",
+            role: "Software Intern",
+            department: r.industry || "Engineering & Technology",
+            rating: r.rating || 5.0,
+            location: "Dhaka, Bangladesh",
+            period: dateStr,
+            studentBadge: "Verified Student Contributor",
+            paid: true,
+            stipend: "BDT 18,000/mo",
+            title:
+              r.comment && r.comment.length > 75
+                ? `${r.comment.slice(0, 75)}...`
+                : r.comment || "Verified Internship Experience",
+            body:
+              r.comment ||
+              "Great learning experience with collaborative engineering mentorship.",
+            pros: [
+              "Supportive senior mentorship and daily sprint standups",
+              "Real-world codebase contribution with pull request reviews",
+            ],
+            cons: [
+              "Requires strong proactive initiative during initial onboarding",
+            ],
+            advice:
+              "Demonstrate solid fundamentals in Git and standard data structures.",
+            subRatings: { mentorship: 5, workLife: 4, fairStipend: true },
+            tags: [r.industry || "Technology", "Verified Review"],
+            helpfulCount: 8,
+          }
+        },
+      )
 
-      const liveInterviews: StructuredReview[] = (intRes.interviewExperiences || []).map((ie, idx) => {
+      const liveInterviews: StructuredReview[] = (
+        intRes.interviewExperiences || []
+      ).map((ie, idx) => {
         const dateStr = ie.interviewDate
           ? ie.interviewDate
           : new Date(ie.datePosted).toLocaleDateString(undefined, {
-              month: 'short',
-              year: 'numeric',
-            });
+              month: "short",
+              year: "numeric",
+            })
 
-        const roundsList: string[] = [];
-        if (ie.interviewType) roundsList.push(ie.interviewType);
+        const roundsList: string[] = []
+        if (ie.interviewType) roundsList.push(ie.interviewType)
         if (ie.rounds) {
           roundsList.push(
-            ie.rounds.toLowerCase().includes('round') ? ie.rounds : `${ie.rounds} Rounds`
-          );
+            ie.rounds.toLowerCase().includes("round")
+              ? ie.rounds
+              : `${ie.rounds} Rounds`,
+          )
         }
-        if (roundsList.length === 0) roundsList.push('Technical Interview');
+        if (roundsList.length === 0) roundsList.push("Technical Interview")
 
-        const roleName = ie.role || 'Intern Applicant';
+        const roleName = ie.role || "Intern Applicant"
 
         return {
           id: `live-int-${ie.id || idx}`,
           backendId: ie.id,
-          type: 'interview',
-          company: ie.company || 'Partner Company',
+          type: "interview",
+          company: ie.company || "Partner Company",
           role: roleName,
           rating: 4.8,
-          location: 'Dhaka, Bangladesh',
+          location: "Dhaka, Bangladesh",
           period: dateStr,
-          studentBadge: 'Verified Interviewee',
+          studentBadge: "Verified Interviewee",
           paid: true,
           title: `${roleName} Interview Process & Evaluation`,
-          body: ie.process || ie.questions || 'Structured multi-round technical interview experience.',
-          difficulty: (ie.difficulty as 'Easy' | 'Medium' | 'Hard') || 'Medium',
-          outcome: ie.outcome || 'Offer Received',
+          body:
+            ie.process ||
+            ie.questions ||
+            "Structured multi-round technical interview experience.",
+          difficulty: ie.difficulty as "Easy" | "Medium" | "Hard" || "Medium",
+          outcome: ie.outcome || "Offer Received",
           rounds: roundsList,
           questions: ie.questions,
           prepTips: ie.tips,
-          pros: ['Clear communication and timely feedback from engineering managers'],
-          cons: ['Rigorous live problem-solving on the spot'],
+          pros: [
+            "Clear communication and timely feedback from engineering managers",
+          ],
+          cons: ["Rigorous live problem-solving on the spot"],
           subRatings: { mentorship: 5, workLife: 4, fairStipend: true },
-          tags: [ie.interviewType || 'Interview', 'Technical Prep'],
+          tags: [ie.interviewType || "Interview", "Technical Prep"],
           helpfulCount: 12,
-        };
-      });
+        }
+      })
 
-      setAllReviews([...liveReviews, ...liveInterviews, ...CURATED_REVIEWS]);
-    });
-  }, []);
+      setAllReviews([...liveReviews, ...liveInterviews, ...CURATED_REVIEWS])
+    })
+  }, [])
 
   const handleHelpfulToggle = (id: string | number) => {
     setHelpfulSet((prev) => {
-      const next = new Set(prev);
+      const next = new Set(prev)
       if (next.has(id)) {
-        next.delete(id);
+        next.delete(id)
       } else {
-        next.add(id);
-        setToastMessage('Marked as helpful. Thank you for your feedback!');
-        setTimeout(() => setToastMessage(null), 2500);
+        next.add(id)
+        setToastMessage("Marked as helpful. Thank you for your feedback!")
+        setTimeout(() => setToastMessage(null), 2500)
       }
-      return next;
-    });
-  };
+      return next
+    })
+  }
 
   const handleReport = (review: StructuredReview) => {
     setReportingReview({
@@ -387,47 +470,53 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
       rating: review.rating,
       content: review.body,
       anonymous: review.studentBadge,
-    });
-  };
+    })
+  }
 
   const handleReportSuccess = (targetId: string | number) => {
-    setReportedReviewIds((prev) => new Set([...prev, targetId]));
-    setToastMessage('Thank you. This review has been flagged for admin moderation.');
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+    setReportedReviewIds((prev) => new Set([...prev, targetId]))
+    setToastMessage(
+      "Thank you. This review has been flagged for admin moderation.",
+    )
+    setTimeout(() => setToastMessage(null), 3000)
+  }
 
   // Filter and sort reviews
   const filtered = useMemo(() => {
     return allReviews
       .filter((r) => {
-        if (deletedIds.has(String(r.id)) || (r.backendId && deletedIds.has(String(r.backendId)))) {
-          return false;
+        if (
+          deletedIds.has(String(r.id)) ||
+          (r.backendId && deletedIds.has(String(r.backendId)))
+        ) {
+          return false
         }
-        if (tab !== 'all' && r.type !== tab) {
-          return false;
+        if (tab !== "all" && r.type !== tab) {
+          return false
         }
         if (search) {
-          const q = search.toLowerCase();
-          const matchCompany = r.company.toLowerCase().includes(q);
-          const matchRole = r.role.toLowerCase().includes(q);
-          const matchTags = r.tags.some((t) => t.toLowerCase().includes(q));
-          const matchBody = r.body.toLowerCase().includes(q);
-          if (!matchCompany && !matchRole && !matchTags && !matchBody) return false;
+          const q = search.toLowerCase()
+          const matchCompany = r.company.toLowerCase().includes(q)
+          const matchRole = r.role.toLowerCase().includes(q)
+          const matchTags = r.tags.some((t) => t.toLowerCase().includes(q))
+          const matchBody = r.body.toLowerCase().includes(q)
+          if (!matchCompany && !matchRole && !matchTags && !matchBody)
+            return false
         }
-        return true;
+        return true
       })
       .sort((a, b) => {
-        if (sortBy === 'helpful') {
-          const aCount = a.helpfulCount + (helpfulSet.has(a.id) ? 1 : 0);
-          const bCount = b.helpfulCount + (helpfulSet.has(b.id) ? 1 : 0);
-          return bCount - aCount;
+        if (sortBy === "helpful") {
+          const aCount = a.helpfulCount + (helpfulSet.has(a.id) ? 1 : 0)
+          const bCount = b.helpfulCount + (helpfulSet.has(b.id) ? 1 : 0)
+          return bCount - aCount
         }
-        if (sortBy === 'highest') {
-          return b.rating - a.rating;
+        if (sortBy === "highest") {
+          return b.rating - a.rating
         }
-        return 0;
-      });
-  }, [allReviews, tab, search, sortBy, helpfulSet, deletedIds]);
+        return 0
+      })
+  }, [allReviews, tab, search, sortBy, helpfulSet, deletedIds])
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] pb-24 font-sans selection:bg-indigo-500 selection:text-white relative">
@@ -448,7 +537,7 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
         review={reportingReview}
         onClose={() => setReportingReview(null)}
         onSuccess={handleReportSuccess}
-        onRequireAuth={() => navigate?.('login')}
+        onRequireAuth={() => navigate?.("login")}
       />
 
       {/* ═══════════════════════════════════════════════════════════════
@@ -462,7 +551,7 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
 
         {/* Headline with Indigo gradient accent */}
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#0F172A] tracking-tight mb-3">
-          Real reviews.{' '}
+          Real reviews.{" "}
           <span className="bg-gradient-to-r from-[#4F46E5] to-[#6366F1] bg-clip-text text-transparent">
             Honest experiences.
           </span>
@@ -470,7 +559,8 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
 
         {/* Subtitle */}
         <p className="text-sm sm:text-base text-slate-600 max-w-3xl leading-relaxed">
-          100% anonymous, verified reviews from students who completed internships across Bangladesh. No filters, no corporate spin.
+          100% anonymous, verified reviews from students who completed
+          internships across Bangladesh. No filters, no corporate spin.
         </p>
 
         {/* Filter Toolbar */}
@@ -478,31 +568,31 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
           {/* Left Segmented Pills */}
           <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl overflow-x-auto shrink-0">
             <button
-              onClick={() => setTab('all')}
+              onClick={() => setTab("all")}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                tab === 'all'
-                  ? 'bg-white text-indigo-700 shadow-2xs font-black'
-                  : 'text-slate-600 hover:text-slate-900'
+                tab === "all"
+                  ? "bg-white text-indigo-700 shadow-2xs font-black"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               All Reviews ({allReviews.length})
             </button>
             <button
-              onClick={() => setTab('experience')}
+              onClick={() => setTab("experience")}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                tab === 'experience'
-                  ? 'bg-white text-indigo-700 shadow-2xs font-black'
-                  : 'text-slate-600 hover:text-slate-900'
+                tab === "experience"
+                  ? "bg-white text-indigo-700 shadow-2xs font-black"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               Internship Experiences
             </button>
             <button
-              onClick={() => setTab('interview')}
+              onClick={() => setTab("interview")}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                tab === 'interview'
-                  ? 'bg-white text-indigo-700 shadow-2xs font-black'
-                  : 'text-slate-600 hover:text-slate-900'
+                tab === "interview"
+                  ? "bg-white text-indigo-700 shadow-2xs font-black"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               Interview Tips & Questions
@@ -513,7 +603,17 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
           <div className="flex items-center gap-2.5 flex-1 max-w-lg justify-end">
             {/* Search Input */}
             <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl flex-1 min-w-[200px]">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#6366F1"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="shrink-0"
+              >
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
@@ -525,13 +625,20 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                 className="w-full text-xs sm:text-sm font-medium text-slate-800 placeholder:text-slate-400 bg-transparent outline-none"
               />
               {search && (
-                <button onClick={() => setSearch('')} className="text-slate-400 hover:text-slate-700 font-bold text-xs">✕</button>
+                <button
+                  onClick={() => setSearch("")}
+                  className="text-slate-400 hover:text-slate-700 font-bold text-xs"
+                >
+                  ✕
+                </button>
               )}
             </div>
 
             {/* Sort Dropdown */}
             <div className="flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden sm:inline">Sort:</span>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden sm:inline">
+                Sort:
+              </span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
@@ -560,12 +667,17 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                 <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-3xl mx-auto mb-4">
                   💬
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 mb-1">No reviews match your filters</h3>
+                <h3 className="text-lg font-bold text-slate-900 mb-1">
+                  No reviews match your filters
+                </h3>
                 <p className="text-xs sm:text-sm text-slate-500 mb-5">
                   Try adjusting your search query or reset the filter selection.
                 </p>
                 <button
-                  onClick={() => { setSearch(''); setTab('all'); }}
+                  onClick={() => {
+                    setSearch("")
+                    setTab("all")
+                  }}
                   className="px-5 py-2.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
                 >
                   Reset Filters
@@ -573,9 +685,12 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
               </div>
             ) : (
               filtered.map((rev) => {
-                const isHelpful = helpfulSet.has(rev.id);
-                const currentHelpfulCount = rev.helpfulCount + (isHelpful ? 1 : 0);
-                const isReported = reportedReviewIds.has(rev.backendId || rev.id) || reportedReviewIds.has(rev.id);
+                const isHelpful = helpfulSet.has(rev.id)
+                const currentHelpfulCount =
+                  rev.helpfulCount + (isHelpful ? 1 : 0)
+                const isReported =
+                  reportedReviewIds.has(rev.backendId || rev.id) ||
+                  reportedReviewIds.has(rev.id)
 
                 return (
                   <article
@@ -593,13 +708,22 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                             <h3 className="font-extrabold text-[#0F172A] text-base sm:text-lg">
                               {rev.role}
                             </h3>
-                            <span className="text-xs font-bold text-slate-400">•</span>
-                            <span className="text-xs font-bold text-indigo-600 hover:underline cursor-pointer" onClick={() => navigate?.('company-detail', { companyId: rev.company })}>
+                            <span className="text-xs font-bold text-slate-400">
+                              •
+                            </span>
+                            <span
+                              className="text-xs font-bold text-indigo-600 hover:underline cursor-pointer"
+                              onClick={() =>
+                                navigate?.("company-detail", {
+                                  companyId: rev.company,
+                                })
+                              }
+                            >
                               {rev.company}
                             </span>
                           </div>
                           <p className="text-xs text-slate-500 font-medium mt-1">
-                            {rev.location} · {rev.period} ·{' '}
+                            {rev.location} · {rev.period} ·{" "}
                             <span className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full text-[11px]">
                               <span>✔</span>
                               <span>{rev.studentBadge}</span>
@@ -612,17 +736,17 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                       <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 shrink-0">
                         {rev.paid && (
                           <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                            {rev.stipend || 'Paid'}
+                            {rev.stipend || "Paid"}
                           </span>
                         )}
                         {rev.difficulty && (
                           <span
                             className={`px-2.5 py-0.5 rounded-md text-xs font-bold border ${
-                              rev.difficulty === 'Easy'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : rev.difficulty === 'Medium'
-                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                : 'bg-rose-50 text-rose-700 border-rose-200'
+                              rev.difficulty === "Easy"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : rev.difficulty === "Medium"
+                                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                                  : "bg-rose-50 text-rose-700 border-rose-200"
                             }`}
                           >
                             {rev.difficulty} Difficulty
@@ -630,7 +754,9 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                         )}
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50/80 border border-amber-200/70">
                           <StarRating rating={rev.rating} />
-                          <span className="text-xs font-black text-slate-900">{rev.rating.toFixed(1)}</span>
+                          <span className="text-xs font-black text-slate-900">
+                            {rev.rating.toFixed(1)}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -660,7 +786,9 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                                   {round}
                                 </span>
                                 {rIdx < rev.rounds!.length - 1 && (
-                                  <span className="text-slate-300 font-bold text-xs">→</span>
+                                  <span className="text-slate-300 font-bold text-xs">
+                                    →
+                                  </span>
                                 )}
                               </React.Fragment>
                             ))}
@@ -695,8 +823,13 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                             </span>
                             <ul className="space-y-1.5 text-xs text-slate-700">
                               {rev.pros.map((pro, pIdx) => (
-                                <li key={pIdx} className="flex items-start gap-1.5">
-                                  <span className="text-emerald-600 font-bold">•</span>
+                                <li
+                                  key={pIdx}
+                                  className="flex items-start gap-1.5"
+                                >
+                                  <span className="text-emerald-600 font-bold">
+                                    •
+                                  </span>
                                   <span>{pro}</span>
                                 </li>
                               ))}
@@ -712,8 +845,13 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                             </span>
                             <ul className="space-y-1.5 text-xs text-slate-700">
                               {rev.cons.map((con, cIdx) => (
-                                <li key={cIdx} className="flex items-start gap-1.5">
-                                  <span className="text-amber-600 font-bold">•</span>
+                                <li
+                                  key={cIdx}
+                                  className="flex items-start gap-1.5"
+                                >
+                                  <span className="text-amber-600 font-bold">
+                                    •
+                                  </span>
                                   <span>{con}</span>
                                 </li>
                               ))}
@@ -738,16 +876,22 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                       <div className="py-3 px-4 rounded-xl bg-slate-50/80 border border-slate-100 flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-600">
                         <div className="flex items-center gap-1.5">
                           <span className="text-slate-400">Mentorship:</span>
-                          <span className="font-black text-slate-800">{rev.subRatings.mentorship}/5</span>
+                          <span className="font-black text-slate-800">
+                            {rev.subRatings.mentorship}/5
+                          </span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-slate-400">Work-Life Balance:</span>
-                          <span className="font-black text-slate-800">{rev.subRatings.workLife}/5</span>
+                          <span className="text-slate-400">
+                            Work-Life Balance:
+                          </span>
+                          <span className="font-black text-slate-800">
+                            {rev.subRatings.workLife}/5
+                          </span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className="text-slate-400">Fair Stipend:</span>
                           <span className="font-black text-emerald-700">
-                            {rev.subRatings.fairStipend ? 'Yes' : 'No'}
+                            {rev.subRatings.fairStipend ? "Yes" : "No"}
                           </span>
                         </div>
                       </div>
@@ -773,8 +917,8 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                           onClick={() => handleHelpfulToggle(rev.id)}
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                             isHelpful
-                              ? 'bg-indigo-50 border-indigo-300 text-indigo-700 shadow-2xs'
-                              : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600 shadow-2xs'
+                              ? "bg-indigo-50 border-indigo-300 text-indigo-700 shadow-2xs"
+                              : "bg-white hover:bg-slate-50 border-slate-200 text-slate-600 shadow-2xs"
                           }`}
                         >
                           <span>👍</span>
@@ -796,7 +940,7 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                       </div>
                     </div>
                   </article>
-                );
+                )
               })
             )}
           </div>
@@ -816,12 +960,13 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                   Share Your Experience
                 </h3>
                 <p className="text-xs text-indigo-100 leading-relaxed mt-2 mb-5">
-                  Help fellow students make informed decisions. Share your internship or interview story anonymously.
+                  Help fellow students make informed decisions. Share your
+                  internship or interview story anonymously.
                 </p>
                 <button
                   onClick={() => {
-                    const user = getSavedUser();
-                    navigate?.(user ? 'write-review' : 'login');
+                    const user = getSavedUser()
+                    navigate?.(user ? "write-review" : "login")
                   }}
                   className="w-full py-3 px-4 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-extrabold text-xs shadow-md shadow-orange-500/30 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
@@ -837,14 +982,18 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                 <h3 className="text-sm font-black text-[#0F172A] uppercase tracking-wider">
                   Top Rated Companies
                 </h3>
-                <span className="text-[10px] font-bold text-slate-400">By Students</span>
+                <span className="text-[10px] font-bold text-slate-400">
+                  By Students
+                </span>
               </div>
 
               <div className="space-y-3.5">
                 {TOP_RATED_COMPANIES.map((comp) => (
                   <div
                     key={comp.name}
-                    onClick={() => navigate?.('company-detail', { companyId: comp.name })}
+                    onClick={() =>
+                      navigate?.("company-detail", { companyId: comp.name })
+                    }
                     className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer group"
                   >
                     <span className="w-5 text-center text-xs font-black text-slate-400 group-hover:text-indigo-600">
@@ -865,8 +1014,12 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="text-xs font-black text-slate-800">★ {comp.rating.toFixed(1)}</span>
-                      <p className="text-[10px] text-slate-400 font-medium">{comp.reviews} reviews</p>
+                      <span className="text-xs font-black text-slate-800">
+                        ★ {comp.rating.toFixed(1)}
+                      </span>
+                      <p className="text-[10px] text-slate-400 font-medium">
+                        {comp.reviews} reviews
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -876,7 +1029,16 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
             {/* Card 3: "Review Integrity & Privacy Guarantee" */}
             <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/90 p-5 shadow-xs flex items-start gap-3.5">
               <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
               </div>
@@ -885,7 +1047,8 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
                   100% Anonymous & Encrypted
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  We encrypt user identifiers and verify university student emails without linking identities to public reviews.
+                  We encrypt user identifiers and verify university student
+                  emails without linking identities to public reviews.
                 </p>
               </div>
             </div>
@@ -893,5 +1056,5 @@ export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
         </div>
       </div>
     </div>
-  );
+  )
 }

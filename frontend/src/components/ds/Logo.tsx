@@ -1,35 +1,65 @@
-import React from 'react';
+import React from "react"
 
-export type LogoVariant = 'full' | 'full-white' | 'icon' | 'image';
-export type LogoSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+export type LogoVariant = "full" | "full-white" | "icon" | "image"
+export type LogoSize = "xs" | "sm" | "md" | "lg" | "xl"
 
 export interface LogoProps {
-  variant?: LogoVariant;
-  size?: LogoSize;
-  className?: string;
-  showSubtitle?: boolean;
+  variant?: LogoVariant
+  size?: LogoSize
+  className?: string
+  showSubtitle?: boolean
 }
 
 const sizeMap = {
-  xs: { icon: 24, gap: 'gap-1.5', title: 'text-sm', sub: 'text-[7px]', dot: 'w-1 h-1' },
-  sm: { icon: 30, gap: 'gap-2',   title: 'text-base', sub: 'text-[8px]', dot: 'w-1.5 h-1.5' },
-  md: { icon: 38, gap: 'gap-2.5', title: 'text-xl',  sub: 'text-[9px]', dot: 'w-1.5 h-1.5' },
-  lg: { icon: 46, gap: 'gap-3',   title: 'text-2xl', sub: 'text-[10px]', dot: 'w-2 h-2' },
-  xl: { icon: 56, gap: 'gap-3.5', title: 'text-3xl', sub: 'text-[11px]', dot: 'w-2.5 h-2.5' },
-};
+  xs: {
+    icon: 24,
+    gap: "gap-1.5",
+    title: "text-sm",
+    sub: "text-[7px]",
+    dot: "w-1 h-1",
+  },
+  sm: {
+    icon: 30,
+    gap: "gap-2",
+    title: "text-base",
+    sub: "text-[8px]",
+    dot: "w-1.5 h-1.5",
+  },
+  md: {
+    icon: 38,
+    gap: "gap-2.5",
+    title: "text-xl",
+    sub: "text-[9px]",
+    dot: "w-1.5 h-1.5",
+  },
+  lg: {
+    icon: 46,
+    gap: "gap-3",
+    title: "text-2xl",
+    sub: "text-[10px]",
+    dot: "w-2 h-2",
+  },
+  xl: {
+    icon: 56,
+    gap: "gap-3.5",
+    title: "text-3xl",
+    sub: "text-[11px]",
+    dot: "w-2.5 h-2.5",
+  },
+}
 
 /* ─── Ascending Gradient Steps & Arrow Mark ──────────────────── */
 export function LogoMark({
   size = 40,
-  variant = 'color',
-  className = '',
+  variant = "color",
+  className = "",
 }: {
-  size?: number;
-  variant?: 'color' | 'white' | 'dark';
-  className?: string;
+  size?: number
+  variant?: "color" | "white" | "dark"
+  className?: string
 }) {
-  const isWhite = variant === 'white';
-  const isDark = variant === 'dark';
+  const isWhite = variant === "white"
+  const isDark = variant === "dark"
 
   return (
     <svg
@@ -42,14 +72,31 @@ export function LogoMark({
       aria-hidden="true"
     >
       <defs>
-        <linearGradient id={`ipAscentGrad-${size}-${variant}`} x1="6" y1="42" x2="42" y2="6" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor={isWhite ? '#c7d2fe' : isDark ? '#4f46e5' : '#312e81'} />
-          <stop offset="40%" stopColor={isWhite ? '#a855f7' : '#6366f1'} />
-          <stop offset="78%" stopColor={isWhite ? '#fdba74' : '#f97316'} />
-          <stop offset="100%" stopColor={isWhite ? '#ffffff' : '#fb923c'} />
+        <linearGradient
+          id={`ipAscentGrad-${size}-${variant}`}
+          x1="6"
+          y1="42"
+          x2="42"
+          y2="6"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop
+            offset="0%"
+            stopColor={isWhite ? "#c7d2fe" : isDark ? "#4f46e5" : "#312e81"}
+          />
+          <stop offset="40%" stopColor={isWhite ? "#a855f7" : "#6366f1"} />
+          <stop offset="78%" stopColor={isWhite ? "#fdba74" : "#f97316"} />
+          <stop offset="100%" stopColor={isWhite ? "#ffffff" : "#fb923c"} />
         </linearGradient>
 
-        <linearGradient id={`ipArrowGlow-${size}-${variant}`} x1="8" y1="36" x2="42" y2="6" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id={`ipArrowGlow-${size}-${variant}`}
+          x1="8"
+          y1="36"
+          x2="42"
+          y2="6"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop offset="0%" stopColor="#4338ca" />
           <stop offset="35%" stopColor="#6366f1" />
           <stop offset="75%" stopColor="#ea580c" />
@@ -62,7 +109,9 @@ export function LogoMark({
         width="48"
         height="48"
         rx="12"
-        fill={isWhite ? 'rgba(255,255,255,0.1)' : isDark ? '#090d16' : '#0b0f19'}
+        fill={
+          isWhite ? "rgba(255,255,255,0.1)" : isDark ? "#090d16" : "#0b0f19"
+        }
       />
 
       {/* Ascending staircase frames: representing early steps */}
@@ -73,7 +122,7 @@ export function LogoMark({
         width="9"
         height="12"
         rx="2"
-        stroke={isWhite ? '#cbd5e1' : '#4338ca'}
+        stroke={isWhite ? "#cbd5e1" : "#4338ca"}
         strokeWidth="2"
         fill="none"
         opacity={isWhite ? 0.7 : 0.85}
@@ -85,7 +134,7 @@ export function LogoMark({
         width="10"
         height="20"
         rx="2"
-        stroke={isWhite ? '#e2e8f0' : '#6366f1'}
+        stroke={isWhite ? "#e2e8f0" : "#6366f1"}
         strokeWidth="2"
         fill="none"
         opacity={isWhite ? 0.85 : 0.95}
@@ -97,7 +146,7 @@ export function LogoMark({
         width="11"
         height="28"
         rx="2"
-        stroke={isWhite ? '#fed7aa' : '#a855f7'}
+        stroke={isWhite ? "#fed7aa" : "#a855f7"}
         strokeWidth="2"
         fill="none"
         opacity={0.9}
@@ -116,7 +165,7 @@ export function LogoMark({
       <path
         d="M 41 9 L 30 11 L 34.5 15.5 Z"
         fill={`url(#ipAscentGrad-${size}-${variant})`}
-        stroke={isWhite ? '#ffffff' : '#f97316'}
+        stroke={isWhite ? "#ffffff" : "#f97316"}
         strokeWidth="1.2"
         strokeLinejoin="round"
       />
@@ -130,20 +179,20 @@ export function LogoMark({
       {/* Milestone dot */}
       <circle cx="40" cy="9.5" r="1.3" fill="#ffffff" />
     </svg>
-  );
+  )
 }
 
 /* ─── Full Brand Logo Component ──────────────────────────────── */
 export default function Logo({
-  variant = 'full',
-  size = 'md',
-  className = '',
+  variant = "full",
+  size = "md",
+  className = "",
   showSubtitle = true,
 }: LogoProps) {
-  const s = sizeMap[size];
-  const isDark = variant === 'full-white';
+  const s = sizeMap[size]
+  const isDark = variant === "full-white"
 
-  if (variant === 'image') {
+  if (variant === "image") {
     return (
       <img
         src="/internprangon_logo.jpg"
@@ -151,18 +200,13 @@ export default function Logo({
         className={`h-auto rounded-lg object-contain ${className}`}
         style={{ maxHeight: s.icon * 1.5 }}
       />
-    );
+    )
   }
 
-  const mark = (
-    <LogoMark
-      size={s.icon}
-      variant={isDark ? 'white' : 'color'}
-    />
-  );
+  const mark = <LogoMark size={s.icon} variant={isDark ? "white" : "color"} />
 
-  if (variant === 'icon') {
-    return <div className={`inline-flex shrink-0 ${className}`}>{mark}</div>;
+  if (variant === "icon") {
+    return <div className={`inline-flex shrink-0 ${className}`}>{mark}</div>
   }
 
   return (
@@ -173,7 +217,7 @@ export default function Logo({
           <span
             className={`font-display italic font-extrabold leading-none tracking-tight ${s.title}`}
             style={{
-              color: isDark ? '#ffffff' : '#0f172a',
+              color: isDark ? "#ffffff" : "#0f172a",
               fontVariationSettings: "'opsz' 48, 'wght' 800",
             }}
           >
@@ -191,12 +235,12 @@ export default function Logo({
         {showSubtitle && (
           <span
             className={`font-semibold tracking-[0.16em] uppercase leading-none mt-1 ${s.sub}`}
-            style={{ color: isDark ? '#cbd5e1' : '#64748b' }}
+            style={{ color: isDark ? "#cbd5e1" : "#64748b" }}
           >
             Smart Choices for Your First Steps
           </span>
         )}
       </div>
     </div>
-  );
+  )
 }

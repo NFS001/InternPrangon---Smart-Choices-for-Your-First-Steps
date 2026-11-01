@@ -1,40 +1,40 @@
-import React, { useState, useEffect } from "react";
-import type { Navigate } from "../data/index";
-import { INTERNSHIPS } from "../data/index";
-import { CompanyLogo } from "../components/common/CompanyLogos";
+import React, { useState, useEffect } from "react"
+import type { Navigate } from "../data/index"
+import { INTERNSHIPS } from "../data/index"
+import { CompanyLogo } from "../components/common/CompanyLogos"
 import {
   getMyBookmarks,
   addBookmark,
   removeBookmark,
   searchInternships,
-} from "../api/client";
+} from "../api/client"
 
 interface Props {
-  navigate: Navigate;
-  initialSearch?: string;
-  initialCategory?: string;
+  navigate: Navigate
+  initialSearch?: string
+  initialCategory?: string
 }
 
 export interface DisplayInternship {
-  id: number;
-  backendId?: string;
-  role: string;
-  company: string;
-  companyId: number;
-  logo: string;
-  logoBg: string;
-  logoColor: string;
-  location: string;
-  type: "Remote" | "On-site" | "Hybrid";
-  paid: boolean;
-  stipend?: string;
-  deadline: string;
-  daysLeft: number;
-  tags: string[];
-  posted: string;
-  duration: string;
-  featured: boolean;
-  description: string;
+  id: number
+  backendId?: string
+  role: string
+  company: string
+  companyId: number
+  logo: string
+  logoBg: string
+  logoColor: string
+  location: string
+  type: "Remote" | "On-site" | "Hybrid"
+  paid: boolean
+  stipend?: string
+  deadline: string
+  daysLeft: number
+  tags: string[]
+  posted: string
+  duration: string
+  featured: boolean
+  description: string
 }
 
 const CATEGORY_CHIPS = [
@@ -43,28 +43,35 @@ const CATEGORY_CHIPS = [
   { name: "Marketing", count: 24 },
   { name: "Finance", count: 15 },
   { name: "Data & AI", count: 31 },
-];
+]
 
 export default function InternshipsPage({
   navigate,
   initialSearch = "",
   initialCategory,
 }: Props) {
-  const [search, setSearch] = useState(initialSearch || initialCategory || "");
-  const [locationFilter, setLocationFilter] = useState<string>("All");
-  const [compFilter, setCompFilter] = useState<"all" | "paid" | "unpaid">("all");
-  const [modeFilter, setModeFilter] = useState<"all" | "Remote" | "On-site" | "Hybrid">("all");
-  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory || "");
-  const [sortBy, setSortBy] = useState<"recent" | "deadline" | "stipend">("recent");
-  const [savedIds, setSavedIds] = useState<string[]>([]);
-  const [internshipsList, setInternshipsList] = useState<DisplayInternship[]>([]);
+  const [search, setSearch] = useState(initialSearch || initialCategory || "")
+  const [locationFilter, setLocationFilter] = useState<string>("All")
+  const [compFilter, setCompFilter] = useState<"all" | "paid" | "unpaid">("all")
+  const [modeFilter, setModeFilter] =
+    useState<"all" | "Remote" | "On-site" | "Hybrid">("all")
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    initialCategory || "",
+  )
+  const [sortBy, setSortBy] = useState<"recent" | "deadline" | "stipend">(
+    "recent",
+  )
+  const [savedIds, setSavedIds] = useState<string[]>([])
+  const [internshipsList, setInternshipsList] = useState<DisplayInternship[]>(
+    [],
+  )
 
   useEffect(() => {
     if (initialSearch !== undefined || initialCategory !== undefined) {
-      setSearch(initialSearch || initialCategory || "");
-      if (initialCategory) setSelectedCategory(initialCategory);
+      setSearch(initialSearch || initialCategory || "")
+      if (initialCategory) setSelectedCategory(initialCategory)
     }
-  }, [initialSearch, initialCategory]);
+  }, [initialSearch, initialCategory])
 
   // 1. Fetch live user bookmarks
   useEffect(() => {
@@ -73,12 +80,12 @@ export default function InternshipsPage({
         if (res.bookmarks) {
           const ids = res.bookmarks
             .filter((b) => b.internship)
-            .map((b) => b.internship._id);
-          setSavedIds(ids);
+            .map((b) => b.internship._id)
+          setSavedIds(ids)
         }
       })
-      .catch(() => setSavedIds([]));
-  }, []);
+      .catch(() => setSavedIds([]))
+  }, [])
 
   // 2. Fetch live internships from MongoDB Atlas
   useEffect(() => {
@@ -89,68 +96,91 @@ export default function InternshipsPage({
             const matchStatic = INTERNSHIPS.find(
               (s) =>
                 s.role.toLowerCase() === bi.title.toLowerCase() ||
-                (bi.company && s.company.toLowerCase() === bi.company.toLowerCase())
-            );
+                (bi.company &&
+                  s.company.toLowerCase() === bi.company.toLowerCase()),
+            )
             const daysLeft = Math.max(
               0,
-              Math.ceil((new Date(bi.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-            );
-            const compName = bi.company || matchStatic?.company || "Brain Station 23";
-            const logo = bi.companyLogo || matchStatic?.logo || compName.slice(0, 2).toUpperCase();
+              Math.ceil(
+                (new Date(bi.deadline).getTime() - Date.now()) /
+                  (1000 * 60 * 60 * 24),
+              ),
+            )
+            const compName =
+              bi.company || matchStatic?.company || "Brain Station 23"
+            const logo =
+              bi.companyLogo ||
+              matchStatic?.logo ||
+              compName.slice(0, 2).toUpperCase()
 
             return {
-              id: matchStatic?.id || (idx + 1),
+              id: matchStatic?.id || idx + 1,
               backendId: bi._id,
               role: bi.title,
               company: compName,
               companyId: matchStatic?.companyId || 1,
               logo: logo,
               logoBg: bi.companyLogoBg || matchStatic?.logoBg || "#eff6ff",
-              logoColor: bi.companyLogoColor || matchStatic?.logoColor || "#2563eb",
-              location: matchStatic?.location || (bi.mode === "Remote" ? "Remote, Bangladesh" : "Dhaka, Bangladesh"),
-              type: (bi.mode as "Remote" | "On-site" | "Hybrid") || "On-site",
+              logoColor:
+                bi.companyLogoColor || matchStatic?.logoColor || "#2563eb",
+              location:
+                matchStatic?.location ||
+                (bi.mode === "Remote"
+                  ? "Remote, Bangladesh"
+                  : "Dhaka, Bangladesh"),
+              type: bi.mode as "Remote" | "On-site" | "Hybrid" || "On-site",
               paid: bi.type === "Paid",
-              stipend: matchStatic?.stipend || (bi.type === "Paid" ? "BDT 18,000/mo" : undefined),
-              deadline: new Date(bi.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }),
+              stipend:
+                matchStatic?.stipend ||
+                (bi.type === "Paid" ? "BDT 18,000/mo" : undefined),
+              deadline: new Date(bi.deadline).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              }),
               daysLeft,
               tags: matchStatic?.tags || [bi.type, bi.mode, "Internship"],
               posted: bi.createdAt || "2026-09-01",
               duration: matchStatic?.duration || "3 months",
               featured: matchStatic?.featured ?? idx < 4,
               description: bi.description,
-            };
-          });
-          setInternshipsList(mapped);
+            }
+          })
+          setInternshipsList(mapped)
         } else {
-          setInternshipsList(INTERNSHIPS as DisplayInternship[]);
+          setInternshipsList(INTERNSHIPS as DisplayInternship[])
         }
       })
-      .catch(() => setInternshipsList(INTERNSHIPS as DisplayInternship[]));
-  }, []);
+      .catch(() => setInternshipsList(INTERNSHIPS as DisplayInternship[]))
+  }, [])
 
-  const toggleSave = (backendId?: string, fallbackId?: number, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    const key = backendId || String(fallbackId);
-    if (!key) return;
+  const toggleSave = (
+    backendId?: string,
+    fallbackId?: number,
+    e?: React.MouseEvent,
+  ) => {
+    if (e) e.stopPropagation()
+    const key = backendId || String(fallbackId)
+    if (!key) return
 
     if (savedIds.includes(key)) {
-      setSavedIds((prev) => prev.filter((id) => id !== key));
-      if (backendId) removeBookmark(backendId).catch(() => {});
+      setSavedIds((prev) => prev.filter((id) => id !== key))
+      if (backendId) removeBookmark(backendId).catch(() => {})
     } else {
-      setSavedIds((prev) => [...prev, key]);
-      if (backendId) addBookmark(backendId).catch(() => {});
+      setSavedIds((prev) => [...prev, key])
+      if (backendId) addBookmark(backendId).catch(() => {})
     }
-  };
+  }
 
   const handleCategoryClick = (catName: string) => {
     if (selectedCategory === catName) {
-      setSelectedCategory("");
+      setSelectedCategory("")
     } else {
-      setSelectedCategory(catName);
+      setSelectedCategory(catName)
     }
-  };
+  }
 
-  const q = search.toLowerCase();
+  const q = search.toLowerCase()
   let results = internshipsList.filter((i) => {
     if (
       q &&
@@ -158,30 +188,32 @@ export default function InternshipsPage({
       !i.company.toLowerCase().includes(q) &&
       !i.tags.some((t) => t.toLowerCase().includes(q))
     ) {
-      return false;
+      return false
     }
     if (selectedCategory) {
       const matchCat =
         i.role.toLowerCase().includes(selectedCategory.toLowerCase()) ||
-        i.tags.some((t) => t.toLowerCase().includes(selectedCategory.toLowerCase()));
-      if (!matchCat) return false;
+        i.tags.some((t) =>
+          t.toLowerCase().includes(selectedCategory.toLowerCase()),
+        )
+      if (!matchCat) return false
     }
-    if (compFilter === "paid" && !i.paid) return false;
-    if (compFilter === "unpaid" && i.paid) return false;
-    if (modeFilter !== "all" && i.type !== modeFilter) return false;
-    if (locationFilter === "Remote" && i.type !== "Remote") return false;
-    if (locationFilter === "On-site" && i.type !== "On-site") return false;
-    return true;
-  });
+    if (compFilter === "paid" && !i.paid) return false
+    if (compFilter === "unpaid" && i.paid) return false
+    if (modeFilter !== "all" && i.type !== modeFilter) return false
+    if (locationFilter === "Remote" && i.type !== "Remote") return false
+    if (locationFilter === "On-site" && i.type !== "On-site") return false
+    return true
+  })
 
   if (sortBy === "deadline") {
-    results = [...results].sort((a, b) => a.daysLeft - b.daysLeft);
+    results = [...results].sort((a, b) => a.daysLeft - b.daysLeft)
   } else if (sortBy === "stipend") {
-    results = [...results].sort((a, b) => (b.paid ? 1 : 0) - (a.paid ? 1 : 0));
+    results = [...results].sort((a, b) => (b.paid ? 1 : 0) - (a.paid ? 1 : 0))
   } else {
     results = [...results].sort(
-      (a, b) => new Date(b.posted).getTime() - new Date(a.posted).getTime()
-    );
+      (a, b) => new Date(b.posted).getTime() - new Date(a.posted).getTime(),
+    )
   }
 
   return (
@@ -196,13 +228,20 @@ export default function InternshipsPage({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6">
         {/* Breadcrumb Trail */}
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-4">
-          <button onClick={() => navigate("home")} className="hover:text-indigo-600 cursor-pointer">Home</button>
+          <button
+            onClick={() => navigate("home")}
+            className="hover:text-indigo-600 cursor-pointer"
+          >
+            Home
+          </button>
           <span>/</span>
           <span className="text-slate-800">Internships</span>
           {selectedCategory && (
             <>
               <span>/</span>
-              <span className="text-indigo-600 font-bold">{selectedCategory}</span>
+              <span className="text-indigo-600 font-bold">
+                {selectedCategory}
+              </span>
             </>
           )}
         </div>
@@ -214,12 +253,14 @@ export default function InternshipsPage({
               Find your next internship
             </h1>
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-xs">
-              {results.length} open {results.length === 1 ? "opportunity" : "opportunities"}
+              {results.length} open{" "}
+              {results.length === 1 ? "opportunity" : "opportunities"}
             </span>
           </div>
 
           <p className="text-xs sm:text-sm text-slate-500 max-w-sm">
-            Discover verified corporate and startup opportunities across Bangladesh with guaranteed stipends.
+            Discover verified corporate and startup opportunities across
+            Bangladesh with guaranteed stipends.
           </p>
         </div>
 
@@ -227,7 +268,17 @@ export default function InternshipsPage({
         <div className="w-full bg-white/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 p-2 sm:p-2.5 shadow-[0_12px_36px_rgba(15,23,42,0.05)] flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-6">
           {/* Search role, company, or skills */}
           <div className="flex items-center gap-3 px-4 py-2.5 flex-1 min-w-0">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#6366F1"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="shrink-0"
+            >
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
@@ -253,7 +304,17 @@ export default function InternshipsPage({
 
           {/* Location or Remote Dropdown */}
           <div className="flex items-center gap-2 px-3 py-2 shrink-0 border-t sm:border-t-0 border-slate-100">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#F97316"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="shrink-0"
+            >
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
               <circle cx="12" cy="10" r="3" />
             </svg>
@@ -274,7 +335,15 @@ export default function InternshipsPage({
             className="bg-gradient-to-r from-[#4F46E5] to-[#6366F1] hover:from-[#4338CA] hover:to-[#4F46E5] text-white font-bold px-7 py-3 rounded-xl shadow-md shadow-indigo-500/20 text-sm transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0"
           >
             <span>Search</span>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
               <line x1="5" y1="12" x2="19" y2="12" />
               <polyline points="12 5 19 12 12 19" />
             </svg>
@@ -324,7 +393,9 @@ export default function InternshipsPage({
             <span>Sort by:</span>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as "recent" | "deadline" | "stipend")}
+              onChange={(e) =>
+                setSortBy(e.target.value as "recent" | "deadline" | "stipend")
+              }
               className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 text-xs font-bold outline-none cursor-pointer focus:border-indigo-400 shadow-2xs"
             >
               <option value="recent">Recently posted ▾</option>
@@ -336,9 +407,11 @@ export default function InternshipsPage({
 
         {/* ── Category Chips Filter ── */}
         <div className="flex flex-wrap items-center gap-2 mt-4">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">Categories:</span>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">
+            Categories:
+          </span>
           {CATEGORY_CHIPS.map((cat) => {
-            const isSelected = selectedCategory === cat.name;
+            const isSelected = selectedCategory === cat.name
             return (
               <button
                 key={cat.name}
@@ -352,13 +425,15 @@ export default function InternshipsPage({
                 <span>{cat.name}</span>
                 <span
                   className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
-                    isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                    isSelected
+                      ? "bg-white/20 text-white"
+                      : "bg-slate-100 text-slate-500"
                   }`}
                 >
                   {cat.count}
                 </span>
               </button>
-            );
+            )
           })}
           {selectedCategory && (
             <button
@@ -380,17 +455,20 @@ export default function InternshipsPage({
             <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-3xl mx-auto mb-4">
               🔍
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-1">No internships found</h3>
+            <h3 className="text-lg font-bold text-slate-900 mb-1">
+              No internships found
+            </h3>
             <p className="text-xs sm:text-sm text-slate-500 mb-6">
-              No opportunities currently match your selected filters. Try broadening your criteria.
+              No opportunities currently match your selected filters. Try
+              broadening your criteria.
             </p>
             <button
               onClick={() => {
-                setSearch("");
-                setLocationFilter("All");
-                setCompFilter("all");
-                setModeFilter("all");
-                setSelectedCategory("");
+                setSearch("")
+                setLocationFilter("All")
+                setCompFilter("all")
+                setModeFilter("all")
+                setSelectedCategory("")
               }}
               className="px-5 py-2.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
             >
@@ -402,7 +480,7 @@ export default function InternshipsPage({
             {results.map((intern) => {
               const isSaved = intern.backendId
                 ? savedIds.includes(intern.backendId)
-                : savedIds.includes(String(intern.id));
+                : savedIds.includes(String(intern.id))
 
               return (
                 <div
@@ -428,13 +506,17 @@ export default function InternshipsPage({
                         )}
                         <button
                           type="button"
-                          onClick={(e) => toggleSave(intern.backendId, intern.id, e)}
+                          onClick={(e) =>
+                            toggleSave(intern.backendId, intern.id, e)
+                          }
                           className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer border ${
                             isSaved
                               ? "bg-rose-50 border-rose-200 text-rose-500"
                               : "bg-slate-50 hover:bg-slate-100 border-slate-200/60 text-slate-400 hover:text-slate-600"
                           }`}
-                          aria-label={isSaved ? "Remove bookmark" : "Bookmark internship"}
+                          aria-label={
+                            isSaved ? "Remove bookmark" : "Bookmark internship"
+                          }
                         >
                           <svg
                             width="15"
@@ -457,8 +539,17 @@ export default function InternshipsPage({
                       {intern.role}
                     </h3>
                     <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-xs sm:text-sm font-semibold text-slate-700">{intern.company}</span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="#0284C7" className="shrink-0" aria-label="Verified Employer">
+                      <span className="text-xs sm:text-sm font-semibold text-slate-700">
+                        {intern.company}
+                      </span>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="#0284C7"
+                        className="shrink-0"
+                        aria-label="Verified Employer"
+                      >
                         <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
@@ -470,7 +561,9 @@ export default function InternshipsPage({
                         {intern.type}
                       </span>
                       <span>•</span>
-                      <span className="truncate max-w-[150px]">{intern.location}</span>
+                      <span className="truncate max-w-[150px]">
+                        {intern.location}
+                      </span>
                       <span>•</span>
                       <span>{intern.duration}</span>
                     </div>
@@ -491,7 +584,10 @@ export default function InternshipsPage({
                     {/* Skill Tags */}
                     <div className="flex flex-wrap gap-1.5 mt-3.5">
                       {intern.tags.slice(0, 3).map((tag) => (
-                        <span key={tag} className="text-[11px] font-medium bg-slate-100/90 text-slate-600 px-2 py-0.5 rounded-md">
+                        <span
+                          key={tag}
+                          className="text-[11px] font-medium bg-slate-100/90 text-slate-600 px-2 py-0.5 rounded-md"
+                        >
                           {tag}
                         </span>
                       ))}
@@ -511,11 +607,11 @@ export default function InternshipsPage({
                     </span>
                   </div>
                 </div>
-              );
+              )
             })}
           </div>
         )}
       </div>
     </div>
-  );
+  )
 }

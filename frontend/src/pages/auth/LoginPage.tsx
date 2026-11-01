@@ -1,54 +1,63 @@
-import React, { useState } from 'react';
-import type { Navigate } from '../../data/index';
-import AuthSideShowcase from '../../components/auth/AuthSideShowcase';
-import { LogoMark } from '../../components/ds/Logo';
+import React, { useState } from "react"
+import type { Navigate } from "../../data/index"
+import AuthSideShowcase from "../../components/auth/AuthSideShowcase"
+import { LogoMark } from "../../components/ds/Logo"
 
 interface Props {
-  navigate: Navigate;
-  onLogin: (as: 'student' | 'company' | 'admin') => void;
-  onSubmit: (email: string, password: string) => Promise<void>;
-  error?: string;
-  loading?: boolean;
+  navigate: Navigate
+  onLogin: (as: "student" | "company" | "admin") => void
+  onSubmit: (email: string, password: string) => Promise<void>
+  error?: string
+  loading?: boolean
 }
 
-export default function LoginPage({ navigate, onLogin, onSubmit, error, loading }: Props) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
-  const [showSsoModal, setShowSsoModal] = useState(false);
-  const [forgotSent, setForgotSent] = useState(false);
-  const [showForgotModal, setShowForgotModal] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
+export default function LoginPage({
+  navigate,
+  onLogin,
+  onSubmit,
+  error,
+  loading,
+}: Props) {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true)
+  const [showSsoModal, setShowSsoModal] = useState(false)
+  const [forgotSent, setForgotSent] = useState(false)
+  const [showForgotModal, setShowForgotModal] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState("")
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim() || !password) return;
-    await onSubmit(email.trim(), password);
+    e.preventDefault()
+    if (!email.trim() || !password) return
+    await onSubmit(email.trim(), password)
   }
 
   // Quick 1-click SSO Login Simulation
-  const handleQuickSso = async (ssoEmail: string, ssoRole: 'student' | 'company' | 'admin') => {
-    setEmail(ssoEmail);
-    setPassword('password123');
-    setShowSsoModal(false);
+  const handleQuickSso = async (
+    ssoEmail: string,
+    ssoRole: "student" | "company" | "admin",
+  ) => {
+    setEmail(ssoEmail)
+    setPassword("password123")
+    setShowSsoModal(false)
     try {
-      await onSubmit(ssoEmail, 'password123');
+      await onSubmit(ssoEmail, "password123")
     } catch {
       // If backend mock user doesn't exist, bypass via onLogin
-      onLogin(ssoRole);
+      onLogin(ssoRole)
     }
-  };
+  }
 
   const handleForgotPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    setForgotSent(true);
+    e.preventDefault()
+    setForgotSent(true)
     setTimeout(() => {
-      setShowForgotModal(false);
-      setForgotSent(false);
-      setForgotEmail('');
-    }, 2500);
-  };
+      setShowForgotModal(false)
+      setForgotSent(false)
+      setForgotEmail("")
+    }, 2500)
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex selection:bg-indigo-500 selection:text-white">
@@ -67,7 +76,7 @@ export default function LoginPage({ navigate, onLogin, onSubmit, error, loading 
         <div className="w-full max-w-md mx-auto relative z-10">
           {/* Mobile Only Brand Mark */}
           <div
-            onClick={() => navigate('home')}
+            onClick={() => navigate("home")}
             className="lg:hidden flex items-center justify-center gap-2.5 mb-8 cursor-pointer"
           >
             <LogoMark size={32} />
@@ -125,7 +134,15 @@ export default function LoginPage({ navigate, onLogin, onSubmit, error, loading 
             <div className="flex items-center justify-center gap-1.5 text-center">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
               <span className="text-[11px] font-medium text-slate-500">
-                Supports <strong className="font-mono text-slate-700">@g.bracu.ac.bd</strong>, <strong className="font-mono text-slate-700">@buet.ac.bd</strong> & all university domains
+                Supports{" "}
+                <strong className="font-mono text-slate-700">
+                  @g.bracu.ac.bd
+                </strong>
+                ,{" "}
+                <strong className="font-mono text-slate-700">
+                  @buet.ac.bd
+                </strong>{" "}
+                & all university domains
               </span>
             </div>
           </div>
@@ -142,8 +159,18 @@ export default function LoginPage({ navigate, onLogin, onSubmit, error, loading 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="rounded-xl bg-rose-50 border border-rose-200/80 px-4 py-3 text-xs font-semibold text-rose-700 flex items-center gap-2">
-                <svg className="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                <svg
+                  className="w-4 h-4 text-rose-600 shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                  />
                 </svg>
                 {error}
               </div>
@@ -151,13 +178,26 @@ export default function LoginPage({ navigate, onLogin, onSubmit, error, loading 
 
             {/* Email Field */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 block" htmlFor="login-email">
+              <label
+                className="text-xs font-bold text-slate-700 block"
+                htmlFor="login-email"
+              >
                 University or Work Email
               </label>
               <div className="relative">
                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+                    />
                   </svg>
                 </div>
                 <input
@@ -176,7 +216,10 @@ export default function LoginPage({ navigate, onLogin, onSubmit, error, loading 
             {/* Password Field */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-700" htmlFor="login-password">
+                <label
+                  className="text-xs font-bold text-slate-700"
+                  htmlFor="login-password"
+                >
                   Password
                 </label>
                 <button
@@ -189,13 +232,23 @@ export default function LoginPage({ navigate, onLogin, onSubmit, error, loading 
               </div>
               <div className="relative">
                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                    />
                   </svg>
                 </div>
                 <input
                   id="login-password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   required
                   autoComplete="current-password"
                   value={password}
@@ -207,16 +260,40 @@ export default function LoginPage({ navigate, onLogin, onSubmit, error, loading 
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
-                  title={showPassword ? 'Hide password' : 'Show password'}
+                  title={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                      />
                     </svg>
                   ) : (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
                     </svg>
                   )}
                 </button>
@@ -246,14 +323,29 @@ export default function LoginPage({ navigate, onLogin, onSubmit, error, loading 
             >
               {loading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Authenticating...
                 </>
               ) : (
-                'Sign In to InternPrangon'
+                "Sign In to InternPrangon"
               )}
             </button>
           </form>
@@ -261,10 +353,10 @@ export default function LoginPage({ navigate, onLogin, onSubmit, error, loading 
           {/* Bottom Switch Link */}
           <div className="mt-8 pt-6 border-t border-slate-200/90 text-center">
             <p className="text-xs md:text-sm text-slate-500">
-              Don't have an account yet?{' '}
+              Don't have an account yet?{" "}
               <button
                 type="button"
-                onClick={() => navigate('register')}
+                onClick={() => navigate("register")}
                 className="font-bold text-orange-600 hover:text-orange-700 hover:underline transition-colors cursor-pointer"
               >
                 Sign up for free →
@@ -280,10 +372,16 @@ export default function LoginPage({ navigate, onLogin, onSubmit, error, loading 
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-indigo-600" viewBox="0 0 24 24" fill="currentColor">
+                <svg
+                  className="w-5 h-5 text-indigo-600"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
                   <path d="M12 2L1 7l11 5 9-4.09V17h2V7L12 2zm0 8.8L3.82 7 12 3.27 20.18 7 12 10.8zM4 12.7v5.6c0 3.2 3.6 5.7 8 5.7s8-2.5 8-5.7v-5.6l-8 3.6-8-3.6z" />
                 </svg>
-                <h3 className="text-sm font-bold text-slate-900">University SSO Provider</h3>
+                <h3 className="text-sm font-bold text-slate-900">
+                  University SSO Provider
+                </h3>
               </div>
               <button
                 onClick={() => setShowSsoModal(false)}
@@ -294,50 +392,73 @@ export default function LoginPage({ navigate, onLogin, onSubmit, error, loading 
             </div>
 
             <p className="text-xs text-slate-500 my-3">
-              Select your institution email to simulate Instant Google OAuth authentication:
+              Select your institution email to simulate Instant Google OAuth
+              authentication:
             </p>
 
             <div className="space-y-2">
               <button
-                onClick={() => handleQuickSso('tahmina@buet.ac.bd', 'student')}
+                onClick={() => handleQuickSso("tahmina@buet.ac.bd", "student")}
                 className="w-full p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 text-left transition flex items-center justify-between text-xs"
               >
                 <div>
-                  <div className="font-bold text-slate-900">Tahmina Akter (Student)</div>
-                  <div className="font-mono text-[11px] text-slate-500">tahmina@buet.ac.bd · BUET CSE</div>
+                  <div className="font-bold text-slate-900">
+                    Tahmina Akter (Student)
+                  </div>
+                  <div className="font-mono text-[11px] text-slate-500">
+                    tahmina@buet.ac.bd · BUET CSE
+                  </div>
                 </div>
                 <span className="font-bold text-indigo-600">Connect →</span>
               </button>
 
               <button
-                onClick={() => handleQuickSso('riyad.hossain@g.bracu.ac.bd', 'student')}
+                onClick={() =>
+                  handleQuickSso("riyad.hossain@g.bracu.ac.bd", "student")
+                }
                 className="w-full p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 text-left transition flex items-center justify-between text-xs"
               >
                 <div>
-                  <div className="font-bold text-slate-900">Riyad Hossain (Student)</div>
-                  <div className="font-mono text-[11px] text-slate-500">riyad.hossain@g.bracu.ac.bd · BRAC Univ</div>
+                  <div className="font-bold text-slate-900">
+                    Riyad Hossain (Student)
+                  </div>
+                  <div className="font-mono text-[11px] text-slate-500">
+                    riyad.hossain@g.bracu.ac.bd · BRAC Univ
+                  </div>
                 </div>
                 <span className="font-bold text-indigo-600">Connect →</span>
               </button>
 
               <button
-                onClick={() => handleQuickSso('recruiter@brainstation-23.com', 'company')}
+                onClick={() =>
+                  handleQuickSso("recruiter@brainstation-23.com", "company")
+                }
                 className="w-full p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 text-left transition flex items-center justify-between text-xs"
               >
                 <div>
-                  <div className="font-bold text-slate-900">Brain Station 23 (Recruiter)</div>
-                  <div className="font-mono text-[11px] text-slate-500">recruiter@brainstation-23.com · Verified</div>
+                  <div className="font-bold text-slate-900">
+                    Brain Station 23 (Recruiter)
+                  </div>
+                  <div className="font-mono text-[11px] text-slate-500">
+                    recruiter@brainstation-23.com · Verified
+                  </div>
                 </div>
                 <span className="font-bold text-indigo-600">Connect →</span>
               </button>
 
               <button
-                onClick={() => handleQuickSso('admin@internprangon.com', 'admin')}
+                onClick={() =>
+                  handleQuickSso("admin@internprangon.com", "admin")
+                }
                 className="w-full p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 text-left transition flex items-center justify-between text-xs"
               >
                 <div>
-                  <div className="font-bold text-slate-900">Superadmin (Nafis U.)</div>
-                  <div className="font-mono text-[11px] text-slate-500">admin@internprangon.com · Level 3</div>
+                  <div className="font-bold text-slate-900">
+                    Superadmin (Nafis U.)
+                  </div>
+                  <div className="font-mono text-[11px] text-slate-500">
+                    admin@internprangon.com · Level 3
+                  </div>
                 </div>
                 <span className="font-bold text-indigo-600">Connect →</span>
               </button>
@@ -350,14 +471,19 @@ export default function LoginPage({ navigate, onLogin, onSubmit, error, loading 
       {showForgotModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200">
-            <h3 className="text-base font-bold text-slate-900 mb-1">Reset Account Password</h3>
+            <h3 className="text-base font-bold text-slate-900 mb-1">
+              Reset Account Password
+            </h3>
             <p className="text-xs text-slate-500 mb-4">
-              Enter your registered institutional or employer email address and we'll send you a secure one-time reset link.
+              Enter your registered institutional or employer email address and
+              we'll send you a secure one-time reset link.
             </p>
 
             {forgotSent ? (
               <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
-                <div className="text-sm font-bold text-emerald-800">Password Reset Dispatched</div>
+                <div className="text-sm font-bold text-emerald-800">
+                  Password Reset Dispatched
+                </div>
                 <div className="text-xs text-emerald-600 mt-1">
                   Check your inbox for step-by-step instructions.
                 </div>
@@ -365,7 +491,9 @@ export default function LoginPage({ navigate, onLogin, onSubmit, error, loading 
             ) : (
               <form onSubmit={handleForgotPassword} className="space-y-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Email Address</label>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Email Address
+                  </label>
                   <input
                     type="email"
                     required
@@ -396,5 +524,5 @@ export default function LoginPage({ navigate, onLogin, onSubmit, error, loading 
         </div>
       )}
     </div>
-  );
+  )
 }

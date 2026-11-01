@@ -1,9 +1,9 @@
-import React from 'react';
-import { LogoMark } from '../ds/Logo';
+import React from "react"
+import { LogoMark } from "../ds/Logo"
 
 interface AuthSideShowcaseProps {
-  testimonialQuote?: string;
-  testimonialAuthor?: string;
+  testimonialQuote?: string
+  testimonialAuthor?: string
 }
 
 export default function AuthSideShowcase({
@@ -25,7 +25,15 @@ export default function AuthSideShowcase({
         xmlns="http://www.w3.org/2000/svg"
       >
         <path d="M0 180 L0 140 L30 140 L30 120 L45 100 L60 120 L60 140 L110 140 L110 110 L130 90 L150 110 L150 140 L210 140 L210 80 L230 60 L250 80 L250 140 L310 140 L310 95 L330 75 L350 95 L350 140 L420 140 L420 105 L440 85 L460 105 L460 140 L520 140 L520 115 L540 95 L560 115 L560 140 L600 140 L600 180 Z" />
-        <line x1="0" y1="140" x2="600" y2="140" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4" />
+        <line
+          x1="0"
+          y1="140"
+          x2="600"
+          y2="140"
+          stroke="currentColor"
+          strokeWidth="1"
+          strokeDasharray="4 4"
+        />
       </svg>
 
       {/* Top Brand Header */}
@@ -54,7 +62,9 @@ export default function AuthSideShowcase({
           Your bridge from university to your first real engineering role.
         </h2>
         <p className="text-sm text-indigo-100/80 leading-relaxed max-w-md">
-          Say goodbye to untracked Facebook messages and unverified job posts. Connect directly with hiring managers across Bangladesh's top tech companies.
+          Say goodbye to untracked Facebook messages and unverified job posts.
+          Connect directly with hiring managers across Bangladesh's top tech
+          companies.
         </p>
 
         {/* Key Trust Highlights */}
@@ -64,8 +74,13 @@ export default function AuthSideShowcase({
               ✓
             </div>
             <div>
-              <div className="text-sm font-bold text-white">100% Verified Employers</div>
-              <div className="text-xs text-indigo-200/70">Trade licenses, physical offices & official corporate domains authenticated.</div>
+              <div className="text-sm font-bold text-white">
+                100% Verified Employers
+              </div>
+              <div className="text-xs text-indigo-200/70">
+                Trade licenses, physical offices & official corporate domains
+                authenticated.
+              </div>
             </div>
           </div>
 
@@ -74,8 +89,13 @@ export default function AuthSideShowcase({
               💰
             </div>
             <div>
-              <div className="text-sm font-bold text-white">Guaranteed, Transparent Stipends</div>
-              <div className="text-xs text-indigo-200/70">Every listing publishes exact monthly stipends and perks upfront. No surprises.</div>
+              <div className="text-sm font-bold text-white">
+                Guaranteed, Transparent Stipends
+              </div>
+              <div className="text-xs text-indigo-200/70">
+                Every listing publishes exact monthly stipends and perks
+                upfront. No surprises.
+              </div>
             </div>
           </div>
 
@@ -84,8 +104,13 @@ export default function AuthSideShowcase({
               ⚡
             </div>
             <div>
-              <div className="text-sm font-bold text-white">1-Click Universal Applications</div>
-              <div className="text-xs text-indigo-200/70">Apply instantly with your verified student profile, university crest & GitHub record.</div>
+              <div className="text-sm font-bold text-white">
+                1-Click Universal Applications
+              </div>
+              <div className="text-xs text-indigo-200/70">
+                Apply instantly with your verified student profile, university
+                crest & GitHub record.
+              </div>
             </div>
           </div>
         </div>
@@ -95,7 +120,7 @@ export default function AuthSideShowcase({
       <div className="relative z-10">
         <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-5 shadow-xl relative overflow-hidden">
           <div className="flex items-center gap-1 text-amber-400 text-xs mb-2">
-            {'★'.repeat(5)}
+            {"★".repeat(5)}
           </div>
           <p className="text-xs text-white/95 leading-relaxed font-medium italic">
             "{testimonialQuote}"
@@ -106,10 +131,10 @@ export default function AuthSideShowcase({
             </div>
             <div>
               <div className="text-xs font-bold text-white">
-                {testimonialAuthor.split('·')[0].trim()}
+                {testimonialAuthor.split("·")[0].trim()}
               </div>
               <div className="text-[10px] text-indigo-200">
-                {testimonialAuthor.split('·').slice(1).join('·').trim()}
+                {testimonialAuthor.split("·").slice(1).join("·").trim()}
               </div>
             </div>
           </div>
@@ -122,5 +147,5 @@ export default function AuthSideShowcase({
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,49 +1,62 @@
-import React, { useState, useMemo } from 'react';
-import type { Navigate } from '../../data/index';
-import AuthSideShowcase from '../../components/auth/AuthSideShowcase';
-import { LogoMark } from '../../components/ds/Logo';
+import React, { useState, useMemo } from "react"
+import type { Navigate } from "../../data/index"
+import AuthSideShowcase from "../../components/auth/AuthSideShowcase"
+import { LogoMark } from "../../components/ds/Logo"
 
 interface Props {
-  navigate: Navigate;
-  onLogin: (as: 'student' | 'company' | 'admin') => void;
-  onSubmit: (name: string, email: string, password: string, role: 'student' | 'company') => Promise<void>;
-  error?: string;
-  loading?: boolean;
-  as?: 'student' | 'company';
+  navigate: Navigate
+  onLogin: (as: "student" | "company" | "admin") => void
+  onSubmit: (
+    name: string,
+    email: string,
+    password: string,
+    role: "student" | "company",
+  ) => Promise<void>
+  error?: string
+  loading?: boolean
+  as?: "student" | "company"
 }
 
 const UNIVERSITIES = [
-  { name: 'BUET (Bangladesh University of Engineering and Technology)', code: 'BUET', badge: '🏛️' },
-  { name: 'BRAC University', code: 'BRACU', badge: '🎓' },
-  { name: 'North South University', code: 'NSU', badge: '🏛️' },
-  { name: 'University of Dhaka', code: 'DU', badge: '🎓' },
-  { name: 'Islamic University of Technology', code: 'IUT', badge: '🏛️' },
-  { name: 'Ahsanullah University of Science and Technology', code: 'AUST', badge: '🎓' },
-  { name: 'United International University', code: 'UIU', badge: '🏛️' },
-  { name: 'Independent University, Bangladesh', code: 'IUB', badge: '🎓' },
-  { name: 'East West University', code: 'EWU', badge: '🏛️' },
-  { name: 'Other University or Institute', code: 'OTHER', badge: '🎓' },
-];
+  {
+    name: "BUET (Bangladesh University of Engineering and Technology)",
+    code: "BUET",
+    badge: "🏛️",
+  },
+  { name: "BRAC University", code: "BRACU", badge: "🎓" },
+  { name: "North South University", code: "NSU", badge: "🏛️" },
+  { name: "University of Dhaka", code: "DU", badge: "🎓" },
+  { name: "Islamic University of Technology", code: "IUT", badge: "🏛️" },
+  {
+    name: "Ahsanullah University of Science and Technology",
+    code: "AUST",
+    badge: "🎓",
+  },
+  { name: "United International University", code: "UIU", badge: "🏛️" },
+  { name: "Independent University, Bangladesh", code: "IUB", badge: "🎓" },
+  { name: "East West University", code: "EWU", badge: "🏛️" },
+  { name: "Other University or Institute", code: "OTHER", badge: "🎓" },
+]
 
 const STUDY_YEARS = [
-  '1st Year (Freshman)',
-  '2nd Year (Sophomore)',
-  '3rd Year (Junior)',
-  'Final Year (Senior)',
-  'Recent Graduate (Within 12 Mo)',
-  'Masters / Postgraduate',
-];
+  "1st Year (Freshman)",
+  "2nd Year (Sophomore)",
+  "3rd Year (Junior)",
+  "Final Year (Senior)",
+  "Recent Graduate (Within 12 Mo)",
+  "Masters / Postgraduate",
+]
 
 const INDUSTRIES = [
-  'Software & Cloud Technology',
-  'Fintech & Digital Banking',
-  'E-Commerce & Retail',
-  'Logistics & Supply Chain',
-  'Healthcare & Pharmaceuticals',
-  'Telecommunications',
-  'Design & Creative Media',
-  'Other Enterprise Sector',
-];
+  "Software & Cloud Technology",
+  "Fintech & Digital Banking",
+  "E-Commerce & Retail",
+  "Logistics & Supply Chain",
+  "Healthcare & Pharmaceuticals",
+  "Telecommunications",
+  "Design & Creative Media",
+  "Other Enterprise Sector",
+]
 
 export default function RegisterPage({
   navigate,
@@ -53,105 +66,118 @@ export default function RegisterPage({
   loading,
   as: defaultRole,
 }: Props) {
-  const [role, setRole] = useState<'student' | 'company'>(defaultRole ?? 'student');
+  const [role, setRole] = useState<"student" | "company">(
+    defaultRole ?? "student",
+  )
 
   // Student form fields
-  const [studentName, setStudentName] = useState('');
-  const [university, setUniversity] = useState('BRAC University');
-  const [department, setDepartment] = useState('CSE');
-  const [yearOfStudy, setYearOfStudy] = useState('3rd Year (Junior)');
-  const [studentEmail, setStudentEmail] = useState('');
-  const [studentPassword, setStudentPassword] = useState('');
-  const [studentConfirm, setStudentConfirm] = useState('');
+  const [studentName, setStudentName] = useState("")
+  const [university, setUniversity] = useState("BRAC University")
+  const [department, setDepartment] = useState("CSE")
+  const [yearOfStudy, setYearOfStudy] = useState("3rd Year (Junior)")
+  const [studentEmail, setStudentEmail] = useState("")
+  const [studentPassword, setStudentPassword] = useState("")
+  const [studentConfirm, setStudentConfirm] = useState("")
 
   // Company form fields
-  const [companyEmail, setCompanyEmail] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [companyIndustry, setCompanyIndustry] = useState('Software & Cloud Technology');
-  const [companyWebsite, setCompanyWebsite] = useState('');
-  const [recruiterName, setRecruiterName] = useState('');
-  const [companyPassword, setCompanyPassword] = useState('');
-  const [companyConfirm, setCompanyConfirm] = useState('');
+  const [companyEmail, setCompanyEmail] = useState("")
+  const [companyName, setCompanyName] = useState("")
+  const [companyIndustry, setCompanyIndustry] = useState(
+    "Software & Cloud Technology",
+  )
+  const [companyWebsite, setCompanyWebsite] = useState("")
+  const [recruiterName, setRecruiterName] = useState("")
+  const [companyPassword, setCompanyPassword] = useState("")
+  const [companyConfirm, setCompanyConfirm] = useState("")
 
   // UI state toggles
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [localValidationErr, setLocalValidationErr] = useState<string | null>(null);
-  const [showSsoModal, setShowSsoModal] = useState(false);
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [localValidationErr, setLocalValidationErr] = useState<string | null>(
+    null,
+  )
+  const [showSsoModal, setShowSsoModal] = useState(false)
 
   // Live password strength calculation
-  const activePassword = role === 'student' ? studentPassword : companyPassword;
+  const activePassword = role === "student" ? studentPassword : companyPassword
   const passwordStrength = useMemo(() => {
-    if (!activePassword) return { score: 0, label: '', color: 'bg-slate-200' };
-    let s = 0;
-    if (activePassword.length >= 8) s += 1;
-    if (/[A-Z]/.test(activePassword)) s += 1;
-    if (/[0-9]/.test(activePassword)) s += 1;
-    if (/[^A-Za-z0-9]/.test(activePassword)) s += 1;
+    if (!activePassword) return { score: 0, label: "", color: "bg-slate-200" }
+    let s = 0
+    if (activePassword.length >= 8) s += 1
+    if (/[A-Z]/.test(activePassword)) s += 1
+    if (/[0-9]/.test(activePassword)) s += 1
+    if (/[^A-Za-z0-9]/.test(activePassword)) s += 1
 
-    if (s <= 1) return { score: 1, label: 'Weak', color: 'bg-rose-500' };
-    if (s <= 3) return { score: 2, label: 'Medium', color: 'bg-amber-500' };
-    return { score: 3, label: 'Strong (Secure)', color: 'bg-emerald-500' };
-  }, [activePassword]);
+    if (s <= 1) return { score: 1, label: "Weak", color: "bg-rose-500" }
+    if (s <= 3) return { score: 2, label: "Medium", color: "bg-amber-500" }
+    return { score: 3, label: "Strong (Secure)", color: "bg-emerald-500" }
+  }, [activePassword])
 
   // Student email domain eligibility
   const isAcBdStudentEmail = useMemo(() => {
-    const norm = studentEmail.trim().toLowerCase();
-    return norm.endsWith('.ac.bd') || norm.endsWith('.edu.bd') || norm.endsWith('.edu');
-  }, [studentEmail]);
+    const norm = studentEmail.trim().toLowerCase()
+    return (
+      norm.endsWith(".ac.bd") ||
+      norm.endsWith(".edu.bd") ||
+      norm.endsWith(".edu")
+    )
+  }, [studentEmail])
 
   // Company personal email warning
   const isPersonalCompanyEmail = useMemo(() => {
-    const norm = companyEmail.trim().toLowerCase();
+    const norm = companyEmail.trim().toLowerCase()
     return (
-      norm.includes('@gmail.com') ||
-      norm.includes('@yahoo.com') ||
-      norm.includes('@hotmail.com') ||
-      norm.includes('@outlook.com')
-    );
-  }, [companyEmail]);
+      norm.includes("@gmail.com") ||
+      norm.includes("@yahoo.com") ||
+      norm.includes("@hotmail.com") ||
+      norm.includes("@outlook.com")
+    )
+  }, [companyEmail])
 
   // Form submit
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLocalValidationErr(null);
+    e.preventDefault()
+    setLocalValidationErr(null)
 
-    const name = role === 'student' ? studentName.trim() : (companyName.trim() || recruiterName.trim());
-    const email = role === 'student' ? studentEmail.trim() : companyEmail.trim();
-    const pass = role === 'student' ? studentPassword : companyPassword;
-    const confirm = role === 'student' ? studentConfirm : companyConfirm;
+    const name =
+      role === "student"
+        ? studentName.trim()
+        : companyName.trim() || recruiterName.trim()
+    const email = role === "student" ? studentEmail.trim() : companyEmail.trim()
+    const pass = role === "student" ? studentPassword : companyPassword
+    const confirm = role === "student" ? studentConfirm : companyConfirm
 
     if (!name || !email || !pass) {
-      setLocalValidationErr('Please fill in all required credentials.');
-      return;
+      setLocalValidationErr("Please fill in all required credentials.")
+      return
     }
 
     if (pass !== confirm) {
-      setLocalValidationErr('Passwords do not match. Please re-enter.');
-      return;
+      setLocalValidationErr("Passwords do not match. Please re-enter.")
+      return
     }
 
     if (pass.length < 6) {
-      setLocalValidationErr('Password must be at least 6 characters.');
-      return;
+      setLocalValidationErr("Password must be at least 6 characters.")
+      return
     }
 
-    await onSubmit(name, email, pass, role);
+    await onSubmit(name, email, pass, role)
   }
 
   // Quick SSO Student simulation
   const handleQuickStudentSso = async (ssoEmail: string, ssoName: string) => {
-    setStudentName(ssoName);
-    setStudentEmail(ssoEmail);
-    setStudentPassword('password123');
-    setStudentConfirm('password123');
-    setShowSsoModal(false);
+    setStudentName(ssoName)
+    setStudentEmail(ssoEmail)
+    setStudentPassword("password123")
+    setStudentConfirm("password123")
+    setShowSsoModal(false)
     try {
-      await onSubmit(ssoName, ssoEmail, 'password123', 'student');
+      await onSubmit(ssoName, ssoEmail, "password123", "student")
     } catch {
-      onLogin('student');
+      onLogin("student")
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex selection:bg-indigo-500 selection:text-white">
@@ -170,7 +196,7 @@ export default function RegisterPage({
         <div className="w-full max-w-lg mx-auto relative z-10">
           {/* Mobile Only Brand Mark */}
           <div
-            onClick={() => navigate('home')}
+            onClick={() => navigate("home")}
             className="lg:hidden flex items-center justify-center gap-2.5 mb-6 cursor-pointer"
           >
             <LogoMark size={32} />
@@ -191,7 +217,8 @@ export default function RegisterPage({
               Join InternPrangon
             </h1>
             <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-              Find paid, verified internships or recruit pre-screened university talent.
+              Find paid, verified internships or recruit pre-screened university
+              talent.
             </p>
           </div>
 
@@ -200,13 +227,13 @@ export default function RegisterPage({
             <button
               type="button"
               onClick={() => {
-                setRole('student');
-                setLocalValidationErr(null);
+                setRole("student")
+                setLocalValidationErr(null)
               }}
               className={`flex-1 py-2.5 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                role === 'student'
-                  ? 'bg-white shadow-xs text-indigo-700'
-                  : 'text-slate-500 hover:text-slate-800'
+                role === "student"
+                  ? "bg-white shadow-xs text-indigo-700"
+                  : "text-slate-500 hover:text-slate-800"
               }`}
             >
               <span>🎓</span>
@@ -216,13 +243,13 @@ export default function RegisterPage({
             <button
               type="button"
               onClick={() => {
-                setRole('company');
-                setLocalValidationErr(null);
+                setRole("company")
+                setLocalValidationErr(null)
               }}
               className={`flex-1 py-2.5 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                role === 'company'
-                  ? 'bg-white shadow-xs text-indigo-700'
-                  : 'text-slate-500 hover:text-slate-800'
+                role === "company"
+                  ? "bg-white shadow-xs text-indigo-700"
+                  : "text-slate-500 hover:text-slate-800"
               }`}
             >
               <span>🏢</span>
@@ -231,7 +258,7 @@ export default function RegisterPage({
           </div>
 
           {/* Student Form View */}
-          {role === 'student' && (
+          {role === "student" && (
             <div className="space-y-4">
               {/* Fast SSO Button for Student */}
               <button
@@ -272,8 +299,18 @@ export default function RegisterPage({
           {/* Error Banner */}
           {(error || localValidationErr) && (
             <div className="mb-4 rounded-xl bg-rose-50 border border-rose-200/80 px-4 py-3 text-xs font-semibold text-rose-700 flex items-center gap-2">
-              <svg className="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              <svg
+                className="w-4 h-4 text-rose-600 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                />
               </svg>
               {error || localValidationErr}
             </div>
@@ -281,15 +318,20 @@ export default function RegisterPage({
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
             {/* ── STUDENT FIELDS ── */}
-            {role === 'student' ? (
+            {role === "student" ? (
               <>
                 {/* Full Legal Name */}
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 block" htmlFor="reg-name">
+                  <label
+                    className="text-xs font-bold text-slate-700 block"
+                    htmlFor="reg-name"
+                  >
                     Full Legal Name
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">👤</span>
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
+                      👤
+                    </span>
                     <input
                       id="reg-name"
                       type="text"
@@ -304,7 +346,10 @@ export default function RegisterPage({
 
                 {/* University Searchable Select */}
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 block" htmlFor="reg-univ">
+                  <label
+                    className="text-xs font-bold text-slate-700 block"
+                    htmlFor="reg-univ"
+                  >
                     University / Institution
                   </label>
                   <div className="relative">
@@ -326,7 +371,10 @@ export default function RegisterPage({
                 {/* Department & Year (Dual row) */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 block" htmlFor="reg-dept">
+                    <label
+                      className="text-xs font-bold text-slate-700 block"
+                      htmlFor="reg-dept"
+                    >
                       Department
                     </label>
                     <input
@@ -340,7 +388,10 @@ export default function RegisterPage({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 block" htmlFor="reg-year">
+                    <label
+                      className="text-xs font-bold text-slate-700 block"
+                      htmlFor="reg-year"
+                    >
                       Year of Study
                     </label>
                     <select
@@ -350,7 +401,9 @@ export default function RegisterPage({
                       className="w-full px-3 py-2.5 text-xs md:text-sm border border-slate-200 rounded-xl bg-white text-slate-900 focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 transition shadow-xs font-medium"
                     >
                       {STUDY_YEARS.map((y) => (
-                        <option key={y} value={y}>{y}</option>
+                        <option key={y} value={y}>
+                          {y}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -359,7 +412,10 @@ export default function RegisterPage({
                 {/* University Email Address with .ac.bd Detection Chip */}
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700 block" htmlFor="reg-email">
+                    <label
+                      className="text-xs font-bold text-slate-700 block"
+                      htmlFor="reg-email"
+                    >
                       University Email Address
                     </label>
                     {isAcBdStudentEmail && (
@@ -370,7 +426,9 @@ export default function RegisterPage({
                     )}
                   </div>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">✉</span>
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
+                      ✉
+                    </span>
                     <input
                       id="reg-email"
                       type="email"
@@ -386,13 +444,16 @@ export default function RegisterPage({
                 {/* Password & Confirm Password */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 block" htmlFor="reg-pass">
+                    <label
+                      className="text-xs font-bold text-slate-700 block"
+                      htmlFor="reg-pass"
+                    >
                       Password
                     </label>
                     <div className="relative">
                       <input
                         id="reg-pass"
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPassword ? "text" : "password"}
                         required
                         value={studentPassword}
                         onChange={(e) => setStudentPassword(e.target.value)}
@@ -404,19 +465,22 @@ export default function RegisterPage({
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs p-1"
                       >
-                        {showPassword ? '🙈' : '👁️'}
+                        {showPassword ? "🙈" : "👁️"}
                       </button>
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 block" htmlFor="reg-confirm">
+                    <label
+                      className="text-xs font-bold text-slate-700 block"
+                      htmlFor="reg-confirm"
+                    >
                       Confirm Password
                     </label>
                     <div className="relative">
                       <input
                         id="reg-confirm"
-                        type={showConfirmPassword ? 'text' : 'password'}
+                        type={showConfirmPassword ? "text" : "password"}
                         required
                         value={studentConfirm}
                         onChange={(e) => setStudentConfirm(e.target.value)}
@@ -425,10 +489,12 @@ export default function RegisterPage({
                       />
                       <button
                         type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs p-1"
                       >
-                        {showConfirmPassword ? '🙈' : '👁️'}
+                        {showConfirmPassword ? "🙈" : "👁️"}
                       </button>
                     </div>
                   </div>
@@ -439,12 +505,32 @@ export default function RegisterPage({
                   <div className="pt-1">
                     <div className="flex items-center justify-between text-[11px] mb-1 font-mono">
                       <span className="text-slate-400">Password Security</span>
-                      <span className="font-bold text-slate-700">{passwordStrength.label}</span>
+                      <span className="font-bold text-slate-700">
+                        {passwordStrength.label}
+                      </span>
                     </div>
                     <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden flex gap-1">
-                      <div className={`flex-1 rounded-full ${passwordStrength.score >= 1 ? passwordStrength.color : 'bg-slate-200'}`} />
-                      <div className={`flex-1 rounded-full ${passwordStrength.score >= 2 ? passwordStrength.color : 'bg-slate-200'}`} />
-                      <div className={`flex-1 rounded-full ${passwordStrength.score >= 3 ? passwordStrength.color : 'bg-slate-200'}`} />
+                      <div
+                        className={`flex-1 rounded-full ${
+                          passwordStrength.score >= 1
+                            ? passwordStrength.color
+                            : "bg-slate-200"
+                        }`}
+                      />
+                      <div
+                        className={`flex-1 rounded-full ${
+                          passwordStrength.score >= 2
+                            ? passwordStrength.color
+                            : "bg-slate-200"
+                        }`}
+                      />
+                      <div
+                        className={`flex-1 rounded-full ${
+                          passwordStrength.score >= 3
+                            ? passwordStrength.color
+                            : "bg-slate-200"
+                        }`}
+                      />
                     </div>
                   </div>
                 )}
@@ -455,7 +541,9 @@ export default function RegisterPage({
                   disabled={loading}
                   className="w-full bg-[#F97316] hover:bg-orange-600 active:scale-[0.99] text-white font-bold py-3.5 rounded-xl shadow-md hover:shadow-orange-200 transition-all cursor-pointer flex items-center justify-center gap-2 text-sm mt-3 disabled:opacity-60"
                 >
-                  {loading ? 'Creating Student Profile...' : 'Create Free Student Account'}
+                  {loading
+                    ? "Creating Student Profile..."
+                    : "Create Free Student Account"}
                 </button>
               </>
             ) : (
@@ -464,12 +552,17 @@ export default function RegisterPage({
                 {/* Work Email with Personal Domain Warning */}
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700 block" htmlFor="c-work-email">
+                    <label
+                      className="text-xs font-bold text-slate-700 block"
+                      htmlFor="c-work-email"
+                    >
                       Corporate Work Email *
                     </label>
                   </div>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">✉</span>
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
+                      ✉
+                    </span>
                     <input
                       id="c-work-email"
                       type="email"
@@ -483,18 +576,26 @@ export default function RegisterPage({
                   {isPersonalCompanyEmail && (
                     <div className="p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium flex items-center gap-1.5 mt-1">
                       <span>⚠️</span>
-                      <span>Please use your official company domain for expedited verification.</span>
+                      <span>
+                        Please use your official company domain for expedited
+                        verification.
+                      </span>
                     </div>
                   )}
                 </div>
 
                 {/* Company Legal Name */}
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 block" htmlFor="c-legal-name">
+                  <label
+                    className="text-xs font-bold text-slate-700 block"
+                    htmlFor="c-legal-name"
+                  >
                     Company Legal Name *
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🏢</span>
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
+                      🏢
+                    </span>
                     <input
                       id="c-legal-name"
                       type="text"
@@ -509,7 +610,10 @@ export default function RegisterPage({
 
                 {/* Industry Classification */}
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 block" htmlFor="c-ind">
+                  <label
+                    className="text-xs font-bold text-slate-700 block"
+                    htmlFor="c-ind"
+                  >
                     Industry Classification
                   </label>
                   <select
@@ -519,18 +623,25 @@ export default function RegisterPage({
                     className="w-full px-3 py-2.5 text-xs md:text-sm border border-slate-200 rounded-xl bg-white text-slate-900 focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 transition shadow-xs font-medium"
                   >
                     {INDUSTRIES.map((ind) => (
-                      <option key={ind} value={ind}>{ind}</option>
+                      <option key={ind} value={ind}>
+                        {ind}
+                      </option>
                     ))}
                   </select>
                 </div>
 
                 {/* Company Website URL */}
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 block" htmlFor="c-web">
+                  <label
+                    className="text-xs font-bold text-slate-700 block"
+                    htmlFor="c-web"
+                  >
                     Official Website URL
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🌐</span>
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
+                      🌐
+                    </span>
                     <input
                       id="c-web"
                       type="text"
@@ -544,7 +655,10 @@ export default function RegisterPage({
 
                 {/* Recruiter Full Name & Designation */}
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 block" htmlFor="c-recruiter">
+                  <label
+                    className="text-xs font-bold text-slate-700 block"
+                    htmlFor="c-recruiter"
+                  >
                     Talent Lead / Recruiter Full Name & Designation
                   </label>
                   <input
@@ -560,13 +674,16 @@ export default function RegisterPage({
                 {/* Password & Confirm Password */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 block" htmlFor="c-pass">
+                    <label
+                      className="text-xs font-bold text-slate-700 block"
+                      htmlFor="c-pass"
+                    >
                       Password
                     </label>
                     <div className="relative">
                       <input
                         id="c-pass"
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPassword ? "text" : "password"}
                         required
                         value={companyPassword}
                         onChange={(e) => setCompanyPassword(e.target.value)}
@@ -578,19 +695,22 @@ export default function RegisterPage({
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs p-1"
                       >
-                        {showPassword ? '🙈' : '👁️'}
+                        {showPassword ? "🙈" : "👁️"}
                       </button>
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 block" htmlFor="c-confirm">
+                    <label
+                      className="text-xs font-bold text-slate-700 block"
+                      htmlFor="c-confirm"
+                    >
                       Confirm Password
                     </label>
                     <div className="relative">
                       <input
                         id="c-confirm"
-                        type={showConfirmPassword ? 'text' : 'password'}
+                        type={showConfirmPassword ? "text" : "password"}
                         required
                         value={companyConfirm}
                         onChange={(e) => setCompanyConfirm(e.target.value)}
@@ -599,10 +719,12 @@ export default function RegisterPage({
                       />
                       <button
                         type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs p-1"
                       >
-                        {showConfirmPassword ? '🙈' : '👁️'}
+                        {showConfirmPassword ? "🙈" : "👁️"}
                       </button>
                     </div>
                   </div>
@@ -613,23 +735,48 @@ export default function RegisterPage({
                   <div className="pt-1">
                     <div className="flex items-center justify-between text-[11px] mb-1 font-mono">
                       <span className="text-slate-400">Security Strength</span>
-                      <span className="font-bold text-slate-700">{passwordStrength.label}</span>
+                      <span className="font-bold text-slate-700">
+                        {passwordStrength.label}
+                      </span>
                     </div>
                     <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden flex gap-1">
-                      <div className={`flex-1 rounded-full ${passwordStrength.score >= 1 ? passwordStrength.color : 'bg-slate-200'}`} />
-                      <div className={`flex-1 rounded-full ${passwordStrength.score >= 2 ? passwordStrength.color : 'bg-slate-200'}`} />
-                      <div className={`flex-1 rounded-full ${passwordStrength.score >= 3 ? passwordStrength.color : 'bg-slate-200'}`} />
+                      <div
+                        className={`flex-1 rounded-full ${
+                          passwordStrength.score >= 1
+                            ? passwordStrength.color
+                            : "bg-slate-200"
+                        }`}
+                      />
+                      <div
+                        className={`flex-1 rounded-full ${
+                          passwordStrength.score >= 2
+                            ? passwordStrength.color
+                            : "bg-slate-200"
+                        }`}
+                      />
+                      <div
+                        className={`flex-1 rounded-full ${
+                          passwordStrength.score >= 3
+                            ? passwordStrength.color
+                            : "bg-slate-200"
+                        }`}
+                      />
                     </div>
                   </div>
                 )}
 
                 {/* Verified Employer Guarantee Banner */}
                 <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200/90 text-emerald-900 text-xs flex items-start gap-2.5 mt-2">
-                  <span className="text-emerald-600 font-bold text-sm mt-0.5">✔</span>
+                  <span className="text-emerald-600 font-bold text-sm mt-0.5">
+                    ✔
+                  </span>
                   <div className="leading-snug">
-                    <strong className="block font-bold text-emerald-950">Verified Employer Guarantee</strong>
+                    <strong className="block font-bold text-emerald-950">
+                      Verified Employer Guarantee
+                    </strong>
                     <span className="text-emerald-800 text-[11px]">
-                      You can start drafting internships immediately while our compliance team authenticates your trade credentials.
+                      You can start drafting internships immediately while our
+                      compliance team authenticates your trade credentials.
                     </span>
                   </div>
                 </div>
@@ -640,7 +787,9 @@ export default function RegisterPage({
                   disabled={loading}
                   className="w-full bg-[#4F46E5] hover:bg-indigo-700 active:scale-[0.99] text-white font-bold py-3.5 rounded-xl shadow-md hover:shadow-indigo-200 transition-all cursor-pointer flex items-center justify-center gap-2 text-sm mt-3 disabled:opacity-60"
                 >
-                  {loading ? 'Registering Company Profile...' : 'Register Company Account'}
+                  {loading
+                    ? "Registering Company Profile..."
+                    : "Register Company Account"}
                 </button>
               </>
             )}
@@ -649,17 +798,28 @@ export default function RegisterPage({
           {/* Terms & Footer */}
           <div className="mt-6 pt-5 border-t border-slate-200/90 text-center space-y-3">
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              By continuing, you agree to InternPrangon's{' '}
-              <button type="button" className="text-indigo-600 hover:underline font-medium">Terms of Service</button>
-              {' and '}
-              <button type="button" className="text-indigo-600 hover:underline font-medium">Privacy Policy</button>.
+              By continuing, you agree to InternPrangon's{" "}
+              <button
+                type="button"
+                className="text-indigo-600 hover:underline font-medium"
+              >
+                Terms of Service
+              </button>
+              {" and "}
+              <button
+                type="button"
+                className="text-indigo-600 hover:underline font-medium"
+              >
+                Privacy Policy
+              </button>
+              .
             </p>
 
             <p className="text-xs md:text-sm text-slate-500">
-              Already have an account?{' '}
+              Already have an account?{" "}
               <button
                 type="button"
-                onClick={() => navigate('login')}
+                onClick={() => navigate("login")}
                 className="font-bold text-indigo-600 hover:text-indigo-800 hover:underline transition-colors cursor-pointer"
               >
                 Log in here →
@@ -675,10 +835,16 @@ export default function RegisterPage({
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-indigo-600" viewBox="0 0 24 24" fill="currentColor">
+                <svg
+                  className="w-5 h-5 text-indigo-600"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
                   <path d="M12 2L1 7l11 5 9-4.09V17h2V7L12 2zm0 8.8L3.82 7 12 3.27 20.18 7 12 10.8zM4 12.7v5.6c0 3.2 3.6 5.7 8 5.7s8-2.5 8-5.7v-5.6l-8 3.6-8-3.6z" />
                 </svg>
-                <h3 className="text-sm font-bold text-slate-900">Sign Up with University SSO</h3>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Sign Up with University SSO
+                </h3>
               </div>
               <button
                 onClick={() => setShowSsoModal(false)}
@@ -689,39 +855,61 @@ export default function RegisterPage({
             </div>
 
             <p className="text-xs text-slate-500 my-3">
-              Fast-track your registration with your authenticated institution account:
+              Fast-track your registration with your authenticated institution
+              account:
             </p>
 
             <div className="space-y-2">
               <button
-                onClick={() => handleQuickStudentSso('sabbir.ahmed@buet.ac.bd', 'Sabbir Ahmed')}
+                onClick={() =>
+                  handleQuickStudentSso(
+                    "sabbir.ahmed@buet.ac.bd",
+                    "Sabbir Ahmed",
+                  )
+                }
                 className="w-full p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 text-left transition flex items-center justify-between text-xs"
               >
                 <div>
                   <div className="font-bold text-slate-900">Sabbir Ahmed</div>
-                  <div className="font-mono text-[11px] text-slate-500">sabbir.ahmed@buet.ac.bd · BUET CSE</div>
+                  <div className="font-mono text-[11px] text-slate-500">
+                    sabbir.ahmed@buet.ac.bd · BUET CSE
+                  </div>
                 </div>
                 <span className="font-bold text-orange-600">Register →</span>
               </button>
 
               <button
-                onClick={() => handleQuickStudentSso('nafisa.islam@g.bracu.ac.bd', 'Nafisa Islam')}
+                onClick={() =>
+                  handleQuickStudentSso(
+                    "nafisa.islam@g.bracu.ac.bd",
+                    "Nafisa Islam",
+                  )
+                }
                 className="w-full p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 text-left transition flex items-center justify-between text-xs"
               >
                 <div>
                   <div className="font-bold text-slate-900">Nafisa Islam</div>
-                  <div className="font-mono text-[11px] text-slate-500">nafisa.islam@g.bracu.ac.bd · BRAC Univ</div>
+                  <div className="font-mono text-[11px] text-slate-500">
+                    nafisa.islam@g.bracu.ac.bd · BRAC Univ
+                  </div>
                 </div>
                 <span className="font-bold text-orange-600">Register →</span>
               </button>
 
               <button
-                onClick={() => handleQuickStudentSso('fardin.hasan@northsouth.edu', 'Fardin Hasan')}
+                onClick={() =>
+                  handleQuickStudentSso(
+                    "fardin.hasan@northsouth.edu",
+                    "Fardin Hasan",
+                  )
+                }
                 className="w-full p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 text-left transition flex items-center justify-between text-xs"
               >
                 <div>
                   <div className="font-bold text-slate-900">Fardin Hasan</div>
-                  <div className="font-mono text-[11px] text-slate-500">fardin.hasan@northsouth.edu · NSU ECE</div>
+                  <div className="font-mono text-[11px] text-slate-500">
+                    fardin.hasan@northsouth.edu · NSU ECE
+                  </div>
                 </div>
                 <span className="font-bold text-orange-600">Register →</span>
               </button>
@@ -730,5 +918,5 @@ export default function RegisterPage({
         </div>
       )}
     </div>
-  );
+  )
 }

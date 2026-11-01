@@ -1,25 +1,25 @@
-import React, { useState } from "react";
-import { type Navigate } from "../data/index";
-import { getSavedUser } from "../api/client";
-import { CompanyLogo } from "../components/common/CompanyLogos";
-import { StudentAvatar } from "../components/common/StudentAvatars";
+import React, { useState } from "react"
+import { type Navigate } from "../data/index"
+import { getSavedUser } from "../api/client"
+import { CompanyLogo } from "../components/common/CompanyLogos"
+import { StudentAvatar } from "../components/common/StudentAvatars"
 
 interface Props {
-  navigate: Navigate;
-  loggedIn?: boolean;
+  navigate: Navigate
+  loggedIn?: boolean
 }
 
 interface FeaturedOpportunity {
-  id: number;
-  company: string;
-  role: string;
-  mode: string;
-  duration: string;
-  stipend: string;
-  tags: string[];
-  daysLeft: number;
-  featured: boolean;
-  saved?: boolean;
+  id: number
+  company: string
+  role: string
+  mode: string
+  duration: string
+  stipend: string
+  tags: string[]
+  daysLeft: number
+  featured: boolean
+  saved?: boolean
 }
 
 const OPPORTUNITIES: FeaturedOpportunity[] = [
@@ -89,7 +89,7 @@ const OPPORTUNITIES: FeaturedOpportunity[] = [
     daysLeft: 16,
     featured: true,
   },
-];
+]
 
 const CATEGORIES = [
   { name: "Engineering", count: 42 },
@@ -98,7 +98,7 @@ const CATEGORIES = [
   { name: "Finance", count: 15 },
   { name: "Data & AI", count: 31 },
   { name: "Operations", count: 12 },
-];
+]
 
 const STATS = [
   {
@@ -106,7 +106,16 @@ const STATS = [
     label: "Active Internships",
     iconBg: "from-blue-500 to-indigo-600",
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
         <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
       </svg>
@@ -117,7 +126,16 @@ const STATS = [
     label: "Verified Companies",
     iconBg: "from-purple-500 to-violet-600",
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         <polyline points="9 12 11 14 15 10" />
       </svg>
@@ -128,7 +146,16 @@ const STATS = [
     label: "Students Registered",
     iconBg: "from-amber-500 to-orange-600",
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
         <path d="M6 12v5c3 3 9 3 12 0v-5" />
       </svg>
@@ -139,13 +166,22 @@ const STATS = [
     label: "Placement Rate",
     iconBg: "from-emerald-500 to-teal-600",
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
         <polyline points="17 6 23 6 23 12" />
       </svg>
     ),
   },
-];
+]
 
 const STEPS = [
   {
@@ -172,7 +208,7 @@ const STEPS = [
     desc: "Get shortlisted, interview with confidence, and step onto your career launchpad.",
     icon: "🚀",
   },
-];
+]
 
 const REVIEWS = [
   {
@@ -196,36 +232,62 @@ const REVIEWS = [
     badge: "Veteran",
     points: "820 pts",
   },
-];
+]
 
 const BADGES = [
-  { icon: "🌱", tier: "Newbie", points: "0–99 pts", desc: "Just getting started. Complete your profile and explore opportunities." },
-  { icon: "🔭", tier: "Explorer", points: "100–299 pts", desc: "Actively contributing reviews and tracking applications." },
-  { icon: "💡", tier: "Insider", points: "300–599 pts", desc: "A trusted community voice sharing transparent stipend insights." },
-  { icon: "⚡", tier: "Veteran", points: "600–999 pts", desc: "Experienced mentor unlocking recruiter spotlight placement." },
-  { icon: "🏆", tier: "Elite", points: "1000+ pts", desc: "Leaderboard icon recognized by premier hiring partners nationwide.", glow: true },
-];
+  {
+    icon: "🌱",
+    tier: "Newbie",
+    points: "0–99 pts",
+    desc: "Just getting started. Complete your profile and explore opportunities.",
+  },
+  {
+    icon: "🔭",
+    tier: "Explorer",
+    points: "100–299 pts",
+    desc: "Actively contributing reviews and tracking applications.",
+  },
+  {
+    icon: "💡",
+    tier: "Insider",
+    points: "300–599 pts",
+    desc: "A trusted community voice sharing transparent stipend insights.",
+  },
+  {
+    icon: "⚡",
+    tier: "Veteran",
+    points: "600–999 pts",
+    desc: "Experienced mentor unlocking recruiter spotlight placement.",
+  },
+  {
+    icon: "🏆",
+    tier: "Elite",
+    points: "1000+ pts",
+    desc: "Leaderboard icon recognized by premier hiring partners nationwide.",
+    glow: true,
+  },
+]
 
 export default function HomePage({ navigate, loggedIn }: Props) {
-  const isAuth = loggedIn ?? Boolean(getSavedUser());
-  const [searchQuery, setSearchQuery] = useState("");
-  const [locationFilter, setLocationFilter] = useState("All");
-  const [savedIds, setSavedIds] = useState<number[]>([1, 4]);
+  const isAuth = loggedIn ?? Boolean(getSavedUser())
+  const [searchQuery, setSearchQuery] = useState("")
+  const [locationFilter, setLocationFilter] = useState("All")
+  const [savedIds, setSavedIds] = useState<number[]>([1, 4])
 
   const toggleSave = (id: number, e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation()
     setSavedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    )
+  }
 
   const handleSearch = () => {
-    const term = searchQuery.trim();
+    const term = searchQuery.trim()
     navigate("internships", {
       search: term,
       mode: locationFilter !== "All" ? locationFilter : undefined,
-    });
-  };
+    })
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] relative overflow-hidden font-sans selection:bg-indigo-500 selection:text-white">
@@ -269,14 +331,25 @@ export default function HomePage({ navigate, loggedIn }: Props) {
 
           {/* Subtitle */}
           <p className="text-lg sm:text-xl text-slate-600 max-w-2xl font-normal leading-relaxed mb-10">
-            Bangladesh's most trusted internship platform. Find paid, verified opportunities matched to your skills.
+            Bangladesh's most trusted internship platform. Find paid, verified
+            opportunities matched to your skills.
           </p>
 
           {/* ── Massive Glassmorphic Combined Search Bar ── */}
           <div className="w-full max-w-3xl bg-white/85 backdrop-blur-xl rounded-2xl md:rounded-full border border-white/80 p-2 sm:p-2.5 shadow-[0_15px_45px_rgba(99,102,241,0.12)] flex flex-col sm:flex-row items-stretch sm:items-center gap-2 transition-all hover:shadow-[0_20px_50px_rgba(99,102,241,0.18)]">
             {/* Input 1: Roles, Companies, Skills */}
             <div className="flex items-center gap-3 px-4 py-2.5 flex-1 min-w-0">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#6366F1"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="shrink-0"
+              >
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
@@ -295,7 +368,17 @@ export default function HomePage({ navigate, loggedIn }: Props) {
 
             {/* Input 2: Location or Mode Dropdown */}
             <div className="flex items-center gap-2 px-3 py-2 shrink-0 border-t sm:border-t-0 border-slate-100">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#F97316"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="shrink-0"
+              >
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                 <circle cx="12" cy="10" r="3" />
               </svg>
@@ -316,7 +399,15 @@ export default function HomePage({ navigate, loggedIn }: Props) {
               className="bg-gradient-to-r from-[#6366F1] to-[#4F46E5] hover:from-[#4F46E5] hover:to-[#4338CA] text-white font-bold px-8 py-3.5 rounded-xl md:rounded-full shadow-lg shadow-indigo-500/25 transition-all active:scale-[0.98] shrink-0 text-sm sm:text-base cursor-pointer flex items-center justify-center gap-2"
             >
               <span>Search</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              >
                 <line x1="5" y1="12" x2="19" y2="12" />
                 <polyline points="12 5 19 12 12 19" />
               </svg>
@@ -325,7 +416,9 @@ export default function HomePage({ navigate, loggedIn }: Props) {
 
           {/* Search Category Chips with Badges */}
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 mt-8">
-            <span className="text-xs font-semibold text-slate-400 mr-1 uppercase tracking-wider">Popular:</span>
+            <span className="text-xs font-semibold text-slate-400 mr-1 uppercase tracking-wider">
+              Popular:
+            </span>
             {CATEGORIES.map((cat) => (
               <button
                 key={cat.name}
@@ -349,16 +442,27 @@ export default function HomePage({ navigate, loggedIn }: Props) {
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/70 shadow-[0_15px_45px_rgba(15,23,42,0.06)] p-6 sm:p-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 items-center divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
             {STATS.map((stat, idx) => (
-              <div key={stat.label} className={`flex items-center gap-4 ${idx > 0 ? "pt-4 sm:pt-0 sm:pl-6" : ""}`}>
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${stat.iconBg} flex items-center justify-center text-white shadow-md shrink-0`}>
+              <div
+                key={stat.label}
+                className={`flex items-center gap-4 ${
+                  idx > 0 ? "pt-4 sm:pt-0 sm:pl-6" : ""
+                }`}
+              >
+                <div
+                  className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${stat.iconBg} flex items-center justify-center text-white shadow-md shrink-0`}
+                >
                   {stat.icon}
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <p className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">{stat.value}</p>
+                    <p className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">
+                      {stat.value}
+                    </p>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
                   </div>
-                  <p className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">{stat.label}</p>
+                  <p className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">
+                    {stat.label}
+                  </p>
                 </div>
               </div>
             ))}
@@ -377,13 +481,16 @@ export default function HomePage({ navigate, loggedIn }: Props) {
                 <span className="w-2 h-2 rounded-full bg-indigo-600 animate-ping" />
                 Live Feed
               </span>
-              <span className="text-xs text-slate-400 font-medium">Updated 10m ago</span>
+              <span className="text-xs text-slate-400 font-medium">
+                Updated 10m ago
+              </span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0F172A] tracking-tight">
               Featured opportunities
             </h2>
             <p className="text-sm text-slate-500 mt-1">
-              Hand-picked, high-growth internships with transparent stipends from verified hiring partners.
+              Hand-picked, high-growth internships with transparent stipends
+              from verified hiring partners.
             </p>
           </div>
 
@@ -392,14 +499,16 @@ export default function HomePage({ navigate, loggedIn }: Props) {
             className="inline-flex items-center gap-1 text-sm font-bold text-[#6366F1] hover:text-[#4F46E5] hover:underline cursor-pointer group shrink-0"
           >
             <span>View all opportunities</span>
-            <span className="transition-transform group-hover:translate-x-1">↗</span>
+            <span className="transition-transform group-hover:translate-x-1">
+              ↗
+            </span>
           </button>
         </div>
 
         {/* 3x2 Grid of Detailed Opportunity Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {OPPORTUNITIES.map((item) => {
-            const isSaved = savedIds.includes(item.id);
+            const isSaved = savedIds.includes(item.id)
             return (
               <div
                 key={item.id}
@@ -424,7 +533,16 @@ export default function HomePage({ navigate, loggedIn }: Props) {
                         }`}
                         aria-label="Save internship"
                       >
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="15"
+                          height="15"
+                          viewBox="0 0 24 24"
+                          fill={isSaved ? "currentColor" : "none"}
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                         </svg>
                       </button>
@@ -436,8 +554,16 @@ export default function HomePage({ navigate, loggedIn }: Props) {
                     {item.role}
                   </h3>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <span className="text-sm font-semibold text-slate-700">{item.company}</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="#0284C7" className="shrink-0">
+                    <span className="text-sm font-semibold text-slate-700">
+                      {item.company}
+                    </span>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="#0284C7"
+                      className="shrink-0"
+                    >
                       <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
@@ -456,7 +582,10 @@ export default function HomePage({ navigate, loggedIn }: Props) {
                   {/* Skill Tags */}
                   <div className="flex flex-wrap gap-1.5 mt-4">
                     {item.tags.map((tag) => (
-                      <span key={tag} className="text-[11px] font-medium bg-slate-100/80 text-slate-600 px-2.5 py-0.5 rounded-md">
+                      <span
+                        key={tag}
+                        className="text-[11px] font-medium bg-slate-100/80 text-slate-600 px-2.5 py-0.5 rounded-md"
+                      >
                         {tag}
                       </span>
                     ))}
@@ -473,7 +602,7 @@ export default function HomePage({ navigate, loggedIn }: Props) {
                   </span>
                 </div>
               </div>
-            );
+            )
           })}
         </div>
       </section>
@@ -506,8 +635,12 @@ export default function HomePage({ navigate, loggedIn }: Props) {
                   {step.num}
                 </div>
 
-                <h3 className="text-base font-bold text-[#0F172A] mb-2">{step.title}</h3>
-                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">{step.desc}</p>
+                <h3 className="text-base font-bold text-[#0F172A] mb-2">
+                  {step.title}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                  {step.desc}
+                </p>
 
                 {/* Connecting arrow indicator for desktop */}
                 {idx < STEPS.length - 1 && (
@@ -534,7 +667,8 @@ export default function HomePage({ navigate, loggedIn }: Props) {
             Students love it
           </h2>
           <p className="text-slate-500 text-sm sm:text-base mt-2">
-            Hear from community members who landed verified roles across Dhaka and remote hubs.
+            Hear from community members who landed verified roles across Dhaka
+            and remote hubs.
           </p>
         </div>
 
@@ -549,7 +683,9 @@ export default function HomePage({ navigate, loggedIn }: Props) {
                 <div className="flex items-center gap-3 mb-3">
                   <StudentAvatar name={rev.name} size={42} />
                   <div>
-                    <p className="text-sm font-bold text-[#0F172A]">{rev.name}</p>
+                    <p className="text-sm font-bold text-[#0F172A]">
+                      {rev.name}
+                    </p>
                     <p className="text-xs text-slate-500">{rev.university}</p>
                   </div>
                 </div>
@@ -562,7 +698,9 @@ export default function HomePage({ navigate, loggedIn }: Props) {
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
                   ★ {rev.badge}
                 </span>
-                <span className="text-xs font-semibold text-slate-400">{rev.points}</span>
+                <span className="text-xs font-semibold text-slate-400">
+                  {rev.points}
+                </span>
               </div>
             </div>
           ))}
@@ -582,10 +720,13 @@ export default function HomePage({ navigate, loggedIn }: Props) {
                 Build your reputation.
               </h3>
               <p className="text-sm sm:text-base text-slate-600 leading-relaxed mt-4">
-                InternPrangon rewards students who give back. Submit verified company ratings, share interview experiences, and answer community questions to earn contributor points.
+                InternPrangon rewards students who give back. Submit verified
+                company ratings, share interview experiences, and answer
+                community questions to earn contributor points.
               </p>
               <p className="text-xs sm:text-sm text-slate-500 mt-2">
-                Higher badge tiers unlock recruiter spotlights, early-access listings, and exclusive mentor meetups.
+                Higher badge tiers unlock recruiter spotlights, early-access
+                listings, and exclusive mentor meetups.
               </p>
 
               <button
@@ -613,17 +754,23 @@ export default function HomePage({ navigate, loggedIn }: Props) {
                     <span className="text-2xl">{b.icon}</span>
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-bold text-[#0F172A]">{b.tier}</p>
+                        <p className="text-sm font-bold text-[#0F172A]">
+                          {b.tier}
+                        </p>
                         {b.glow && (
                           <span className="text-[10px] font-black uppercase px-2 py-0.2 rounded-full bg-amber-400 text-slate-900">
                             Elite Tier
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] font-semibold text-indigo-600">{b.points}</p>
+                      <p className="text-[11px] font-semibold text-indigo-600">
+                        {b.points}
+                      </p>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-500 mt-2 leading-relaxed">{b.desc}</p>
+                  <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                    {b.desc}
+                  </p>
                 </div>
               ))}
             </div>
@@ -645,7 +792,8 @@ export default function HomePage({ navigate, loggedIn }: Props) {
               Your first step starts here.
             </h2>
             <p className="text-slate-300 text-sm sm:text-base mb-8 max-w-lg">
-              Join 8,400+ university students stepping into paid, verified career opportunities with top technology companies today.
+              Join 8,400+ university students stepping into paid, verified
+              career opportunities with top technology companies today.
             </p>
             <button
               onClick={() => navigate("internships")}
@@ -664,59 +812,161 @@ export default function HomePage({ navigate, loggedIn }: Props) {
             {/* Brand column */}
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-1 mb-3">
-                <span className="font-display italic text-white text-xl font-extrabold">Intern</span>
-                <span className="font-sans font-black text-[#F97316] text-xl">Prangon</span>
+                <span className="font-display italic text-white text-xl font-extrabold">
+                  Intern
+                </span>
+                <span className="font-sans font-black text-[#F97316] text-xl">
+                  Prangon
+                </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-[#F97316] ml-0.5" />
               </div>
               <p className="text-xs text-slate-400 leading-relaxed max-w-xs mb-4">
-                Smart choices for your first steps. Connecting ambitious students with verified employers across Bangladesh.
+                Smart choices for your first steps. Connecting ambitious
+                students with verified employers across Bangladesh.
               </p>
             </div>
 
             {/* Platform links */}
             <div>
-              <p className="text-sm font-bold text-white uppercase tracking-wider mb-4">Platform</p>
+              <p className="text-sm font-bold text-white uppercase tracking-wider mb-4">
+                Platform
+              </p>
               <ul className="space-y-2 text-xs">
-                <li><button onClick={() => navigate("internships")} className="hover:text-white transition-colors cursor-pointer">Browse internships</button></li>
-                <li><button onClick={() => navigate("companies")} className="hover:text-white transition-colors cursor-pointer">Company directory</button></li>
-                <li><button onClick={() => navigate("reviews")} className="hover:text-white transition-colors cursor-pointer">Company reviews</button></li>
-                <li><button onClick={() => navigate("about")} className="hover:text-white transition-colors cursor-pointer">About InternPrangon</button></li>
+                <li>
+                  <button
+                    onClick={() => navigate("internships")}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    Browse internships
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate("companies")}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    Company directory
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate("reviews")}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    Company reviews
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate("about")}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    About InternPrangon
+                  </button>
+                </li>
               </ul>
             </div>
 
             {/* For Students links */}
             <div>
-              <p className="text-sm font-bold text-white uppercase tracking-wider mb-4">For Students</p>
+              <p className="text-sm font-bold text-white uppercase tracking-wider mb-4">
+                For Students
+              </p>
               <ul className="space-y-2 text-xs">
-                <li><button onClick={() => navigate("register", { as: "student" })} className="hover:text-white transition-colors cursor-pointer">Create student profile</button></li>
-                <li><button onClick={() => navigate("applications")} className="hover:text-white transition-colors cursor-pointer">Track applications</button></li>
-                <li><button onClick={() => navigate("contributors")} className="hover:text-white transition-colors cursor-pointer">Contributor leaderboard</button></li>
-                <li><button onClick={() => navigate("saved")} className="hover:text-white transition-colors cursor-pointer">Saved opportunities</button></li>
+                <li>
+                  <button
+                    onClick={() => navigate("register", { as: "student" })}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    Create student profile
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate("applications")}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    Track applications
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate("contributors")}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    Contributor leaderboard
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate("saved")}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    Saved opportunities
+                  </button>
+                </li>
               </ul>
             </div>
 
             {/* For Companies links */}
             <div>
-              <p className="text-sm font-bold text-white uppercase tracking-wider mb-4">For Companies</p>
+              <p className="text-sm font-bold text-white uppercase tracking-wider mb-4">
+                For Companies
+              </p>
               <ul className="space-y-2 text-xs">
-                <li><button onClick={() => navigate("register", { as: "company" })} className="hover:text-white transition-colors cursor-pointer">Post an internship</button></li>
-                <li><button onClick={() => navigate("co-verification")} className="hover:text-white transition-colors cursor-pointer">Employer verification</button></li>
-                <li><button onClick={() => navigate("co-internships")} className="hover:text-white transition-colors cursor-pointer">Manage listings</button></li>
-                <li><button onClick={() => navigate("co-applicants")} className="hover:text-white transition-colors cursor-pointer">Applicant pipeline</button></li>
+                <li>
+                  <button
+                    onClick={() => navigate("register", { as: "company" })}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    Post an internship
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate("co-verification")}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    Employer verification
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate("co-internships")}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    Manage listings
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate("co-applicants")}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
+                    Applicant pipeline
+                  </button>
+                </li>
               </ul>
             </div>
           </div>
 
           <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-            <p>&copy; 2026 InternPrangon. All rights reserved. Built with care by students of BRAC.</p>
+            <p>
+              &copy; 2026 InternPrangon. All rights reserved. Built with care by
+              students of BRAC.
+            </p>
             <div className="flex gap-4">
-              <span className="hover:text-slate-400 cursor-pointer">Privacy Policy</span>
+              <span className="hover:text-slate-400 cursor-pointer">
+                Privacy Policy
+              </span>
               <span>&bull;</span>
-              <span className="hover:text-slate-400 cursor-pointer">Terms of Service</span>
+              <span className="hover:text-slate-400 cursor-pointer">
+                Terms of Service
+              </span>
             </div>
           </div>
         </div>
       </footer>
     </div>
-  );
+  )
 }

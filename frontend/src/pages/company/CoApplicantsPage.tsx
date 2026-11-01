@@ -1,36 +1,36 @@
-import React, { useState, useEffect } from "react";
-import type { Navigate } from "../../data/index";
+import React, { useState, useEffect } from "react"
+import type { Navigate } from "../../data/index"
 import {
   getAllCompanyApplicants,
   getMyCompanyInternships,
   updateApplicationStatus,
   type ApiCompanyApplicantItem,
   type ApiCompanyInternship,
-} from "../../api/client";
+} from "../../api/client"
 
 interface Props {
-  navigate: Navigate;
-  internshipId?: string | number;
+  navigate: Navigate
+  internshipId?: string | number
 }
 
-type StageFilter = "all" | "Applied" | "Shortlisted" | "Interviewing" | "Offered" | "Rejected";
+type StageFilter = "all" | "Applied" | "Shortlisted" | "Interviewing" | "Offered" | "Rejected"
 
 interface CandidateCardData {
-  id: string;
-  name: string;
-  photo: string;
-  email: string;
-  university: string;
-  department: string;
-  appliedDate: string;
-  tierBadge: string;
-  tierIcon: string;
-  status: "Applied" | "Shortlisted" | "Interviewing" | "Offered" | "Rejected";
-  roleTitle: string;
-  workMode: string;
-  bio: string;
-  skills: string[];
-  resumeUrl?: string;
+  id: string
+  name: string
+  photo: string
+  email: string
+  university: string
+  department: string
+  appliedDate: string
+  tierBadge: string
+  tierIcon: string
+  status: "Applied" | "Shortlisted" | "Interviewing" | "Offered" | "Rejected"
+  roleTitle: string
+  workMode: string
+  bio: string
+  skills: string[]
+  resumeUrl?: string
 }
 
 const DEFAULT_CANDIDATES: CandidateCardData[] = [
@@ -82,38 +82,47 @@ const DEFAULT_CANDIDATES: CandidateCardData[] = [
     bio: "Final year CSE student focusing on network security, web app vulnerability assessment, and ISO compliance.",
     skills: ["React", "TypeScript", "Node.js", "Python", "OWASP", "Docker"],
   },
-];
+]
 
-export default function CoApplicantsPage({ navigate: _navigate, internshipId }: Props) {
-  const [candidates, setCandidates] = useState<CandidateCardData[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [stageFilter, setStageFilter] = useState<StageFilter>("all");
-  const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>("all");
-  const [successToast, setSuccessToast] = useState<string | null>(null);
+export default function CoApplicantsPage({
+  navigate: _navigate,
+  internshipId,
+}: Props) {
+  const [candidates, setCandidates] = useState<CandidateCardData[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [stageFilter, setStageFilter] = useState<StageFilter>("all")
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>("all")
+  const [successToast, setSuccessToast] = useState<string | null>(null)
 
   // Modals
-  const [profileModalCandidate, setProfileModalCandidate] = useState<CandidateCardData | null>(null);
-  const [interviewModalCandidate, setInterviewModalCandidate] = useState<CandidateCardData | null>(null);
-  const [rejectModalCandidate, setRejectModalCandidate] = useState<CandidateCardData | null>(null);
+  const [profileModalCandidate, setProfileModalCandidate] =
+    useState<CandidateCardData | null>(null)
+  const [interviewModalCandidate, setInterviewModalCandidate] =
+    useState<CandidateCardData | null>(null)
+  const [rejectModalCandidate, setRejectModalCandidate] =
+    useState<CandidateCardData | null>(null)
 
   // Interview modal inputs
-  const [interviewLink, setInterviewLink] = useState("https://meet.google.com/interview-room");
-  const [interviewDate, setInterviewDate] = useState("2026-11-05");
-  const [interviewTime, setInterviewTime] = useState("15:30");
+  const [interviewLink, setInterviewLink] = useState(
+    "https://meet.google.com/interview-room",
+  )
+  const [interviewDate, setInterviewDate] = useState("2026-11-05")
+  const [interviewTime, setInterviewTime] = useState("15:30")
 
   useEffect(() => {
     getAllCompanyApplicants()
       .then((res) => {
         if (res.applicants) {
           const mapped: CandidateCardData[] = res.applicants.map((a, idx) => {
-            const intern = typeof a.internship === "object" ? a.internship : null;
-            const sName = a.student?.name || "Student Candidate";
-            let photo = "";
-            const lower = sName.toLowerCase();
-            if (lower.includes("eva")) photo = "/team_eva.jpg";
-            else if (lower.includes("nafis")) photo = "/team_nafis.jpg";
-            else if (lower.includes("fuad")) photo = "/team_fuad.jpg";
-            else if (lower.includes("tahmid")) photo = "/team_tahmid.jpg";
+            const intern =
+              typeof a.internship === "object" ? a.internship : null
+            const sName = a.student?.name || "Student Candidate"
+            let photo = ""
+            const lower = sName.toLowerCase()
+            if (lower.includes("eva")) photo = "/team_eva.jpg"
+            else if (lower.includes("nafis")) photo = "/team_nafis.jpg"
+            else if (lower.includes("fuad")) photo = "/team_fuad.jpg"
+            else if (lower.includes("tahmid")) photo = "/team_tahmid.jpg"
 
             return {
               id: a.applicationId || `cand-${idx}`,
@@ -123,64 +132,84 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
               university: "BRAC University",
               department: "CSE",
               appliedDate: a.appliedDate
-                ? new Date(a.appliedDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                ? new Date(a.appliedDate).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
                 : "Recently",
-              tierBadge: a.student?.badge ? `${a.student.badge} Tier` : "Explorer Tier",
-              tierIcon: a.student?.badge === "Elite" ? "🏆" : a.student?.badge === "Explorer" ? "🔭" : "🌱",
-              status: (a.status as CandidateCardData["status"]) || "Applied",
+              tierBadge: a.student?.badge
+                ? `${a.student.badge} Tier`
+                : "Explorer Tier",
+              tierIcon:
+                a.student?.badge === "Elite"
+                  ? "🏆"
+                  : a.student?.badge === "Explorer"
+                    ? "🔭"
+                    : "🌱",
+              status: a.status as CandidateCardData["status"] || "Applied",
               roleTitle: intern?.title || "Internship Role",
               workMode: intern?.mode || "On-site",
-              bio: a.student?.bio || "Undergraduate student looking for internship opportunities.",
-              skills: a.student?.skills && a.student.skills.length > 0 ? a.student.skills : ["React", "JavaScript", "Problem Solving"],
-            };
-          });
-          setCandidates(mapped);
+              bio:
+                a.student?.bio ||
+                "Undergraduate student looking for internship opportunities.",
+              skills:
+                a.student?.skills && a.student.skills.length > 0
+                  ? a.student.skills
+                  : ["React", "JavaScript", "Problem Solving"],
+            }
+          })
+          setCandidates(mapped)
         }
       })
       .catch(() => {
-        setCandidates([]);
-      });
-  }, []);
+        setCandidates([])
+      })
+  }, [])
 
-  const handleUpdateStatus = (id: string, newStatus: CandidateCardData["status"]) => {
+  const handleUpdateStatus = (
+    id: string,
+    newStatus: CandidateCardData["status"],
+  ) => {
     setCandidates((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c))
-    );
-    updateApplicationStatus(id, newStatus as any).catch(() => {});
-    setSuccessToast(`Candidate status updated to "${newStatus}"!`);
-    setTimeout(() => setSuccessToast(null), 3000);
-  };
+      prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c)),
+    )
+    updateApplicationStatus(id, newStatus as any).catch(() => {})
+    setSuccessToast(`Candidate status updated to "${newStatus}"!`)
+    setTimeout(() => setSuccessToast(null), 3000)
+  }
 
   const handleConfirmInterview = () => {
-    if (!interviewModalCandidate) return;
-    handleUpdateStatus(interviewModalCandidate.id, "Interviewing");
-    setInterviewModalCandidate(null);
-  };
+    if (!interviewModalCandidate) return
+    handleUpdateStatus(interviewModalCandidate.id, "Interviewing")
+    setInterviewModalCandidate(null)
+  }
 
   const handleConfirmReject = () => {
-    if (!rejectModalCandidate) return;
-    handleUpdateStatus(rejectModalCandidate.id, "Rejected");
-    setRejectModalCandidate(null);
-  };
+    if (!rejectModalCandidate) return
+    handleUpdateStatus(rejectModalCandidate.id, "Rejected")
+    setRejectModalCandidate(null)
+  }
 
   const handleSimulatedDownload = (c: CandidateCardData) => {
-    const filename = `${c.name.replace(/\s+/g, "_")}_Resume.pdf`;
-    alert(`Downloading candidate resume: ${filename}`);
-  };
+    const filename = `${c.name.replace(/\s+/g, "_")}_Resume.pdf`
+    alert(`Downloading candidate resume: ${filename}`)
+  }
 
   const filteredCandidates = candidates.filter((c) => {
-    if (stageFilter !== "all" && c.status !== stageFilter) return false;
-    if (selectedRoleFilter !== "all" && c.roleTitle !== selectedRoleFilter) return false;
+    if (stageFilter !== "all" && c.status !== stageFilter) return false
+    if (selectedRoleFilter !== "all" && c.roleTitle !== selectedRoleFilter)
+      return false
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchName = c.name.toLowerCase().includes(q);
-      const matchEmail = c.email.toLowerCase().includes(q);
-      const matchUni = c.university.toLowerCase().includes(q);
-      const matchSkill = c.skills.some((s) => s.toLowerCase().includes(q));
-      if (!matchName && !matchEmail && !matchUni && !matchSkill) return false;
+      const q = searchQuery.toLowerCase()
+      const matchName = c.name.toLowerCase().includes(q)
+      const matchEmail = c.email.toLowerCase().includes(q)
+      const matchUni = c.university.toLowerCase().includes(q)
+      const matchSkill = c.skills.some((s) => s.toLowerCase().includes(q))
+      if (!matchName && !matchEmail && !matchUni && !matchSkill) return false
     }
-    return true;
-  });
+    return true
+  })
 
   const counts = {
     all: candidates.length,
@@ -189,7 +218,7 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
     interviewing: candidates.filter((c) => c.status === "Interviewing").length,
     offered: candidates.filter((c) => c.status === "Offered").length,
     rejected: candidates.filter((c) => c.status === "Rejected").length,
-  };
+  }
 
   return (
     <div className="px-5 py-6 lg:px-8 lg:py-10 max-w-7xl mx-auto space-y-6">
@@ -214,13 +243,16 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
             </span>
           </div>
           <p className="text-slate-500 text-xs sm:text-sm mt-1">
-            Review submitted student resumes, transition hiring pipeline stages, and schedule interviews.
+            Review submitted student resumes, transition hiring pipeline stages,
+            and schedule interviews.
           </p>
         </div>
 
         {/* Vacancy Filter Dropdown */}
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Filter by Role:</span>
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+            Filter by Role:
+          </span>
           <select
             value={selectedRoleFilter}
             onChange={(e) => setSelectedRoleFilter(e.target.value)}
@@ -228,8 +260,12 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
           >
             <option value="all">All Internships ({candidates.length})</option>
             <option value="Analyst">Analyst</option>
-            <option value="Fintech Cybersecurity Intern">Fintech Cybersecurity Intern</option>
-            <option value="Cloud Infrastructure Intern">Cloud Infrastructure Intern</option>
+            <option value="Fintech Cybersecurity Intern">
+              Fintech Cybersecurity Intern
+            </option>
+            <option value="Cloud Infrastructure Intern">
+              Cloud Infrastructure Intern
+            </option>
           </select>
         </div>
       </div>
@@ -245,7 +281,11 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
             stroke="currentColor"
             strokeWidth="2"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
           </svg>
           <input
             type="text"
@@ -326,9 +366,12 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
         {filteredCandidates.length === 0 ? (
           <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
             <div className="text-4xl mb-3">👥</div>
-            <h3 className="font-bold text-slate-800 text-sm">No candidates match your filters</h3>
+            <h3 className="font-bold text-slate-800 text-sm">
+              No candidates match your filters
+            </h3>
             <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-              Try clearing your search query or switching to another application stage tab.
+              Try clearing your search query or switching to another application
+              stage tab.
             </p>
           </div>
         ) : (
@@ -347,7 +390,7 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
                       alt={candidate.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        (e.target as HTMLElement).style.display = "none";
+                        ;(e.target as HTMLElement).style.display = "none"
                       }}
                     />
                     <div className="w-full h-full bg-indigo-600 text-white font-bold text-sm flex items-center justify-center">
@@ -367,9 +410,17 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
                     </div>
 
                     <p className="text-xs text-slate-500 mt-1">
-                      <span className="font-medium text-slate-700">{candidate.email}</span> ·{" "}
-                      <span>{candidate.university} ({candidate.department})</span> ·{" "}
-                      <span className="text-slate-400">Applied {candidate.appliedDate}</span>
+                      <span className="font-medium text-slate-700">
+                        {candidate.email}
+                      </span>{" "}
+                      ·{" "}
+                      <span>
+                        {candidate.university} ({candidate.department})
+                      </span>{" "}
+                      ·{" "}
+                      <span className="text-slate-400">
+                        Applied {candidate.appliedDate}
+                      </span>
                     </p>
                   </div>
                 </div>
@@ -378,14 +429,14 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
                 <div className="shrink-0 self-start">
                   {candidate.status === "Applied" && (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs">
-                      <span className="w-2 h-2 rounded-full bg-slate-400" />
-                      ⚪ Applied
+                      <span className="w-2 h-2 rounded-full bg-slate-400" />⚪
+                      Applied
                     </span>
                   )}
                   {candidate.status === "Shortlisted" && (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
-                      <span className="w-2 h-2 rounded-full bg-indigo-600" />
-                      🔵 Shortlisted
+                      <span className="w-2 h-2 rounded-full bg-indigo-600" />🔵
+                      Shortlisted
                     </span>
                   )}
                   {candidate.status === "Interviewing" && (
@@ -396,14 +447,14 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
                   )}
                   {candidate.status === "Offered" && (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-2xs">
-                      <span className="w-2 h-2 rounded-full bg-emerald-600" />
-                      🟢 Offer Extended
+                      <span className="w-2 h-2 rounded-full bg-emerald-600" />🟢
+                      Offer Extended
                     </span>
                   )}
                   {candidate.status === "Rejected" && (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs">
-                      <span className="w-2 h-2 rounded-full bg-rose-500" />
-                      🔴 Declined
+                      <span className="w-2 h-2 rounded-full bg-rose-500" />🔴
+                      Declined
                     </span>
                   )}
                 </div>
@@ -412,20 +463,24 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
               {/* Candidate Metadata & Match Overview */}
               <div className="bg-slate-50/70 border border-slate-200/60 rounded-xl p-3.5 space-y-2 text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-700">Role Applied:</span>
-                  <span className="font-bold text-indigo-700">{candidate.roleTitle}</span>
+                  <span className="font-bold text-slate-700">
+                    Role Applied:
+                  </span>
+                  <span className="font-bold text-indigo-700">
+                    {candidate.roleTitle}
+                  </span>
                   <span className="text-[11px] font-semibold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
                     {candidate.workMode}
                   </span>
                 </div>
 
-                <p className="text-slate-600 italic">
-                  "{candidate.bio}"
-                </p>
+                <p className="text-slate-600 italic">"{candidate.bio}"</p>
 
                 {/* Verified Skills Chips */}
                 <div className="flex items-center gap-1.5 pt-1 flex-wrap">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Skills:</span>
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">
+                    Skills:
+                  </span>
                   {candidate.skills.map((skill) => (
                     <span
                       key={skill}
@@ -461,7 +516,9 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
                 <div className="flex items-center gap-2 flex-wrap">
                   {candidate.status !== "Shortlisted" && (
                     <button
-                      onClick={() => handleUpdateStatus(candidate.id, "Shortlisted")}
+                      onClick={() =>
+                        handleUpdateStatus(candidate.id, "Shortlisted")
+                      }
                       className="px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs rounded-xl transition-colors shadow-2xs"
                     >
                       🔵 Shortlist
@@ -509,7 +566,8 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
             </div>
 
             <p className="text-xs text-slate-500">
-              Candidate will receive an automated invitation email and an embedded calendar card in their student workspace.
+              Candidate will receive an automated invitation email and an
+              embedded calendar card in their student workspace.
             </p>
 
             <div className="space-y-3">
@@ -580,7 +638,8 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
               Decline Application for {rejectModalCandidate.name}?
             </h3>
             <p className="text-xs text-slate-500">
-              This updates the student's pipeline status to "Declined". They will be politely notified in their portal.
+              This updates the student's pipeline status to "Declined". They
+              will be politely notified in their portal.
             </p>
             <div className="flex gap-2 justify-center pt-2">
               <button
@@ -607,17 +666,24 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
             <div className="flex items-start justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-indigo-200 shadow-sm shrink-0 bg-slate-100">
-                  <img src={profileModalCandidate.photo} alt={profileModalCandidate.name} className="w-full h-full object-cover" />
+                  <img
+                    src={profileModalCandidate.photo}
+                    alt={profileModalCandidate.name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-bold text-slate-900">{profileModalCandidate.name}</h3>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      {profileModalCandidate.name}
+                    </h3>
                     <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                       ✔ Verified Email
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {profileModalCandidate.university} · Department of {profileModalCandidate.department}
+                    {profileModalCandidate.university} · Department of{" "}
+                    {profileModalCandidate.department}
                   </p>
                 </div>
               </div>
@@ -631,22 +697,34 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
 
             <div className="space-y-4 text-xs">
               <div>
-                <h4 className="font-bold text-slate-400 uppercase tracking-wider mb-1">Academic Standing</h4>
-                <p className="text-slate-700 font-medium">B.Sc. in Computer Science & Engineering · Expected Graduation 2026 · CGPA: 3.82</p>
+                <h4 className="font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  Academic Standing
+                </h4>
+                <p className="text-slate-700 font-medium">
+                  B.Sc. in Computer Science & Engineering · Expected Graduation
+                  2026 · CGPA: 3.82
+                </p>
               </div>
 
               <div>
-                <h4 className="font-bold text-slate-400 uppercase tracking-wider mb-1">Candidate Bio</h4>
+                <h4 className="font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  Candidate Bio
+                </h4>
                 <p className="text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200/80">
                   {profileModalCandidate.bio}
                 </p>
               </div>
 
               <div>
-                <h4 className="font-bold text-slate-400 uppercase tracking-wider mb-2">Verified Skill Tags</h4>
+                <h4 className="font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Verified Skill Tags
+                </h4>
                 <div className="flex flex-wrap gap-1.5">
                   {profileModalCandidate.skills.map((s) => (
-                    <span key={s} className="px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg font-semibold text-xs">
+                    <span
+                      key={s}
+                      className="px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg font-semibold text-xs"
+                    >
                       {s}
                     </span>
                   ))}
@@ -672,5 +750,5 @@ export default function CoApplicantsPage({ navigate: _navigate, internshipId }: 
         </div>
       )}
     </div>
-  );
+  )
 }

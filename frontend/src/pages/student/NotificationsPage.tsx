@@ -1,32 +1,32 @@
-import { useState, useEffect } from "react";
-import type { Navigate } from "../../data/index";
-import { CompanyLogo } from "../../components/common/CompanyLogos";
-import { getMyNotifications, markNotificationAsRead } from "../../api/client";
+import { useState, useEffect } from "react"
+import type { Navigate } from "../../data/index"
+import { CompanyLogo } from "../../components/common/CompanyLogos"
+import { getMyNotifications, markNotificationAsRead } from "../../api/client"
 
 interface Props {
-  navigate: Navigate;
+  navigate: Navigate
 }
 
-type NotificationCategory = "All" | "Applications" | "Interviews" | "Contributor Points";
+type NotificationCategory = "All" | "Applications" | "Interviews" | "Contributor Points"
 
 interface ActionableNotification {
-  id: string;
-  category: "Applications" | "Interviews" | "Contributor Points";
-  companyName?: string;
-  iconType?: "trophy" | "calendar" | "check" | "mail";
-  title: string;
-  descriptionHtml: string;
-  timestamp: string;
-  isUnread: boolean;
+  id: string
+  category: "Applications" | "Interviews" | "Contributor Points"
+  companyName?: string
+  iconType?: "trophy" | "calendar" | "check" | "mail"
+  title: string
+  descriptionHtml: string
+  timestamp: string
+  isUnread: boolean
   primaryAction?: {
-    label: string;
-    url?: string;
-    navTarget?: string;
-  };
+    label: string
+    url?: string
+    navTarget?: string
+  }
   secondaryAction?: {
-    label: string;
-    navTarget?: string;
-  };
+    label: string
+    navTarget?: string
+  }
 }
 
 const DEFAULT_NOTIFICATIONS: ActionableNotification[] = [
@@ -93,57 +93,65 @@ const DEFAULT_NOTIFICATIONS: ActionableNotification[] = [
       navTarget: "applications",
     },
   },
-];
+]
 
 export default function NotificationsPage({ navigate }: Props) {
-  const [filter, setFilter] = useState<NotificationCategory>("All");
-  const [notifs, setNotifs] = useState<ActionableNotification[]>(DEFAULT_NOTIFICATIONS);
+  const [filter, setFilter] = useState<NotificationCategory>("All")
+  const [notifs, setNotifs] = useState<ActionableNotification[]>(
+    DEFAULT_NOTIFICATIONS,
+  )
 
   useEffect(() => {
     getMyNotifications()
       .then((res) => {
         if (res.notifications && res.notifications.length > 0) {
           // If backend has custom notifications, prepend them or merge gracefully
-          const backendNotifs: ActionableNotification[] = res.notifications.map((n, idx) => ({
-            id: n._id || `backend-${idx}`,
-            category: "Applications",
-            companyName: "Chaldal",
-            iconType: "check",
-            title: "Notification Update",
-            descriptionHtml: n.message,
-            timestamp: new Date(n.createdAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
+          const backendNotifs: ActionableNotification[] = res.notifications.map(
+            (n, idx) => ({
+              id: n._id || `backend-${idx}`,
+              category: "Applications",
+              companyName: "Chaldal",
+              iconType: "check",
+              title: "Notification Update",
+              descriptionHtml: n.message,
+              timestamp: new Date(n.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              isUnread: !n.isRead,
+              primaryAction: {
+                label: "View Pipeline",
+                navTarget: "applications",
+              },
             }),
-            isUnread: !n.isRead,
-            primaryAction: {
-              label: "View Pipeline",
-              navTarget: "applications",
-            },
-          }));
+          )
           // Merge avoiding duplicates
-          setNotifs([...backendNotifs, ...DEFAULT_NOTIFICATIONS.slice(backendNotifs.length)]);
+          setNotifs([
+            ...backendNotifs,
+            ...DEFAULT_NOTIFICATIONS.slice(backendNotifs.length),
+          ])
         }
       })
       .catch(() => {
-        setNotifs(DEFAULT_NOTIFICATIONS);
-      });
-  }, []);
+        setNotifs(DEFAULT_NOTIFICATIONS)
+      })
+  }, [])
 
   const handleMarkAllRead = () => {
-    setNotifs((prev) => prev.map((n) => ({ ...n, isUnread: false })));
-  };
+    setNotifs((prev) => prev.map((n) => ({ ...n, isUnread: false })))
+  }
 
   const filtered = notifs.filter((n) => {
-    if (filter === "Applications") return n.category === "Applications";
-    if (filter === "Interviews") return n.category === "Interviews";
-    if (filter === "Contributor Points") return n.category === "Contributor Points";
-    return true;
-  });
+    if (filter === "Applications") return n.category === "Applications"
+    if (filter === "Interviews") return n.category === "Interviews"
+    if (filter === "Contributor Points")
+      return n.category === "Contributor Points"
+    return true
+  })
 
-  const unreadCount = notifs.filter((n) => n.isUnread).length;
+  const unreadCount = notifs.filter((n) => n.isUnread).length
 
   return (
     <div className="px-5 py-6 lg:px-8 lg:py-10 max-w-4xl mx-auto space-y-6">
@@ -154,7 +162,8 @@ export default function NotificationsPage({ navigate }: Props) {
             Notifications & Alerts
           </h1>
           <p className="text-slate-500 text-sm lg:text-base mt-1">
-            Updates on your job applications, interview schedules, and contributor rewards.
+            Updates on your job applications, interview schedules, and
+            contributor rewards.
           </p>
         </div>
 
@@ -170,8 +179,16 @@ export default function NotificationsPage({ navigate }: Props) {
 
       {/* Filter Tabs */}
       <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 w-fit overflow-x-auto max-w-full">
-        {(["All", "Applications", "Interviews", "Contributor Points"] as NotificationCategory[]).map((cat) => {
-          const count = cat === "All" ? notifs.length : notifs.filter((n) => n.category === cat).length;
+        {([
+          "All",
+          "Applications",
+          "Interviews",
+          "Contributor Points",
+        ] as NotificationCategory[]).map((cat) => {
+          const count =
+            cat === "All"
+              ? notifs.length
+              : notifs.filter((n) => n.category === cat).length
           return (
             <button
               key={cat}
@@ -184,7 +201,7 @@ export default function NotificationsPage({ navigate }: Props) {
             >
               {cat} ({count})
             </button>
-          );
+          )
         })}
       </div>
 
@@ -203,7 +220,11 @@ export default function NotificationsPage({ navigate }: Props) {
             <div className="flex items-start gap-4 flex-1 min-w-0">
               <div className="relative shrink-0">
                 {item.companyName ? (
-                  <CompanyLogo name={item.companyName} size={46} className="shadow-xs" />
+                  <CompanyLogo
+                    name={item.companyName}
+                    size={46}
+                    className="shadow-xs"
+                  />
                 ) : (
                   <div className="w-[46px] h-[46px] rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-2xl shadow-xs">
                     🏆
@@ -222,9 +243,14 @@ export default function NotificationsPage({ navigate }: Props) {
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-slate-900">{item.title}</h3>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    {item.title}
+                  </h3>
                   {item.isUnread && (
-                    <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0" title="Unread" />
+                    <span
+                      className="w-2 h-2 rounded-full bg-indigo-600 shrink-0"
+                      title="Unread"
+                    />
                   )}
                 </div>
 
@@ -236,7 +262,9 @@ export default function NotificationsPage({ navigate }: Props) {
                 <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-400">
                   <span>{item.timestamp}</span>
                   {item.isUnread && (
-                    <span className="font-semibold text-indigo-600">· Unread</span>
+                    <span className="font-semibold text-indigo-600">
+                      · Unread
+                    </span>
                   )}
                 </div>
               </div>
@@ -248,7 +276,7 @@ export default function NotificationsPage({ navigate }: Props) {
                 <button
                   onClick={() => {
                     if (item.secondaryAction?.navTarget) {
-                      navigate(item.secondaryAction.navTarget as any);
+                      navigate(item.secondaryAction.navTarget as any)
                     }
                   }}
                   className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors"
@@ -257,8 +285,8 @@ export default function NotificationsPage({ navigate }: Props) {
                 </button>
               )}
 
-              {item.primaryAction && (
-                item.primaryAction.url ? (
+              {item.primaryAction &&
+                (item.primaryAction.url ? (
                   <a
                     href={item.primaryAction.url}
                     target="_blank"
@@ -272,19 +300,18 @@ export default function NotificationsPage({ navigate }: Props) {
                   <button
                     onClick={() => {
                       if (item.primaryAction?.navTarget) {
-                        navigate(item.primaryAction.navTarget as any);
+                        navigate(item.primaryAction.navTarget as any)
                       }
                     }}
                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-xs transition-colors"
                   >
                     {item.primaryAction.label}
                   </button>
-                )
-              )}
+                ))}
             </div>
           </div>
         ))}
       </div>
     </div>
-  );
+  )
 }

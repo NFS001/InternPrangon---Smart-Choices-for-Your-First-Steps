@@ -1,33 +1,41 @@
-import React, { useEffect } from 'react';
+import React, { useEffect } from "react"
 
-type ModalSize = 'sm' | 'md' | 'lg' | 'xl';
+type ModalSize = "sm" | "md" | "lg" | "xl"
 
 interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title?: string;
-  children?: React.ReactNode;
-  footer?: React.ReactNode;
-  size?: ModalSize;
-  hideClose?: boolean;
+  isOpen: boolean
+  onClose: () => void
+  title?: string
+  children?: React.ReactNode
+  footer?: React.ReactNode
+  size?: ModalSize
+  hideClose?: boolean
 }
 
 const sizeMap: Record<ModalSize, string> = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
-};
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-xl",
+}
 
-export default function Modal({ isOpen, onClose, title, children, footer, size = 'md', hideClose }: ModalProps) {
+export default function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  footer,
+  size = "md",
+  hideClose,
+}: ModalProps) {
   useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [isOpen, onClose]);
+    if (!isOpen) return
+    const handler = (e: KeyboardEvent) => e.key === "Escape" && onClose()
+    document.addEventListener("keydown", handler)
+    return () => document.removeEventListener("keydown", handler)
+  }, [isOpen, onClose])
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <div
@@ -49,14 +57,27 @@ export default function Modal({ isOpen, onClose, title, children, footer, size =
         {/* Header */}
         {(title || !hideClose) && (
           <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-neutral-100 shrink-0">
-            {title && <h2 className="text-base font-semibold text-neutral-900">{title}</h2>}
+            {title && (
+              <h2 className="text-base font-semibold text-neutral-900">
+                {title}
+              </h2>
+            )}
             {!hideClose && (
               <button
                 onClick={onClose}
                 className="ml-auto text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg p-1 transition-colors"
                 aria-label="Close modal"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M18 6 6 18M6 6l12 12" />
                 </svg>
               </button>
@@ -77,5 +98,5 @@ export default function Modal({ isOpen, onClose, title, children, footer, size =
         )}
       </div>
     </div>
-  );
+  )
 }
