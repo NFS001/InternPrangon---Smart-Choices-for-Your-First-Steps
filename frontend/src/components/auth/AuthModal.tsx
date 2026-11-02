@@ -872,24 +872,36 @@ export default function AuthModal({
             <div className="space-y-1.5 text-xs">
               <button
                 type="button"
-                onClick={() => handleQuickSso('tahmina@buet.ac.bd', 'student', 'Tahmina Akter')}
+                onClick={() => handleQuickSso('kawnain.tahmid.billah@g.bracu.ac.bd', 'student', 'SYED KAWNAIN TAHMID BILLAH')}
                 className="w-full p-2.5 rounded-lg border border-slate-200 hover:bg-indigo-50 text-left transition flex justify-between items-center"
               >
                 <div>
-                  <div className="font-bold text-slate-900">Tahmina Akter</div>
-                  <div className="text-[10px] text-slate-500">tahmina@buet.ac.bd (BUET)</div>
+                  <div className="font-bold text-slate-900">Syed Kawnain Tahmid Billah</div>
+                  <div className="text-[10px] text-slate-500">kawnain.tahmid.billah@g.bracu.ac.bd (BRACU)</div>
                 </div>
                 <span className="text-indigo-600 font-bold text-xs">Connect →</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleQuickSso('riyad.hossain@g.bracu.ac.bd', 'student', 'Riyad Hossain')}
+                onClick={() => handleQuickSso('md.muhtasim.fuad1@g.bracu.ac.bd', 'student', 'MD. Muhtasim Fuad')}
                 className="w-full p-2.5 rounded-lg border border-slate-200 hover:bg-indigo-50 text-left transition flex justify-between items-center"
               >
                 <div>
-                  <div className="font-bold text-slate-900">Riyad Hossain</div>
-                  <div className="text-[10px] text-slate-500">riyad.hossain@g.bracu.ac.bd (BRACU)</div>
+                  <div className="font-bold text-slate-900">Md. Muhtasim Fuad</div>
+                  <div className="text-[10px] text-slate-500">md.muhtasim.fuad1@g.bracu.ac.bd (BRACU)</div>
+                </div>
+                <span className="text-indigo-600 font-bold text-xs">Connect →</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickSso('chynafis10@gmail.com', 'student', 'Nafis Uddin Chowdhury')}
+                className="w-full p-2.5 rounded-lg border border-slate-200 hover:bg-indigo-50 text-left transition flex justify-between items-center"
+              >
+                <div>
+                  <div className="font-bold text-slate-900">Nafis Uddin Chowdhury</div>
+                  <div className="text-[10px] text-slate-500">chynafis10@gmail.com (BRACU)</div>
                 </div>
                 <span className="text-indigo-600 font-bold text-xs">Connect →</span>
               </button>

@@ -7,6 +7,9 @@ import {
   updateStudentProfile,
   getMyResume,
   uploadResume,
+  uploadStudentAvatar,
+  resolveAvatarUrl,
+  getUserAvatar,
   type ApiUser,
 } from "../../api/client";
 import DocumentPreviewModal from "../../components/common/DocumentPreviewModal";
@@ -20,9 +23,11 @@ interface Props {
 export default function ProfilePage({ navigate: _navigate, currentUser }: Props) {
   const user = currentUser ?? getSavedUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState(user?.name || CURRENT_STUDENT.name);
   const [email, setEmail] = useState(user?.email || CURRENT_STUDENT.email);
+  const [profileAvatar, setProfileAvatar] = useState<string>(user?.avatar || "");
   const [bio, setBio] = useState(
     "Final-year Computer Science student at BRAC University specializing in full-stack web architectures, distributed systems, and cloud backend engineering."
   );
@@ -44,8 +49,11 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
     "AWS",
   ]);
 
+  const [points, setPoints] = useState<number>(25);
+  const [badge, setBadge] = useState<string>("Newbie");
   const [newSkillInput, setNewSkillInput] = useState("");
-  const [resumeFilename, setResumeFilename] = useState("Nafis_Uddin_Chowdhury_Resume.pdf");
+  const defaultResume = `${(user?.name || CURRENT_STUDENT.name).trim().replace(/\s+/g, '_')}_Resume.pdf`;
+  const [resumeFilename, setResumeFilename] = useState(defaultResume);
   const [resumeUploadDate, setResumeUploadDate] = useState("Sep 7, 2026");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [resumeBlobUrl, setResumeBlobUrl] = useState<string | null>(null);
@@ -58,9 +66,20 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
+    if (user?.name) setName(user.name);
+    if (user?.email) setEmail(user.email);
+    if (user?.avatar) setProfileAvatar(user.avatar);
+
     getStudentProfile()
       .then((res) => {
+        if (res.user?.name) setName(res.user.name);
+        if (res.user?.email) setEmail(res.user.email);
+        if (res.profile?.avatar || res.user?.avatar) {
+          setProfileAvatar(res.profile?.avatar || res.user?.avatar || "");
+        }
         if (res.profile) {
+          if (res.profile.points !== undefined && res.profile.points !== 0) setPoints(res.profile.points);
+          if (res.profile.badge) setBadge(res.profile.badge);
           if (res.profile.bio && res.profile.bio.trim()) {
             setBio(res.profile.bio);
           }
@@ -90,6 +109,34 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
       })
       .catch(() => {});
   }, [user?.id]);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setFeedbackMsg(null);
+    try {
+      const res = await uploadStudentAvatar(file);
+      const newAvatar = res.avatarUrl || URL.createObjectURL(file);
+      setProfileAvatar(newAvatar);
+
+      // Update saved user in localStorage so sidebar and other tabs see it immediately
+      const savedUser = getSavedUser();
+      if (savedUser) {
+        savedUser.avatar = res.avatarUrl;
+        localStorage.setItem("internprangon_user", JSON.stringify(savedUser));
+      }
+      window.dispatchEvent(new Event("internprangon_profile_updated"));
+
+      setFeedbackMsg({ type: "success", text: "Profile photo uploaded successfully!" });
+      setTimeout(() => setFeedbackMsg(null), 3500);
+    } catch (err: unknown) {
+      setFeedbackMsg({
+        type: "error",
+        text: err instanceof Error ? err.message : "Failed to upload picture.",
+      });
+    }
+  };
 
   const handleSaveBio = async () => {
     setSavingBio(true);
@@ -174,6 +221,15 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
     }
   };
 
+  const avatarSrc = resolveAvatarUrl(profileAvatar || user?.avatar) || getUserAvatar(user, profileAvatar);
+  const initials = name
+    .split(" ")
+    .map((n) => n[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "ST";
+
   return (
     <div className="px-5 py-6 lg:px-8 lg:py-10 max-w-5xl mx-auto space-y-6">
       {/* Toast Feedback */}
@@ -201,28 +257,37 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
             {/* Student Headshot in Squircle Frame with Camera Badge */}
             <div className="relative group shrink-0">
-              <div className="w-24 h-24 rounded-3xl overflow-hidden border-2 border-indigo-500/30 shadow-md bg-slate-100">
-                <img
-                  src="/team_nafis.jpg"
-                  alt={name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = "none";
-                  }}
-                />
-                <div className="w-full h-full bg-gradient-to-tr from-indigo-600 to-orange-500 flex items-center justify-center text-white text-2xl font-bold">
-                  NU
+              <div className="w-24 h-24 rounded-3xl overflow-hidden border-2 border-indigo-500/30 shadow-md bg-slate-100 relative flex items-center justify-center">
+                {avatarSrc ? (
+                  <img
+                    src={avatarSrc}
+                    alt={name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = "none";
+                    }}
+                  />
+                ) : null}
+                <div className="absolute inset-0 -z-10 bg-gradient-to-tr from-indigo-600 to-orange-500 flex items-center justify-center text-white text-2xl font-bold">
+                  {initials}
                 </div>
               </div>
 
               {/* Camera Upload Overlay */}
               <button
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-md flex items-center justify-center text-xs transition-colors border-2 border-white"
-                title="Change Photo"
+                onClick={() => photoInputRef.current?.click()}
+                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-md flex items-center justify-center text-xs transition-colors border-2 border-white cursor-pointer"
+                title="Upload photo (JPG, PNG, WebP, etc.)"
               >
                 📷
               </button>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp,.svg,.avif"
+                onChange={handlePhotoUpload}
+                className="hidden"
+              />
             </div>
 
             {/* Name, Badges & Subtitle */}
@@ -244,10 +309,10 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
 
               <div className="flex items-center gap-2 mt-3">
                 <span className="px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60">
-                  🌱 Newbie Tier · 25 pts
+                  🌱 {badge} Tier · {points} pts
                 </span>
                 <span className="px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600">
-                  ID: 21101234
+                  Verified Candidate
                 </span>
               </div>
             </div>
@@ -265,7 +330,15 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
               {isEditingBio ? "Cancel" : "Edit Profile Info"}
             </button>
             <button
-              onClick={() => window.open("https://github.com/NFS001", "_blank")}
+              onClick={() => {
+                const lower = name.toLowerCase();
+                let gh = "https://github.com";
+                if (lower.includes("kawnain") || lower.includes("tahmid")) gh = "https://github.com/kawnaintahmidbillah-arch";
+                else if (lower.includes("fuad") || lower.includes("muhtasim")) gh = "https://github.com/mfd-7";
+                else if (lower.includes("eva")) gh = "https://github.com/tasnim-eva";
+                else if (lower.includes("nafis")) gh = "https://github.com/NFS001";
+                window.open(gh, "_blank");
+              }}
               className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold text-xs rounded-xl border border-indigo-200/80 transition-colors flex items-center gap-1"
             >
               <span>Public View</span>

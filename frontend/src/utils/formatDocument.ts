@@ -8,7 +8,7 @@
 export function formatResumeFilename(
   rawFilePathOrName?: string | null,
   originalName?: string | null,
-  defaultName = "Nafis_Uddin_Chowdhury_Resume.pdf"
+  defaultName = "Student_Resume.pdf"
 ): string {
   let nameToUse = "";
 

@@ -11,7 +11,7 @@ export default function DocumentPreviewModal({
   isOpen,
   onClose,
   documentUrl,
-  documentTitle = "Nafis_Uddin_Chowdhury_Resume.pdf",
+  documentTitle = "Student_Resume.pdf",
 }: DocumentPreviewModalProps) {
   const [iframeError, setIframeError] = useState(false);
 

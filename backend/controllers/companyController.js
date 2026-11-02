@@ -43,8 +43,8 @@ const verifyCompany = async (req, res) => {
         const { status } = req.body; // 'Approved' or 'Rejected'
         const companyId = req.params.id; // Company Profile ID from URL
 
-        if (!['Approved', 'Rejected'].includes(status)) {
-            return res.status(400).json({ message: 'Status must be Approved or Rejected' });
+        if (!['Approved', 'Rejected', 'Pending'].includes(status)) {
+            return res.status(400).json({ message: 'Status must be Approved, Rejected, or Pending' });
         }
 
         // Find company and update status

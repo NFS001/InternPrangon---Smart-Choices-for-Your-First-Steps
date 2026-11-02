@@ -17,6 +17,8 @@ interface Props {
   id?: number | string;
   companyId?: number | string;
   companyData?: any;
+  slug?: string;
+  backendId?: string;
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -41,26 +43,26 @@ function StarRating({ rating }: { rating: number }) {
 
 const DEFAULT_TECH_STACK = ["Cloud", "React", "Node.js", "Enterprise", "AWS", "Docker"];
 
-const DEFAULT_STUDENT_REVIEWS = [
+const getMockReviewsForCompany = (compName: string) => [
   {
     id: "r1",
     author: "Zubaer Rahman",
     university: "BUET, CSE '26",
-    badge: "Verified Cloud Intern",
+    badge: "Verified Intern",
     rating: 5.0,
     date: "Aug 2026",
     quote:
-      "Working at Brain Station 23 was a transformative experience for my software engineering journey. I got to contribute directly to distributed microservices on AWS and attended weekly architecture design reviews with principal architects. The mentorship culture is outstanding.",
+      `Working at ${compName} was a transformative experience for my software engineering journey. I got to contribute directly to distributed microservices and attended weekly architecture design reviews with principal architects. The mentorship culture is outstanding.`,
   },
   {
     id: "r2",
     author: "Mehnaz Tabassum",
     university: "BRAC University, CS '25",
-    badge: "Verified Frontend Intern",
+    badge: "Verified Intern",
     rating: 5.0,
     date: "Jul 2026",
     quote:
-      "The engineering culture is remarkably transparent and encouraging. Rather than working on toy assignments, my supervisor paired with me on production pull requests and helped me build an enterprise component library. Received a full-time PPO offer before graduating!",
+      `The engineering culture at ${compName} is remarkably transparent and encouraging. Rather than working on toy assignments, my supervisor paired with me on production pull requests and helped me build an enterprise component library. Received a full-time PPO offer before graduating!`,
   },
   {
     id: "r3",
@@ -79,8 +81,10 @@ export default function CompanyDetailPage({
   id,
   companyId,
   companyData: initialData,
+  slug,
+  backendId,
 }: Props) {
-  const targetKey = companyId || id;
+  const targetKey = companyId || backendId || id || slug;
   const initialCompany =
     initialData ||
     (targetKey
@@ -89,7 +93,8 @@ export default function CompanyDetailPage({
             (c.mongoId && c.mongoId === targetKey) ||
             String(c.id) === String(targetKey) ||
             (typeof targetKey === "string" &&
-              c.name.toLowerCase() === targetKey.toLowerCase())
+              (c.name.toLowerCase() === targetKey.toLowerCase() ||
+                (c.slug && c.slug.toLowerCase() === targetKey.toLowerCase())))
         )
       : null) ||
     COMPANIES[0];
@@ -102,13 +107,15 @@ export default function CompanyDetailPage({
   const [reportedReviewIds, setReportedReviewIds] = useState<Set<string | number>>(new Set());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [liveReviews, setLiveReviews] = useState<any[]>([]);
+  const [backendInternships, setBackendInternships] = useState<any[]>([]);
 
   // Find active internships belonging to this company
   const compInternships = INTERNSHIPS.filter(
     (i) =>
-      i.company.toLowerCase() === company.name.toLowerCase() ||
+      i.company.toLowerCase() === (company.name || "").toLowerCase() ||
       i.companyId === company.id
   );
+  const activeInternshipsToDisplay = backendInternships.length > 0 ? backendInternships : compInternships;
 
   // Sync when initialCompany or targetKey changes
   useEffect(() => {
@@ -121,45 +128,65 @@ export default function CompanyDetailPage({
               (c.mongoId && c.mongoId === targetKey) ||
               String(c.id) === String(targetKey) ||
               (typeof targetKey === "string" &&
-                c.name.toLowerCase() === targetKey.toLowerCase())
+                (c.name.toLowerCase() === targetKey.toLowerCase() ||
+                  (c.slug && c.slug.toLowerCase() === targetKey.toLowerCase())))
           )
         : null;
       if (match) setCompany(match);
     }
   }, [targetKey, initialData]);
 
-  // Load backend details & verified reviews if mongoId is available
+  // Load backend details & verified reviews if mongoId or targetKey is available
   useEffect(() => {
-    const mongoIdToFetch = company.mongoId || (typeof targetKey === "string" && targetKey.length === 24 ? targetKey : undefined);
-    if (!mongoIdToFetch) return;
+    const keyToFetch = company.mongoId || (targetKey ? String(targetKey) : undefined);
+    if (!keyToFetch) return;
 
-    getCompanyById(mongoIdToFetch)
+    getCompanyById(keyToFetch)
       .then((res) => {
         if (res.company) {
           const c = res.company;
+          const matchStatic = COMPANIES.find(
+            (sc) => sc.name.toLowerCase() === c.companyName.toLowerCase()
+          );
           setCompany((prev: any) => ({
             ...prev,
             mongoId: c._id,
             name: c.companyName || prev.name,
-            industry: c.industry || prev.industry,
+            industry: c.industry || matchStatic?.industry || prev.industry,
             description: c.description || prev.description,
-            website: c.website || prev.website,
+            about: c.description || matchStatic?.about || prev.about,
+            website: c.website || matchStatic?.website || prev.website,
             verified: c.verificationStatus === "Approved",
-            rating: c.averageRating || prev.rating,
-            reviewCount: c.reviewCount || prev.reviewCount,
+            rating: c.averageRating || matchStatic?.rating || prev.rating,
+            reviewCount: c.reviewCount || matchStatic?.reviewCount || prev.reviewCount,
             avgStipend: c.averageStipend
               ? `BDT ${c.averageStipend.toLocaleString()}/mo`
               : prev.avgStipend,
-            size: prev.size || "700+ Engineers",
-            founded: prev.founded || "2006",
-            location: prev.location || "Mohakhali, Dhaka",
+            size: matchStatic?.size || prev.size || "500+ Employees",
+            founded: matchStatic?.founded || prev.founded || "2015",
+            location: matchStatic?.location || prev.location || "Dhaka, Bangladesh",
           }));
         }
-      })
-      .catch(() => {});
 
-    getCompanyReviews(mongoIdToFetch)
-      .then((res) => {
+        if (res.internships && res.internships.length > 0) {
+          setBackendInternships(
+            res.internships.map((bi) => ({
+              id: bi._id,
+              role: bi.title,
+              company: company.name,
+              type: bi.type,
+              mode: bi.mode,
+              location: company.location || "Dhaka, Bangladesh",
+              stipend: "BDT 18,000/mo",
+              deadline: bi.deadline
+                ? new Date(bi.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                : "Open",
+              tags: [bi.mode, bi.type],
+              description: bi.description || "Exciting internship opportunity.",
+            }))
+          );
+        }
+
         if (res.reviews && res.reviews.length > 0) {
           setLiveReviews(
             res.reviews.map((r: any, idx: number) => ({
@@ -202,7 +229,7 @@ export default function CompanyDetailPage({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const reviewsToDisplay = liveReviews.length > 0 ? liveReviews : DEFAULT_STUDENT_REVIEWS;
+  const reviewsToDisplay = liveReviews.length > 0 ? liveReviews : getMockReviewsForCompany(company.name);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] pb-24 font-sans selection:bg-indigo-500 selection:text-white relative">
@@ -363,7 +390,7 @@ export default function CompanyDetailPage({
               <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-200/60 flex flex-col justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">Active Opportunities</span>
                 <p className="text-2xl font-black text-indigo-700 mt-2">
-                  {compInternships.length > 0 ? compInternships.length : 2} Open Roles
+                  {activeInternshipsToDisplay.length > 0 ? activeInternshipsToDisplay.length : 2} Open Roles
                 </p>
               </div>
 
@@ -398,7 +425,7 @@ export default function CompanyDetailPage({
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Active Internships ({compInternships.length > 0 ? compInternships.length : 2})
+            Active Internships ({activeInternshipsToDisplay.length > 0 ? activeInternshipsToDisplay.length : 2})
           </button>
           <button
             onClick={() => setTab("reviews")}
@@ -408,7 +435,7 @@ export default function CompanyDetailPage({
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Student Reviews ({company.name.includes("Brain Station") ? 14 : (company.reviewCount || reviewsToDisplay.length)})
+            Student Reviews ({company.reviewCount || reviewsToDisplay.length})
           </button>
         </div>
 
@@ -430,10 +457,10 @@ export default function CompanyDetailPage({
                     <h2 className="text-2xl font-bold text-[#0F172A] mt-1 mb-4">About {company.name}</h2>
                     <div className="space-y-4 text-sm sm:text-base text-slate-600 leading-relaxed">
                       <p>
-                        {company.name} is one of Bangladesh's premier enterprise technology companies, delivering transformative cloud, fintech, and digital solutions to global Fortune 500 clients across Europe, North America, and the Middle East. With a robust engineering team of over 700 professionals, the company fosters an inclusive, research-driven engineering environment that prioritizes hands-on technical growth.
+                        {company.about || company.description || `${company.name} is one of Bangladesh's recognized organizations delivering industry-leading solutions in ${company.industry || "Software & Cloud Solutions"}. They foster an inclusive, high-growth environment that prioritizes hands-on professional development.`}
                       </p>
                       <p>
-                        Through their accredited university internship program, interns participate directly in production sprint cycles, receive personalized 1-on-1 mentorship from senior tech leads, and gain hands-on experience deploying containerized microservices and modern frontend architectures.
+                        Through their accredited university internship program, interns at {company.name} participate directly in production sprint cycles, receive personalized 1-on-1 mentorship from senior tech leads, and gain hands-on experience solving impactful engineering challenges.
                       </p>
                     </div>
                   </div>
@@ -508,89 +535,67 @@ export default function CompanyDetailPage({
                         </h2>
                       </div>
                       <span className="text-xs font-bold text-slate-400">
-                        {compInternships.length > 0 ? compInternships.length : 2} Roles
+                        {activeInternshipsToDisplay.length} {activeInternshipsToDisplay.length === 1 ? 'Role' : 'Roles'}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Opportunity Card 1 */}
-                      <div
-                        onClick={() =>
-                          navigate("internship-detail", {
-                            id: 1,
-                            internshipData: {
-                              id: 1,
-                              company: company.name,
-                              role: "Software Engineer Intern (Backend & Cloud)",
-                              mode: "Remote",
-                              duration: "3 months",
-                              stipend: "BDT 18,000 / month",
-                              type: "Paid",
-                            },
-                          })
-                        }
-                        className="p-5 rounded-2xl border border-slate-200/90 bg-white hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
-                      >
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                              Remote • 3 months
-                            </span>
-                            <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                              BDT 18,000/mo
-                            </span>
-                          </div>
-                          <h3 className="font-bold text-slate-900 text-sm mt-2 hover:text-indigo-600 transition-colors">
-                            Software Engineer Intern (Backend & Cloud)
-                          </h3>
-                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                            Work on scalable microservices using Node.js, Go, and AWS cloud infrastructures.
-                          </p>
-                        </div>
-                        <span className="text-xs font-bold text-indigo-600 mt-4 inline-flex items-center gap-1">
-                          View Details &rarr;
-                        </span>
+                    {activeInternshipsToDisplay.length === 0 ? (
+                      <div className="py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <p className="text-sm font-semibold text-slate-600">No active openings right now at {company.name}.</p>
+                        <p className="text-xs text-slate-400 mt-1">Check back soon or follow this company for alert notifications.</p>
                       </div>
-
-                      {/* Opportunity Card 2 */}
-                      <div
-                        onClick={() =>
-                          navigate("internship-detail", {
-                            id: 2,
-                            internshipData: {
-                              id: 2,
-                              company: company.name,
-                              role: "Frontend React / Next.js Intern",
-                              mode: "On-site",
-                              duration: "4 months",
-                              stipend: "BDT 16,000 / month",
-                              type: "Paid",
-                            },
-                          })
-                        }
-                        className="p-5 rounded-2xl border border-slate-200/90 bg-white hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
-                      >
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-50 text-violet-700 border border-violet-100">
-                              On-site (Dhaka) • 4 months
-                            </span>
-                            <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                              BDT 16,000/mo
-                            </span>
-                          </div>
-                          <h3 className="font-bold text-slate-900 text-sm mt-2 hover:text-indigo-600 transition-colors">
-                            Frontend React / Next.js Intern
-                          </h3>
-                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                            Build reusable design systems and high-performance user interfaces with React and TailwindCSS.
-                          </p>
-                        </div>
-                        <span className="text-xs font-bold text-indigo-600 mt-4 inline-flex items-center gap-1">
-                          View Details &rarr;
-                        </span>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {activeInternshipsToDisplay.map((intern: any, idx: number) => {
+                          const roleName = intern.role || intern.title || "Internship Role";
+                          const internMode = intern.mode || "Remote";
+                          const internStipend = intern.stipend || company.avgStipend || "BDT 18,000/mo";
+                          const internType = intern.type || "Paid";
+                          return (
+                            <div
+                              key={intern.id || idx}
+                              onClick={() =>
+                                navigate("internship-detail", {
+                                  id: intern.id || idx + 1,
+                                  backendId: typeof intern.id === "string" ? intern.id : undefined,
+                                  internshipData: {
+                                    id: intern.id || idx + 1,
+                                    company: company.name,
+                                    role: roleName,
+                                    mode: internMode,
+                                    duration: intern.duration || "3 months",
+                                    stipend: internStipend,
+                                    type: internType,
+                                    description: intern.description,
+                                  },
+                                })
+                              }
+                              className="p-5 rounded-2xl border border-slate-200/90 bg-white hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                            >
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                    {internMode} • {intern.duration || "3-6 months"}
+                                  </span>
+                                  <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                                    {internStipend}
+                                  </span>
+                                </div>
+                                <h3 className="font-bold text-slate-900 text-sm mt-2 hover:text-indigo-600 transition-colors">
+                                  {roleName}
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                                  {intern.description || `Gain practical hands-on experience and mentorship at ${company.name}.`}
+                                </p>
+                              </div>
+                              <span className="text-xs font-bold text-indigo-600 mt-4 inline-flex items-center gap-1">
+                                View Details &rarr;
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
 
@@ -630,7 +635,7 @@ export default function CompanyDetailPage({
                             <div className="flex items-center gap-2">
                               <StarRating rating={rev.rating} />
                               <button
-                                onClick={() => setReportingReview({ id: rev.id, companyName: company.name, author: rev.author, quote: rev.quote })}
+                                onClick={() => setReportingReview({ id: rev.id, company: company.name, content: rev.quote, rating: rev.rating })}
                                 className="text-[11px] text-slate-400 hover:text-rose-500 font-semibold cursor-pointer"
                               >
                                 {reportedReviewIds.has(rev.id) ? "Reported" : "Report"}
@@ -675,19 +680,19 @@ export default function CompanyDetailPage({
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Headquarters</span>
                   <p className="font-bold text-slate-800 text-sm mt-0.5">
-                    8th Floor, BS23 Tower, Mohakhali C/A, Dhaka 1212
+                    {company.location ? `${company.location}, Bangladesh` : "Dhaka, Bangladesh"}
                   </p>
                 </div>
 
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Website</span>
                   <a
-                    href={company.website || "https://brainstation-23.com"}
+                    href={company.website?.startsWith("http") ? company.website : `https://${company.website || "example.com"}`}
                     target="_blank"
                     rel="noreferrer"
                     className="font-bold text-indigo-600 hover:text-indigo-800 hover:underline inline-flex items-center gap-1 text-sm mt-0.5"
                   >
-                    <span>{company.website?.replace(/^https?:\/\//, "") || "brainstation-23.com"}</span>
+                    <span>{company.website?.replace(/^https?:\/\//, "") || `${(company.name || "company").toLowerCase().replace(/[^a-z0-9]/g, "")}.com`}</span>
                     <span>↗</span>
                   </a>
                 </div>
@@ -742,7 +747,7 @@ export default function CompanyDetailPage({
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Campus Location</span>
                 <a
-                  href="https://maps.google.com/?q=Mohakhali+Dhaka"
+                  href={`https://maps.google.com/?q=${encodeURIComponent(company.location || company.name + " Dhaka")}`}
                   target="_blank"
                   rel="noreferrer"
                   className="text-xs font-bold text-indigo-600 hover:underline"
@@ -752,7 +757,7 @@ export default function CompanyDetailPage({
               </div>
 
               <div className="w-full h-32 rounded-2xl overflow-hidden relative border border-slate-200 bg-[#E2E8F0]">
-                {/* SVG Map of Mohakhali / Gulshan Dhaka */}
+                {/* SVG Map */}
                 <svg className="w-full h-full" viewBox="0 0 300 120" preserveAspectRatio="none">
                   <rect width="300" height="120" fill="#F1F5F9" />
                   <line x1="0" y1="20" x2="300" y2="35" stroke="#CBD5E1" strokeWidth="6" />
@@ -767,7 +772,7 @@ export default function CompanyDetailPage({
                   <circle cx="150" cy="60" r="3" fill="#FFFFFF" />
                 </svg>
                 <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-white/95 backdrop-blur-xs text-[10px] font-bold text-slate-800 shadow-xs border border-slate-200">
-                  📍 Mohakhali Commercial Area, Dhaka
+                  📍 {company.location || "Dhaka, Bangladesh"}
                 </div>
               </div>
             </div>

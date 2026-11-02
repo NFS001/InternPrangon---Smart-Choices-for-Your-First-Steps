@@ -22,16 +22,21 @@ interface Props {
 
 export default function DashboardPage({ navigate, currentUser }: Props) {
   const user = currentUser ?? getSavedUser();
-  const displayName = user?.name || "Nafis Uddin Chowdhury";
-  const firstName = displayName.trim().split(" ")[0] || "Nafis";
+  const displayName = user?.name || "Student Candidate";
+  const firstName = displayName.trim().split(" ")[0] || "Student";
 
   const [points, setPoints] = useState(25);
   const [badge, setBadge] = useState("Newbie");
   const [savedCount, setSavedCount] = useState(1);
   const [applications, setApplications] = useState<ApiApplicationItem[]>([]);
   const [notifications, setNotifications] = useState<ApiNotificationItem[]>([]);
-  const [resumeFilename, setResumeFilename] = useState("Nafis_Uddin_Chowdhury_Resume.pdf");
+  const defaultResume = `${displayName.trim().replace(/\s+/g, '_')}_Resume.pdf`;
+  const [resumeFilename, setResumeFilename] = useState(defaultResume);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  const activeApps = applications.filter((a) => a.status !== "Rejected" && a.status !== "Archived");
+  const interviewingApps = applications.filter((a) => a.status === "Interviewing");
+  const underReviewApps = applications.filter((a) => a.status === "Applied" || a.status === "Shortlisted");
 
   useEffect(() => {
     getStudentProfile()
@@ -86,7 +91,20 @@ export default function DashboardPage({ navigate, currentUser }: Props) {
             Welcome back, {firstName} 👋
           </h1>
           <p className="text-slate-500 text-sm lg:text-base mt-1">
-            You have <span className="font-semibold text-indigo-600">1 active interview scheduled</span> and <span className="font-semibold text-slate-700">2 applications under review</span>.
+            {applications.length > 0 ? (
+              <>
+                You have{" "}
+                <span className="font-semibold text-indigo-600">
+                  {interviewingApps.length} active interview{interviewingApps.length === 1 ? "" : "s"} scheduled
+                </span>{" "}
+                and{" "}
+                <span className="font-semibold text-slate-700">
+                  {underReviewApps.length} application{underReviewApps.length === 1 ? "" : "s"} under review
+                </span>.
+              </>
+            ) : (
+              <>Explore verified internships and track your applications here in real-time.</>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -295,99 +313,96 @@ export default function DashboardPage({ navigate, currentUser }: Props) {
                 <span className="w-2 h-2 rounded-full bg-orange-500" />
                 Live Application Pipeline
               </h2>
-              <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full">3 Active</span>
+              <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full">
+                {activeApps.length} Active
+              </span>
             </div>
 
             <div className="space-y-3.5">
-              {/* Pipeline 1: Chaldal (Interviewing) */}
-              <div className="p-3.5 rounded-xl border border-amber-200/70 bg-amber-50/20 hover:bg-amber-50/40 transition-all">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <CompanyLogo name="Chaldal" size={36} />
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-slate-900 text-xs truncate">
-                        Backend Engineering Intern
-                      </h3>
-                      <p className="text-[11px] text-slate-500">Chaldal · C# / .NET</p>
-                    </div>
-                  </div>
-                  <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    Interviewing
-                  </span>
-                </div>
-                <div className="mt-2.5 pt-2 border-t border-amber-100 flex items-center justify-between text-[11px]">
-                  <span className="font-medium text-amber-900">📅 Tech Interview · Oct 12, 3:30 PM</span>
+              {applications.length === 0 ? (
+                <div className="py-8 text-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200 p-4">
+                  <p className="text-xs font-semibold text-slate-700">No active applications yet</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Start your journey by applying to top verified openings.</p>
                   <button
-                    onClick={() => navigate("applications")}
-                    className="font-semibold text-indigo-600 hover:text-indigo-800"
+                    onClick={() => navigate("internships")}
+                    className="mt-3 text-xs font-bold text-indigo-600 hover:text-indigo-800"
                   >
-                    View →
+                    Browse Openings →
                   </button>
                 </div>
-              </div>
+              ) : (
+                applications.slice(0, 3).map((app, idx) => {
+                  const intern = typeof app.internship === "object" ? app.internship : null;
+                  const compName = intern?.company || "Partner Company";
+                  const roleName = intern?.title || "Engineering Intern";
+                  const mode = intern?.mode ? `${intern.mode} · Dhaka` : "Hybrid · Dhaka";
+                  const status = app.status || "Applied";
 
-              {/* Pipeline 2: ShopUp (Shortlisted) */}
-              <div className="p-3.5 rounded-xl border border-indigo-200/70 bg-indigo-50/20 hover:bg-indigo-50/40 transition-all">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <CompanyLogo name="ShopUp" size={36} />
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-slate-900 text-xs truncate">
-                        Operations & Supply Chain Intern
-                      </h3>
-                      <p className="text-[11px] text-slate-500">ShopUp · Supply Logistics</p>
-                    </div>
-                  </div>
-                  <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-100 text-indigo-800 border border-indigo-300">
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
-                    Shortlisted
-                  </span>
-                </div>
-                <div className="mt-2.5 pt-2 border-t border-indigo-100 flex items-center justify-between text-[11px]">
-                  <span className="text-slate-600">Reviewed by Hiring Manager</span>
-                  <button
-                    onClick={() => navigate("applications")}
-                    className="font-semibold text-indigo-600 hover:text-indigo-800"
-                  >
-                    View →
-                  </button>
-                </div>
-              </div>
+                  let badgeColor = "bg-slate-100 text-slate-700 border-slate-200";
+                  let dotColor = "bg-slate-400";
+                  let pulse = false;
+                  let stageSubtitle = `Applied ${new Date(app.appliedDate || Date.now()).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 
-              {/* Pipeline 3: Pathao (Applied) */}
-              <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-100/50 transition-all">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <CompanyLogo name="Pathao" size={36} />
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-slate-900 text-xs truncate">
-                        Data Analyst Intern
-                      </h3>
-                      <p className="text-[11px] text-slate-500">Pathao · BI & Analytics</p>
+                  if (status === "Interviewing") {
+                    badgeColor = "bg-amber-100 text-amber-800 border-amber-300";
+                    dotColor = "bg-amber-500";
+                    pulse = true;
+                    stageSubtitle = "📅 Tech Interview Scheduled";
+                  } else if (status === "Shortlisted") {
+                    badgeColor = "bg-indigo-100 text-indigo-800 border-indigo-300";
+                    dotColor = "bg-indigo-600";
+                    stageSubtitle = "Reviewed by Hiring Manager";
+                  } else if (status === "Offered") {
+                    badgeColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
+                    dotColor = "bg-emerald-500";
+                    stageSubtitle = "🎉 Offer Extended";
+                  }
+
+                  return (
+                    <div
+                      key={app.applicationId || idx}
+                      className={`p-3.5 rounded-xl border transition-all ${
+                        status === "Interviewing"
+                          ? "border-amber-200/70 bg-amber-50/20 hover:bg-amber-50/40"
+                          : status === "Shortlisted"
+                          ? "border-indigo-200/70 bg-indigo-50/20 hover:bg-indigo-50/40"
+                          : "border-slate-200 bg-slate-50/40 hover:bg-slate-100/50"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2.5 min-w-0">
+                          <CompanyLogo name={compName} size={36} />
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-slate-900 text-xs truncate">
+                              {roleName}
+                            </h3>
+                            <p className="text-[11px] text-slate-500 truncate">{compName} · {mode}</p>
+                          </div>
+                        </div>
+                        <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${badgeColor}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${dotColor} ${pulse ? "animate-pulse" : ""}`} />
+                          {status}
+                        </span>
+                      </div>
+                      <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                        <span className="font-medium text-slate-700">{stageSubtitle}</span>
+                        <button
+                          onClick={() => navigate("applications")}
+                          className="font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                        >
+                          View →
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                    Applied
-                  </span>
-                </div>
-                <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500">Applied Sep 7, 2026</span>
-                  <button
-                    onClick={() => navigate("applications")}
-                    className="font-semibold text-indigo-600 hover:text-indigo-800"
-                  >
-                    View →
-                  </button>
-                </div>
-              </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
           <button
             onClick={() => navigate("applications")}
-            className="mt-4 pt-3 border-t border-slate-100 w-full text-xs font-semibold text-indigo-600 hover:text-indigo-800 text-center flex items-center justify-center gap-1"
+            className="mt-4 pt-3 border-t border-slate-100 w-full text-xs font-semibold text-indigo-600 hover:text-indigo-800 text-center flex items-center justify-center gap-1 cursor-pointer"
           >
             Track full application timeline →
           </button>
@@ -404,19 +419,21 @@ export default function DashboardPage({ navigate, currentUser }: Props) {
               <div className="bg-indigo-50/70 border border-indigo-100/80 rounded-xl p-3.5">
                 <p className="text-2xl font-black text-indigo-700 tracking-tight">{points}</p>
                 <p className="text-xs font-semibold text-indigo-900 mt-0.5">Contributor Pts</p>
-                <p className="text-[10px] text-indigo-500">🌱 Newbie Tier</p>
+                <p className="text-[10px] text-indigo-500">🌱 {badge} Tier</p>
               </div>
 
               <div className="bg-amber-50/70 border border-amber-100/80 rounded-xl p-3.5">
-                <p className="text-2xl font-black text-amber-700 tracking-tight">3</p>
+                <p className="text-2xl font-black text-amber-700 tracking-tight">{activeApps.length}</p>
                 <p className="text-xs font-semibold text-amber-900 mt-0.5">Active Roles</p>
-                <p className="text-[10px] text-amber-600">1 Interview scheduled</p>
+                <p className="text-[10px] text-amber-600">
+                  {interviewingApps.length} Interview{interviewingApps.length === 1 ? "" : "s"} scheduled
+                </p>
               </div>
 
               <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3.5">
                 <p className="text-2xl font-black text-slate-800 tracking-tight">{savedCount}</p>
-                <p className="text-xs font-semibold text-slate-700 mt-0.5">Saved Role</p>
-                <p className="text-[10px] text-slate-400">Brain Station 23</p>
+                <p className="text-xs font-semibold text-slate-700 mt-0.5">Saved Roles</p>
+                <p className="text-[10px] text-slate-400">Shortlisted</p>
               </div>
 
               <div className="bg-emerald-50/70 border border-emerald-100/80 rounded-xl p-3.5">
@@ -442,35 +459,50 @@ export default function DashboardPage({ navigate, currentUser }: Props) {
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-start gap-2.5 text-xs">
-                <span className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0 animate-pulse" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-slate-800 font-semibold leading-tight">
-                    Chaldal scheduled Technical Interview
-                  </p>
-                  <p className="text-slate-400 text-[11px] mt-0.5">Today at 10:38 PM · Google Meet</p>
+              {notifications.length > 0 ? (
+                notifications.slice(0, 3).map((notif, idx) => (
+                  <div key={notif._id || notif.id || idx} className="flex items-start gap-2.5 text-xs">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-800 font-semibold leading-tight">{notif.message}</p>
+                      <p className="text-slate-400 text-[11px] mt-0.5">
+                        {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString() : "Recent"}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : interviewingApps.length > 0 ? (
+                <>
+                  <div className="flex items-start gap-2.5 text-xs">
+                    <span className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0 animate-pulse" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-800 font-semibold leading-tight">
+                        {typeof interviewingApps[0].internship === "object" ? interviewingApps[0].internship?.company : "Company"} scheduled Technical Interview
+                      </p>
+                      <p className="text-slate-400 text-[11px] mt-0.5">Check your email for meeting link</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2.5 text-xs">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-700 leading-tight">
+                        Earned <strong className="text-emerald-600">+{points} points</strong> for Profile Activity
+                      </p>
+                      <p className="text-slate-400 text-[11px] mt-0.5">Tier: {badge}</p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-start gap-2.5 text-xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-slate-700 leading-tight">
+                      Profile Active · Ready for 1-Click Apply
+                    </p>
+                    <p className="text-slate-400 text-[11px] mt-0.5">Tier: {badge}</p>
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex items-start gap-2.5 text-xs">
-                <span className="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-slate-700 leading-tight">
-                    ShopUp moved your status to <strong className="text-indigo-600">Shortlisted</strong>
-                  </p>
-                  <p className="text-slate-400 text-[11px] mt-0.5">Sep 7, 02:37 PM</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2.5 text-xs">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-slate-700 leading-tight">
-                    Earned <strong className="text-emerald-600">+25 points</strong> for Profile Completion
-                  </p>
-                  <p className="text-slate-400 text-[11px] mt-0.5">Sep 7, 11:00 AM</p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

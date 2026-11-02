@@ -8,6 +8,7 @@ export interface ApiUser {
   name: string;
   email: string;
   role: "student" | "company" | "admin";
+  avatar?: string;
 }
 
 export interface AuthResponse {
@@ -25,6 +26,11 @@ export interface ApiInternship {
   deadline: string;
   deadlineSoon?: boolean;
   company?: string;
+  companyLogo?: string;
+  companyLogoBg?: string;
+  companyLogoColor?: string;
+  location?: string;
+  stipend?: string;
   companyProfileId?: string;
   companyIndustry?: string;
   companyWebsite?: string;
@@ -51,6 +57,7 @@ export interface ApiBookmarkItem {
 
 export interface ApiNotificationItem {
   _id: string;
+  id?: string;
   recipient: string;
   type: "CompanyVerification" | "ApplicationStatus";
   message: string;
@@ -131,7 +138,7 @@ export interface ApiApplicationItem {
     originalName?: string;
     uploadedDate: string;
   };
-  status: "Applied" | "Shortlisted" | "Interviewing" | "Rejected";
+  status: "Applied" | "Shortlisted" | "Interviewing" | "Rejected" | "Offered" | "Archived" | string;
   appliedDate: string;
   student?: {
     _id: string;
@@ -257,7 +264,7 @@ export interface ApiCompanyInternship {
 
 export interface ApiCompanyApplicantItem {
   applicationId: string;
-  status: "Applied" | "Shortlisted" | "Interviewing" | "Rejected";
+  status: "Applied" | "Shortlisted" | "Interviewing" | "Rejected" | "Offered" | "Archived" | string;
   appliedDate: string;
   internship: {
     id: string;
@@ -443,10 +450,14 @@ export const submitCompanyProfile = (data: {
 export const getAllCompaniesAdmin = () =>
   request<{ message: string; companies: ApiCompanyDirectoryItem[] }>("/company/all");
 
-export const verifyCompanyAdmin = (companyId: string, status: "Approved" | "Rejected") =>
+export const verifyCompanyAdmin = (
+  companyId: string,
+  status: "Approved" | "Rejected" | "Pending",
+  reason?: string
+) =>
   request<{ message: string; company: unknown }>(`/company/verify/${companyId}`, {
     method: "PUT",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, reason }),
   });
 
 export const deleteCompanyAdmin = (companyId: string) =>
@@ -603,14 +614,61 @@ export const getStudentProfile = () =>
       skills: string[];
       points: number;
       badge: string;
+      avatar?: string;
     };
   }>("/student/profile");
 
-export const updateStudentProfile = (data: { bio?: string; skills?: string[] }) =>
+export const updateStudentProfile = (data: { bio?: string; skills?: string[]; avatar?: string }) =>
   request<{ message: string; profile: unknown }>("/student/profile", {
     method: "POST",
     body: JSON.stringify(data),
   });
+
+export const uploadStudentAvatar = (file: File) => {
+  const formData = new FormData();
+  formData.append("avatar", file);
+  return request<{
+    message: string;
+    avatarUrl: string;
+    user: ApiUser;
+    profile: {
+      bio: string;
+      skills: string[];
+      points: number;
+      badge: string;
+      avatar?: string;
+    };
+  }>("/student/avatar", {
+    method: "POST",
+    body: formData,
+  });
+};
+
+export const resolveAvatarUrl = (url?: string | null): string => {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:") || url.startsWith("blob:")) {
+    return url;
+  }
+  if (url.startsWith("/uploads/")) {
+    const backendOrigin = API_BASE_URL.replace(/\/api$/, "");
+    return `${backendOrigin}${url}`;
+  }
+  return url;
+};
+
+export const getUserAvatar = (
+  user?: { name?: string; email?: string; avatar?: string } | null,
+  profileAvatar?: string
+): string => {
+  if (profileAvatar) return resolveAvatarUrl(profileAvatar);
+  if (user?.avatar) return resolveAvatarUrl(user.avatar);
+  const target = `${user?.name || ""} ${user?.email || ""}`.toLowerCase();
+  if (target.includes("fuad") || target.includes("muhtasim")) return "/team_fuad.jpg";
+  if (target.includes("tahmid") || target.includes("kawnain") || target.includes("billah")) return "/team_tahmid.jpg";
+  if (target.includes("eva") || target.includes("tasnim")) return "/team_eva.jpg";
+  if (target.includes("nafis")) return "/team_nafis.jpg";
+  return "";
+};
 
 export const getMyCompanyProfile = () =>
   request<{

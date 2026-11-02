@@ -271,19 +271,67 @@ const updateApplicationStatus = async (req, res) => {
 
 const getMyApplications = async (req, res) => {
     try {
+        const CompanyProfile = require('../models/CompanyProfile');
+        const User = require('../models/User');
+
         const applications = await Application.find({ student: req.user._id })
             .populate('internship')
+            .populate('resume')
             .sort({ appliedDate: -1 });
+
+        // Gather all company user IDs
+        const companyUserIds = [
+            ...new Set(
+                applications
+                    .map((a) => a.internship && a.internship.companyId)
+                    .filter(Boolean)
+            )
+        ];
+
+        const [companyProfiles, companyUsers] = await Promise.all([
+            CompanyProfile.find({ user: { $in: companyUserIds } }).lean(),
+            User.find({ _id: { $in: companyUserIds } }).select('name email').lean()
+        ]);
+
+        const profileMap = new Map();
+        companyProfiles.forEach((cp) => profileMap.set(String(cp.user), cp));
+        const userMap = new Map();
+        companyUsers.forEach((cu) => userMap.set(String(cu._id), cu));
+
+        const formatted = applications.map((app) => {
+            const internDoc = app.internship;
+            let internObj = null;
+
+            if (internDoc) {
+                const rawIntern = internDoc.toObject ? internDoc.toObject() : internDoc;
+                const companyIdStr = String(rawIntern.companyId);
+                const cp = profileMap.get(companyIdStr);
+                const cu = userMap.get(companyIdStr);
+                const companyName = cp?.companyName || cu?.name || 'Partner Company';
+
+                internObj = {
+                    ...rawIntern,
+                    company: companyName,
+                    companyProfileId: cp ? String(cp._id) : null,
+                    companyLogo: companyName.slice(0, 2).toUpperCase(),
+                    location: cp?.location || 'Dhaka, Bangladesh',
+                    industry: cp?.industry || 'Technology'
+                };
+            }
+
+            return {
+                applicationId: app._id,
+                internship: internObj,
+                resume: app.resume,
+                status: app.status,
+                appliedDate: app.appliedDate
+            };
+        });
 
         res.status(200).json({
             message: 'Applications fetched successfully!',
-            totalApplications: applications.length,
-            applications: applications.map((app) => ({
-                applicationId: app._id,
-                internship: app.internship,
-                status: app.status,
-                appliedDate: app.appliedDate
-            }))
+            totalApplications: formatted.length,
+            applications: formatted
         });
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });

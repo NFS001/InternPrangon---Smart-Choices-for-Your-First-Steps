@@ -242,9 +242,15 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-export default function ReviewsPage({ navigate }: { navigate?: Navigate }) {
+export default function ReviewsPage({
+  navigate,
+  initialCompany,
+}: {
+  navigate?: Navigate;
+  initialCompany?: string;
+}) {
   const [tab, setTab] = useState<'all' | 'experience' | 'interview'>('all');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(initialCompany || '');
   const [sortBy, setSortBy] = useState<'helpful' | 'highest' | 'recent'>('helpful');
   const [allReviews, setAllReviews] = useState<StructuredReview[]>(CURATED_REVIEWS);
   const [helpfulSet, setHelpfulSet] = useState<Set<string | number>>(new Set());

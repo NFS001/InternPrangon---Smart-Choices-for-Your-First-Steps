@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 const connectDB = require('./config/db');
 
@@ -23,6 +24,7 @@ connectDB();
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Reconnect/verify MongoDB connection for serverless invocations
 app.use(async (req, res, next) => {

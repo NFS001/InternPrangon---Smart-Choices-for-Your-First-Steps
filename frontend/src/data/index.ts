@@ -204,6 +204,7 @@ export const INTERNSHIPS: Internship[] = [
 export interface Company {
   id: number;
   mongoId?: string;
+  slug?: string;
   name: string;
   logo: string;
   logoColor: string;
@@ -213,6 +214,9 @@ export interface Company {
   size: string;
   description: string;
   about: string;
+  bio?: string;
+  employees?: string;
+  openingsCount?: number;
   rating: number;
   reviewCount: number;
   activeInternships: number;
@@ -571,6 +575,7 @@ export type ModerationAction = 'pending' | 'dismissed' | 'deleted';
 
 export interface AdminCompany {
   id: number;
+  slug?: string;
   name: string;
   logo: string;
   logoColor: string;

@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import type { Navigate } from '../../data/index';
 import { LogoMark } from '../../pages/DesignSystemPage';
-import { getSavedUser, getStudentProfile, getMyApplications, getMyBookmarks, getMyNotifications, type ApiUser } from '../../api/client';
+import {
+  getSavedUser,
+  getStudentProfile,
+  getMyApplications,
+  getMyBookmarks,
+  getMyNotifications,
+  getUserAvatar,
+  resolveAvatarUrl,
+  type ApiUser
+} from '../../api/client';
 import { CURRENT_STUDENT } from '../../data/index';
 
 interface StudentSidebarProps {
@@ -13,25 +22,35 @@ interface StudentSidebarProps {
 
 export default function StudentSidebar({ currentPage, navigate, onLogout, currentUser }: StudentSidebarProps) {
   const user = currentUser ?? getSavedUser();
-  const [profile, setProfile] = useState<{ points: number; badge: string }>({
+  const [profile, setProfile] = useState<{ points: number; badge: string; avatar?: string }>({
     points: 25,
     badge: 'Newbie',
+    avatar: user?.avatar || '',
   });
   const [appCount, setAppCount] = useState(3);
   const [savedCount, setSavedCount] = useState(1);
   const [unreadNotif, setUnreadNotif] = useState(true);
 
-  useEffect(() => {
+  const fetchProfile = () => {
     getStudentProfile()
       .then((res) => {
         if (res.profile) {
           setProfile({
             points: res.profile.points !== undefined && res.profile.points !== 0 ? res.profile.points : 25,
             badge: res.profile.badge || 'Newbie',
+            avatar: res.profile.avatar || res.user?.avatar || '',
           });
         }
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchProfile();
+
+    const handleUpdate = () => fetchProfile();
+    window.addEventListener('internprangon_profile_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
 
     getMyApplications()
       .then((res) => {
@@ -59,6 +78,14 @@ export default function StudentSidebar({ currentPage, navigate, onLogout, curren
 
   const displayName = user?.name || CURRENT_STUDENT.name;
   const universitySub = `${CURRENT_STUDENT.university} · ${CURRENT_STUDENT.department}`;
+  const avatarSrc = resolveAvatarUrl(profile.avatar || user?.avatar) || getUserAvatar(user, profile.avatar);
+  const initials = displayName
+    .split(' ')
+    .map((n) => n[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 
   const navItems = [
     {
@@ -173,16 +200,20 @@ export default function StudentSidebar({ currentPage, navigate, onLogout, curren
           >
             <div className="flex items-center gap-3">
               {/* Rounded-xl squircle avatar frame */}
-              <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-slate-200 shadow-2xs">
-                <img
-                  src="/team_nafis.jpg"
-                  alt={displayName}
-                  className="w-full h-full object-cover object-top"
-                  onError={(e) => {
-                    // Fallback to gradient initials if image is missing
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
+              <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200 shadow-2xs relative flex items-center justify-center">
+                {avatarSrc ? (
+                  <img
+                    src={avatarSrc}
+                    alt={displayName}
+                    className="w-full h-full object-cover object-top"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                ) : null}
+                <div className="absolute inset-0 -z-10 bg-gradient-to-tr from-indigo-600 to-orange-500 flex items-center justify-center text-white text-xs font-bold">
+                  {initials}
+                </div>
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Navigate } from "../../data/index";
 import { CompanyLogo } from "../../components/common/CompanyLogos";
-import { getMyApplications } from "../../api/client";
+import { getMyApplications, getSavedUser } from "../../api/client";
 import DocumentPreviewModal from "../../components/common/DocumentPreviewModal";
 import { formatResumeFilename } from "../../utils/formatDocument";
 
@@ -106,15 +106,18 @@ const DEFAULT_APPLICATIONS: ApplicationItem[] = [
 ];
 
 export default function ApplicationsPage({ navigate }: Props) {
+  const user = getSavedUser();
+  const defaultResume = `${(user?.name || "Student").trim().replace(/\s+/g, "_")}_Resume.pdf`;
+  const isNafis = user ? (user.name.toLowerCase().includes("nafis") || user.email.toLowerCase().includes("nafis")) : true;
+
   const [filter, setFilter] = useState<FilterType>("All");
-  const [apps, setApps] = useState<ApplicationItem[]>(DEFAULT_APPLICATIONS);
+  const [apps, setApps] = useState<ApplicationItem[]>(isNafis ? DEFAULT_APPLICATIONS : []);
   const [selectedResumeModal, setSelectedResumeModal] = useState<{ url: string; title: string } | null>(null);
 
   useEffect(() => {
     getMyApplications()
       .then((res) => {
         if (res.applications && res.applications.length > 0) {
-          // If live backend applications exist, map them or merge with defaults
           const mapped: ApplicationItem[] = res.applications.map((apiApp, idx) => {
             const intern = typeof apiApp.internship === "object" ? apiApp.internship : null;
             const statusMapped = (apiApp.status || "Applied") as ApplicationItem["status"];
@@ -125,38 +128,74 @@ export default function ApplicationsPage({ navigate }: Props) {
             const cleanResumeName = formatResumeFilename(
               resumeObj?.filePath || (typeof apiApp.resume === "string" ? apiApp.resume : null),
               resumeObj?.originalName,
-              "Nafis_Uddin_Chowdhury_Resume.pdf"
+              defaultResume
             );
+
+            const compName = (typeof apiApp.internship === "object" && apiApp.internship?.company) || "Partner Company";
+            const roleTitle = intern?.title || "Engineering Intern";
+
+            let alertNote: ApplicationItem["alertNote"] = undefined;
+            if (statusMapped === "Interviewing") {
+              alertNote = {
+                type: "interview",
+                text: `📅 Technical Interview via Google Meet scheduled for ${roleTitle}.`,
+                actionLabel: "Join Meeting Link",
+                actionUrl: "https://meet.google.com/abc-defg-hij",
+              };
+            } else if (statusMapped === "Shortlisted") {
+              alertNote = {
+                type: "info",
+                text: `Application reviewed by ${compName} hiring committee. Shortlisted for interview round.`,
+              };
+            } else if (statusMapped === "Offered") {
+              alertNote = {
+                type: "interview",
+                text: `🎉 Formal offer letter extended by ${compName}.`,
+              };
+            } else {
+              alertNote = {
+                type: "submitted",
+                text: `Application submitted successfully and delivered to ${compName} talent acquisition queue.`,
+              };
+            }
+
+            const appDateStr = new Date(apiApp.appliedDate || Date.now()).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            });
 
             return {
               id: apiApp.applicationId || `app-${idx}`,
-              companyName: (typeof apiApp.internship === "object" && apiApp.internship?.company) || "Chaldal",
-              roleTitle: intern?.title || "Engineering Intern",
+              companyName: compName,
+              roleTitle,
               location: intern?.mode ? `${intern.mode} · Dhaka` : "On-site · Dhaka",
-              stipend: "Stipend: BDT 18,000/mo",
-              appliedDate: new Date(apiApp.appliedDate).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              }),
+              stipend: intern?.stipend ? `Stipend: ${intern.stipend}` : "Stipend: BDT 18,000/mo",
+              appliedDate: appDateStr,
               status: statusMapped,
               currentStage: stageNum,
               stages: [
-                { title: "Applied", date: "Sep 7" },
-                { title: "Profile Shortlisted", date: stageNum >= 2 ? "Sep 14" : undefined },
-                { title: "Interview Scheduled", date: stageNum >= 3 ? "Oct 12" : undefined },
-                { title: "Decision / Offer" },
+                { title: "Applied", date: appDateStr },
+                { title: "Profile Shortlisted", date: stageNum >= 2 ? "In Review" : undefined },
+                { title: "Interview Scheduled", date: stageNum >= 3 ? "Scheduled" : undefined },
+                { title: "Decision / Offer", date: stageNum >= 4 ? "Offered" : undefined },
               ],
+              alertNote,
               resumeFilename: cleanResumeName,
               resumeUrl: "/sample_resume.pdf",
             };
           });
           setApps(mapped);
+        } else if (!isNafis) {
+          setApps([]);
         }
       })
       .catch(() => {
-        // Fallback to default demonstrative data
-        setApps(DEFAULT_APPLICATIONS);
+        if (isNafis) {
+          setApps(DEFAULT_APPLICATIONS);
+        } else {
+          setApps([]);
+        }
       });
   }, []);
 

@@ -257,7 +257,16 @@ export default function App() {
           {page === 'internships'       && <InternshipsPage navigate={navigate} initialSearch={(pageData.search as string) || (pageData.category as string) || ''} initialCategory={pageData.category as string} />}
           {page === 'internship-detail' && <InternshipDetailPage navigate={navigate} id={pageData.id as number | string | undefined} backendId={pageData.backendId as string | undefined} internshipData={pageData.internshipData as any} />}
           {page === 'companies'         && <CompaniesPage navigate={navigate} initialSearch={pageData.search as string} />}
-          {page === 'company-detail'    && <CompanyDetailPage navigate={navigate} slug={(pageData.slug as string) || ''} backendId={pageData.backendId as string | undefined} />}
+          {page === 'company-detail'    && (
+            <CompanyDetailPage
+              navigate={navigate}
+              id={pageData.id as number | string | undefined}
+              companyId={(pageData.companyId || pageData.backendId || pageData.id) as number | string | undefined}
+              companyData={pageData.companyData}
+              slug={(pageData.slug as string) || ''}
+              backendId={(pageData.backendId || pageData.companyId) as string | undefined}
+            />
+          )}
           {page === 'reviews'           && <ReviewsPage navigate={navigate} initialCompany={pageData.company as string} />}
           {page === 'about'             && <AboutPage navigate={navigate} />}
         </div>

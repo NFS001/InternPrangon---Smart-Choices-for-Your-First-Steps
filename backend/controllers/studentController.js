@@ -1,9 +1,10 @@
 const StudentProfile = require('../models/StudentProfile');
+const User = require('../models/User');
 
 // Create or Update Student Profile (Feature 3)
 const updateStudentProfile = async (req, res) => {
     try {
-        const { bio, skills } = req.body; // Points and Badges will be automatically assigned initially
+        const { bio, skills, avatar } = req.body; // Points and Badges will be automatically assigned initially
         const user = req.user._id;
 
         // Check if profile exists, if yes, update it. If not, create a new one.
@@ -11,12 +12,17 @@ const updateStudentProfile = async (req, res) => {
 
         if (profile) {
             // Update existing profile
-            profile.bio = bio || profile.bio;
-            profile.skills = skills || profile.skills;
+            profile.bio = bio !== undefined ? bio : profile.bio;
+            profile.skills = skills !== undefined ? skills : profile.skills;
+            if (avatar !== undefined) profile.avatar = avatar;
             await profile.save();
         } else {
             // Create new profile
-            profile = await StudentProfile.create({ user, bio, skills });
+            profile = await StudentProfile.create({ user, bio, skills, avatar: avatar || '' });
+        }
+
+        if (avatar !== undefined) {
+            await User.findByIdAndUpdate(user, { avatar });
         }
 
         res.status(200).json({
@@ -65,7 +71,8 @@ const getStudentProfile = async (req, res) => {
                 bio: '',
                 skills: [],
                 points: 0,
-                badge: 'Newbie'
+                badge: 'Newbie',
+                avatar: req.user.avatar || ''
             });
         }
         res.status(200).json({
@@ -74,13 +81,15 @@ const getStudentProfile = async (req, res) => {
                 id: req.user._id,
                 name: req.user.name,
                 email: req.user.email,
-                role: req.user.role
+                role: req.user.role,
+                avatar: profile.avatar || req.user.avatar || ''
             },
             profile: {
                 bio: profile.bio,
                 skills: profile.skills,
                 points: profile.points,
-                badge: profile.badge
+                badge: profile.badge,
+                avatar: profile.avatar || req.user.avatar || ''
             }
         });
     } catch (error) {
@@ -88,4 +97,50 @@ const getStudentProfile = async (req, res) => {
     }
 };
 
-module.exports = { updateStudentProfile, getLeaderboard, getStudentProfile };
+// Feature: Upload Student Photo / Avatar
+const uploadStudentAvatar = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No image file uploaded' });
+        }
+
+        const avatarRelativePath = `/uploads/avatars/${req.file.filename}`;
+        const userId = req.user._id;
+
+        await User.findByIdAndUpdate(userId, { avatar: avatarRelativePath });
+
+        let profile = await StudentProfile.findOne({ user: userId });
+        if (profile) {
+            profile.avatar = avatarRelativePath;
+            await profile.save();
+        } else {
+            profile = await StudentProfile.create({
+                user: userId,
+                avatar: avatarRelativePath
+            });
+        }
+
+        res.status(200).json({
+            message: 'Profile picture uploaded successfully!',
+            avatarUrl: avatarRelativePath,
+            user: {
+                id: req.user._id,
+                name: req.user.name,
+                email: req.user.email,
+                role: req.user.role,
+                avatar: avatarRelativePath
+            },
+            profile: {
+                bio: profile.bio,
+                skills: profile.skills,
+                points: profile.points,
+                badge: profile.badge,
+                avatar: avatarRelativePath
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+module.exports = { updateStudentProfile, getLeaderboard, getStudentProfile, uploadStudentAvatar };

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Navigate } from "../../data/index";
 import { CURRENT_STUDENT } from "../../data/index";
-import { getLeaderboard, getStudentProfile, getSavedUser } from "../../api/client";
+import { getLeaderboard, getStudentProfile, getSavedUser, getUserAvatar, resolveAvatarUrl } from "../../api/client";
 
 interface Props {
   navigate: Navigate;
@@ -142,10 +142,13 @@ export default function ContributorsPage({ navigate }: Props) {
   const [timeFilter, setTimeFilter] = useState<"All-Time" | "This Month">("This Month");
   const [points, setPoints] = useState(25);
   const [badge, setBadge] = useState("Newbie");
+  const [profileAvatar, setProfileAvatar] = useState("");
   const [rows, setRows] = useState<ContributorRow[]>(DEFAULT_LEADERBOARD);
 
   const savedUser = getSavedUser();
   const studentName = savedUser?.name || CURRENT_STUDENT.name;
+  const myAvatar = resolveAvatarUrl(profileAvatar || savedUser?.avatar) || getUserAvatar(savedUser, profileAvatar);
+  const myInitials = studentName.split(" ").map((n) => n[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
 
   useEffect(() => {
     getStudentProfile()
@@ -153,6 +156,9 @@ export default function ContributorsPage({ navigate }: Props) {
         if (res.profile) {
           setPoints(res.profile.points ?? 25);
           setBadge(res.profile.badge ?? "Newbie");
+          if (res.profile.avatar || res.user?.avatar) {
+            setProfileAvatar(res.profile.avatar || res.user?.avatar || "");
+          }
         }
       })
       .catch(() => {});
@@ -165,7 +171,7 @@ export default function ContributorsPage({ navigate }: Props) {
             return {
               rank: item.rank || idx + 1,
               name: isMe ? `${studentName} (You)` : item.name,
-              avatar: isMe ? "/team_nafis.jpg" : undefined,
+              avatar: isMe ? (myAvatar || undefined) : undefined,
               university: isMe ? "BRAC University" : "University Student",
               contributions: Math.max(1, Math.round(item.points / 30)),
               points: item.points,
@@ -210,17 +216,19 @@ export default function ContributorsPage({ navigate }: Props) {
         <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6">
           {/* Left: Avatar + Student Info */}
           <div className="flex items-center gap-4 w-full lg:w-auto">
-            <div className="relative w-14 h-14 rounded-2xl overflow-hidden border-2 border-indigo-400/50 shadow-md shrink-0">
-              <img
-                src="/team_nafis.jpg"
-                alt="Nafis"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = "none";
-                }}
-              />
-              <div className="w-full h-full bg-gradient-to-br from-indigo-600 to-orange-500 flex items-center justify-center font-bold text-white text-lg">
-                NU
+            <div className="relative w-14 h-14 rounded-2xl overflow-hidden border-2 border-indigo-400/50 shadow-md shrink-0 flex items-center justify-center bg-slate-900">
+              {myAvatar ? (
+                <img
+                  src={myAvatar}
+                  alt={studentName}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+              ) : null}
+              <div className="absolute inset-0 -z-10 bg-gradient-to-br from-indigo-600 to-orange-500 flex items-center justify-center font-bold text-white text-lg">
+                {myInitials}
               </div>
             </div>
 
