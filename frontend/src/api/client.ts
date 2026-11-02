@@ -91,6 +91,11 @@ export interface ApiLeaderboardEntry {
   name: string;
   points: number;
   badge: "Newbie" | "Explorer" | "Insider" | "Veteran" | "Elite" | string;
+  avatar?: string;
+  email?: string;
+  userId?: string;
+  id?: string;
+  university?: string;
 }
 
 export interface ApiReviewItem {

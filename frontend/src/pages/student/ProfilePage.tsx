@@ -66,13 +66,21 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
-    if (user?.name) setName(user.name);
+    if (user?.name) {
+      setName(user.name);
+      const computedDefault = `${user.name.trim().replace(/\s+/g, '_')}_Resume.pdf`;
+      setResumeFilename((prev) => (prev.toLowerCase().includes("nafis") && !user.name.toLowerCase().includes("nafis") ? computedDefault : prev));
+    }
     if (user?.email) setEmail(user.email);
     if (user?.avatar) setProfileAvatar(user.avatar);
 
     getStudentProfile()
       .then((res) => {
-        if (res.user?.name) setName(res.user.name);
+        if (res.user?.name) {
+          setName(res.user.name);
+          const computedDefault = `${res.user.name.trim().replace(/\s+/g, '_')}_Resume.pdf`;
+          setResumeFilename((prev) => (prev.toLowerCase().includes("nafis") && !res.user.name.toLowerCase().includes("nafis") ? computedDefault : prev));
+        }
         if (res.user?.email) setEmail(res.user.email);
         if (res.profile?.avatar || res.user?.avatar) {
           setProfileAvatar(res.profile?.avatar || res.user?.avatar || "");
@@ -93,8 +101,15 @@ export default function ProfilePage({ navigate: _navigate, currentUser }: Props)
 
     getMyResume()
       .then((res) => {
-        if (res.resume && res.resume.filePath) {
-          const fn = formatResumeFilename(res.resume.filePath, res.resume.originalName);
+        if (res.resume) {
+          let orig = res.resume.originalName;
+          const currentNameClean = (name || user?.name || CURRENT_STUDENT.name).trim();
+          const userDefault = `${currentNameClean.replace(/\s+/g, '_')}_Resume.pdf`;
+
+          if (orig && orig.toLowerCase().includes("nafis") && !currentNameClean.toLowerCase().includes("nafis")) {
+            orig = userDefault;
+          }
+          const fn = formatResumeFilename(res.resume.filePath, orig || userDefault, userDefault);
           setResumeFilename(fn);
           if (res.resume.uploadedDate) {
             setResumeUploadDate(

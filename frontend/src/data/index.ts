@@ -383,7 +383,7 @@ export const CURRENT_STUDENT = {
   badge: 'Newbie',
   badgeTier: 1,
   profileComplete: 100,
-  resumeName: 'Nafis_Uddin_Chowdhury_Resume_2026.pdf',
+  resumeName: 'Student_Resume.pdf',
   savedIds: [1],
   applicationIds: [1, 2, 4],
 };

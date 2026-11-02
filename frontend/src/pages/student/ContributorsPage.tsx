@@ -82,7 +82,8 @@ const BADGE_TIERS: TierLadder[] = [
 const DEFAULT_LEADERBOARD: ContributorRow[] = [
   {
     rank: 1,
-    name: "Tahmid R.",
+    name: "Syed Kawnain Tahmid Billah",
+    avatar: "/team_tahmid.jpg",
     university: "BRAC University",
     contributions: 4,
     points: 113,
@@ -91,48 +92,50 @@ const DEFAULT_LEADERBOARD: ContributorRow[] = [
   },
   {
     rank: 2,
-    name: "Anika S.",
-    university: "BUET",
+    name: "Md. Muhtasim Fuad",
+    avatar: "/team_fuad.jpg",
+    university: "BRAC University",
+    contributions: 2,
+    points: 45,
+    badgeTier: "Explorer",
+    badgeIcon: "🔭",
+  },
+  {
+    rank: 3,
+    name: "Farhana Tasnim Eva",
+    avatar: "/team_eva.jpg",
+    university: "BRAC University",
     contributions: 1,
     points: 30,
     badgeTier: "Newbie",
     badgeIcon: "🌱",
   },
   {
-    rank: 3,
-    name: "Nafis Uddin Chowdhury (You)",
+    rank: 4,
+    name: "Nafis Uddin Chowdhury",
     avatar: "/team_nafis.jpg",
     university: "BRAC University",
     contributions: 1,
     points: 25,
     badgeTier: "Newbie",
     badgeIcon: "🌱",
-    isCurrentUser: true,
-  },
-  {
-    rank: 4,
-    name: "Tanvir H.",
-    university: "IUT",
-    contributions: 1,
-    points: 20,
-    badgeTier: "Newbie",
-    badgeIcon: "🌱",
   },
   {
     rank: 5,
-    name: "Sadia K.",
-    university: "Dhaka University",
+    name: "Tahmid Rahman",
+    avatar: "/team_tahmid.jpg",
+    university: "BRAC University",
     contributions: 1,
-    points: 15,
+    points: 23,
     badgeTier: "Newbie",
     badgeIcon: "🌱",
   },
   {
     rank: 6,
-    name: "Farhan A.",
-    university: "North South University",
+    name: "Anika S.",
+    university: "BUET",
     contributions: 1,
-    points: 10,
+    points: 20,
     badgeTier: "Newbie",
     badgeIcon: "🌱",
   },
@@ -167,12 +170,21 @@ export default function ContributorsPage({ navigate }: Props) {
       .then((res) => {
         if (res.leaderboard && res.leaderboard.length > 0) {
           const mapped: ContributorRow[] = res.leaderboard.map((item, idx) => {
-            const isMe = item.name === studentName || idx === 2;
+            const isMe =
+              Boolean(savedUser?.email && item.email && item.email.toLowerCase() === savedUser.email.toLowerCase()) ||
+              Boolean(savedUser?.id && item.userId && String(item.userId) === String(savedUser.id)) ||
+              (item.name.trim().toLowerCase() === studentName.trim().toLowerCase());
+
+            const rowAvatar =
+              (isMe && myAvatar) ||
+              (item.avatar ? resolveAvatarUrl(item.avatar) : "") ||
+              getUserAvatar({ name: item.name, email: item.email }, item.avatar);
+
             return {
               rank: item.rank || idx + 1,
-              name: isMe ? `${studentName} (You)` : item.name,
-              avatar: isMe ? (myAvatar || undefined) : undefined,
-              university: isMe ? "BRAC University" : "University Student",
+              name: isMe ? `${item.name} (You)` : item.name,
+              avatar: rowAvatar || undefined,
+              university: item.university || (isMe ? "BRAC University" : "University Student"),
               contributions: Math.max(1, Math.round(item.points / 30)),
               points: item.points,
               badgeTier: item.badge || "Newbie",

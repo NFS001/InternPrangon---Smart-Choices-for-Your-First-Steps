@@ -50,8 +50,12 @@ export default function DashboardPage({ navigate, currentUser }: Props) {
 
     getMyResume()
       .then((res) => {
-        if (res.resume && res.resume.filePath) {
-          const fn = formatResumeFilename(res.resume.filePath, res.resume.originalName);
+        if (res.resume) {
+          let orig = res.resume.originalName;
+          if (orig && orig.toLowerCase().includes("nafis") && !displayName.toLowerCase().includes("nafis")) {
+            orig = defaultResume;
+          }
+          const fn = formatResumeFilename(res.resume.filePath, orig || defaultResume, defaultResume);
           setResumeFilename(fn);
         }
       })
