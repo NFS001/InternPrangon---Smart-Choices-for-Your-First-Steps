@@ -427,12 +427,12 @@ export default function AboutPage({ navigate }: Props) {
               linkedin: 'https://www.linkedin.com/in/syed-kawnain-tahmid-billah-725768337/',
             },
             {
-              name: 'Tasnim Eva',
+              name: 'Farhana Tasnim Eva',
               role: 'UI/UX & Frontend Lead',
               dept: 'B.Sc. in CSE, BRAC University',
               image: '/team_eva.jpg',
               github: 'https://github.com/tasnim-eva',
-              linkedin: '',
+              linkedin: 'https://www.linkedin.com/in/farhana-tasnim-eva/',
             },
           ].map((member, idx) => (
             <div

@@ -908,6 +908,18 @@ export default function AuthModal({
 
               <button
                 type="button"
+                onClick={() => handleQuickSso('eva@gmail.com', 'student', 'Farhana Tasnim Eva')}
+                className="w-full p-2.5 rounded-lg border border-slate-200 hover:bg-indigo-50 text-left transition flex justify-between items-center"
+              >
+                <div>
+                  <div className="font-bold text-slate-900">Farhana Tasnim Eva</div>
+                  <div className="text-[10px] text-slate-500">eva@gmail.com (BRACU)</div>
+                </div>
+                <span className="text-indigo-600 font-bold text-xs">Connect →</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => handleQuickSso('recruiter@brainstation-23.com', 'company', 'Brain Station 23')}
                 className="w-full p-2.5 rounded-lg border border-slate-200 hover:bg-indigo-50 text-left transition flex justify-between items-center"
               >

@@ -332,6 +332,17 @@ export default function LoginPage({ navigate, onLogin, onSubmit, error, loading 
               </button>
 
               <button
+                onClick={() => handleQuickSso('eva@gmail.com', 'student')}
+                className="w-full p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 text-left transition flex items-center justify-between text-xs"
+              >
+                <div>
+                  <div className="font-bold text-slate-900">Farhana Tasnim Eva</div>
+                  <div className="font-mono text-[11px] text-slate-500">eva@gmail.com · BRACU</div>
+                </div>
+                <span className="font-bold text-indigo-600">Connect →</span>
+              </button>
+
+              <button
                 onClick={() => handleQuickSso('recruiter@brainstation-23.com', 'company')}
                 className="w-full p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 text-left transition flex items-center justify-between text-xs"
               >
