@@ -1,0 +1,49 @@
+================================================================================
+INTERNPRANGON LAUNCH VIDEO — EXTENDED 37.0s MASTER SCRIPT & SFX CUES
+Pacing: Relaxed, clear, natural speaking rate with generous pauses & SFX sync
+Total Duration: 37.0 Seconds | Music: Modern Neo-LoFi / Future Soul (96 BPM)
+================================================================================
+
+SCENE 1: THE HOOK [00:00.0 – 00:07.5]
+--------------------------------------------------------------------------------
+Visual: Big question on screen; kinetic typography pushes in.
+00:00.6  [VOICEOVER STARTS]: "Still taking unpaid 'exposure' internships in 2026?..."
+00:02.4  [SFX: SWORD SLASH / MARKER STRIKE]: Neon red line cuts across text.
+00:03.4  [SFX: HEAVY RUBBER STAMP SLAM]: Bold "EXPIRED." stamp slams down.
+00:04.0  [VOICEOVER CONTINUES]: "...Yeah, let's cancel that right now."
+00:07.1  [VOICEOVER ENDS] (0.4s breathing room before scene transition)
+
+SCENE 2: THE REVEAL & SEARCH [00:07.5 – 00:16.5]
+--------------------------------------------------------------------------------
+Visual: Brand logo & tagline burst; search bar simulates typing and clicking.
+00:07.8  [VOICEOVER STARTS]: "Meet InternPrangon. Smart choices, first steps. Over 380 verified companies hiring right now."
+00:08.8  Search bar simulates typing: "Software Engineer Intern (Cloud) — BDT 25,000"
+00:14.0  [SFX: TACTILE MOUSE CLICK]: Simulated cursor clicks the "Search" button.
+00:14.3  Search results pulse: "1,200+ Active Roles Found".
+00:15.9  [VOICEOVER ENDS] (0.6s breathing room before scene transition)
+
+SCENE 3: REAL STIPENDS & 1-CLICK APPLY [00:16.5 – 00:23.5]
+--------------------------------------------------------------------------------
+Visual: 3D opportunity cards slide in (Brain Station 23, Pathao, bKash).
+00:16.8  [VOICEOVER STARTS]: "Guaranteed paid stipends up to 25,000 taka a month. Apply in just one click."
+00:18.0  [SFX: CASH REGISTER / COIN CHIME]: BDT 25,000/mo stipend pill glows.
+00:20.0  [SFX: TACTILE MOUSE CLICK]: Cursor clicks "Apply in 1-Click ⚡".
+00:20.2  Green success toast appears: "🎉 Application delivered to ATS Pipeline!".
+00:22.9  [VOICEOVER ENDS] (0.6s breathing room before scene transition)
+
+SCENE 4: STUDENT REVIEWS & CONTRIBUTOR TIERS [00:23.5 – 00:30.5]
+--------------------------------------------------------------------------------
+Visual: BUET student review on left; gamified tier ladder on right.
+00:23.8  [VOICEOVER STARTS]: "Real student reviews, zero ghosting, and contributor tiers that unlock recruiter spotlights."
+00:24.5  Tier ladder progressively lights up: Newbie → Explorer → Insider → Veteran → Elite.
+00:27.2  [SFX: ARCADE LEVEL-UP FANFARE]: Recruiter Spotlight banner unlocks with golden halo.
+00:29.8  [VOICEOVER ENDS] (0.7s breathing room before scene transition)
+
+SCENE 5: OUTRO & CALL TO ACTION [00:30.5 – 00:37.0]
+--------------------------------------------------------------------------------
+Visual: Hero outro lockup with pulsing radiant beacon button.
+00:30.8  [VOICEOVER STARTS]: "Your career launchpad starts today. Find your paid role at internprangon.vercel.app."
+00:32.0  Pulsing amber & violet beacon rings radiate from the live link.
+00:36.7  [VOICEOVER ENDS]
+00:37.0  Gentle musical decay, Rhodes chord shimmer, and fade to black.
+================================================================================

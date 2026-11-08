@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InternPrangon — Official Launch Video (Brag-Slim Extended)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #060911;
+      color: #F8FAFC;
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      padding: 16px 20px;
+    }
+
+    .header-bar {
+      width: 100%;
+      max-width: 1280px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-title .badge {
+      font-size: 0.72rem;
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.5);
+      color: #C4B5FD;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Video Frame Container */
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1280px;
+      aspect-ratio: 16 / 9;
+      background: #0B0F19;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 25px 80px -15px rgba(0, 0, 0, 0.95), 0 0 50px -10px rgba(99, 102, 241, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    canvas#renderCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+    }
+
+    /* Live Subtitles / Caption Overlay */
+    .caption-overlay {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(11, 15, 25, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(249, 115, 22, 0.45);
+      color: #FFF;
+      padding: 8px 24px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      pointer-events: none;
+      transition: all 0.25s ease;
+      opacity: 0;
+      max-width: 85%;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .caption-overlay.active {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-5px);
+    }
+
+    .caption-mic {
+      color: #F97316;
+      font-size: 0.95rem;
+    }
+
+    /* Controls Deck */
+    .controls-deck {
+      width: 100%;
+      max-width: 1280px;
+      margin-top: 14px;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 12px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .timeline-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .timeline-bar {
+      position: relative;
+      flex: 1;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .timeline-fill {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg, #6366F1, #F97316);
+      border-radius: 999px;
+      transition: width 0.04s linear;
+    }
+
+    .time-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: #94A3B8;
+      min-width: 95px;
+      text-align: right;
+    }
+
+    .button-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button, select {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #F8FAFC;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.84rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    button:hover, select:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, #F97316, #EA580C);
+      border-color: #FB923C;
+      color: #FFF;
+      box-shadow: 0 4px 15px rgba(249, 115, 22, 0.35);
+    }
+
+    button.primary:hover {
+      background: linear-gradient(135deg, #FB923C, #F97316);
+      box-shadow: 0 6px 20px rgba(249, 115, 22, 0.5);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: #94A3B8;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22C55E;
+      box-shadow: 0 0 8px #22C55E;
+    }
+
+    .script-drawer {
+      margin-top: 6px;
+      padding: 12px 16px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 8px;
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+      font-size: 0.8rem;
+      color: #CBD5E1;
+      display: none;
+      line-height: 1.6;
+    }
+
+    .script-drawer.open {
+      display: block;
+    }
+
+    .script-item {
+      margin-bottom: 6px;
+    }
+
+    .script-time {
+      color: #F97316;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-bar">
+    <div class="brand-title">
+      <span>🎓 InternPrangon</span>
+      <span class="badge">LAUNCH VIDEO • 1080P @ 60FPS</span>
+    </div>
+    <div class="status-pill">
+      <span class="status-dot"></span>
+      <span>EXTENDED 37.0s TIMELINE • SFX + AI VOICEOVER</span>
+    </div>
+  </div>
+
+  <div class="video-wrapper">
+    <canvas id="renderCanvas" width="1920" height="1080"></canvas>
+    <div id="captionOverlay" class="caption-overlay">
+      <span class="caption-mic">🎙️</span>
+      <span id="captionText">...</span>
+    </div>
+  </div>
+
+  <div class="controls-deck">
+    <div class="timeline-container">
+      <div class="timeline-bar" id="timelineBar">
+        <div class="timeline-fill" id="timelineFill"></div>
+      </div>
+      <div class="time-display" id="timeDisplay">00:00 / 00:37</div>
+    </div>
+    <div class="button-row">
+      <div class="btn-group">
+        <button id="playBtn" class="primary">
+          <span id="playIcon">▶</span> Play Video
+        </button>
+        <button id="restartBtn">↺ Replay</button>
+        <select id="audioModeSelect">
+          <option value="master">🎙️ + 🎵 Master Mix (Voiceover + SFX + Lo-Fi)</option>
+          <option value="live_voice">🗣️ Live Browser AI Voice + SFX Bed</option>
+          <option value="music_only">🎵 Clean Music Bed (No Voice)</option>
+        </select>
+        <button id="toggleScriptBtn">📜 Script</button>
+      </div>
+      <div class="btn-group">
+        <button id="recordBtn" title="Render and download full 60fps WebM">
+          ⏺ Export Video (.webm)
+        </button>
+      </div>
+    </div>
+
+    <!-- Script Drawer -->
+    <div class="script-drawer" id="scriptDrawer">
+      <div class="script-item"><span class="script-time">[00:00.6 – 00:07.1] Hook:</span> "Still taking unpaid 'exposure' internships in 2026? Yeah, let's cancel that right now." (Slash SFX @ 2.4s, Expired Stamp SFX @ 3.4s)</div>
+      <div class="script-item"><span class="script-time">[00:07.8 – 00:15.9] Reveal:</span> "Meet InternPrangon. Smart choices, first steps. Over 380 verified companies hiring right now." (Search Click SFX @ 14.0s)</div>
+      <div class="script-item"><span class="script-time">[00:16.8 – 00:22.9] Stipends:</span> "Guaranteed paid stipends up to 25,000 taka a month. Apply in just one click." (Chime SFX @ 18.0s, Apply Click SFX @ 20.0s)</div>
+      <div class="script-item"><span class="script-time">[00:23.8 – 00:29.8] Reviews:</span> "Real student reviews, zero ghosting, and contributor tiers that unlock recruiter spotlights." (Spotlight Fanfare SFX @ 27.2s)</div>
+      <div class="script-item"><span class="script-time">[00:30.8 – 00:36.7] Outro:</span> "Your career launchpad starts today. Find your paid role at internprangon.vercel.app."</div>
+    </div>
+  </div>
+
+  <!-- Audio Elements -->
+  <audio id="masterAudio" src="work/soundtrack.wav" preload="auto"></audio>
+  <audio id="musicBedAudio" src="work/music_bed.wav" preload="auto"></audio>
+
+  <script>
+    const canvas = document.getElementById('renderCanvas');
+    const ctx = canvas.getContext('2d');
+    const playBtn = document.getElementById('playBtn');
+    const playIcon = document.getElementById('playIcon');
+    const restartBtn = document.getElementById('restartBtn');
+    const audioModeSelect = document.getElementById('audioModeSelect');
+    const recordBtn = document.getElementById('recordBtn');
+    const timelineBar = document.getElementById('timelineBar');
+    const timelineFill = document.getElementById('timelineFill');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const captionOverlay = document.getElementById('captionOverlay');
+    const captionText = document.getElementById('captionText');
+    const toggleScriptBtn = document.getElementById('toggleScriptBtn');
+    const scriptDrawer = document.getElementById('scriptDrawer');
+    const masterAudio = document.getElementById('masterAudio');
+    const musicBedAudio = document.getElementById('musicBedAudio');
+
+    // Total Extended Duration
+    const DURATION = 37.0;
+    let currentTime = 0.0;
+    let isPlaying = false;
+    let lastTimestamp = 0;
+    let animationFrameId = null;
+
+    // AI Voiceover Cues with generous pacing
+    const voiceoverCues = [
+      { start: 0.6, end: 7.2, text: "Still taking unpaid 'exposure' internships in 2026? Yeah, let's cancel that right now." },
+      { start: 7.8, end: 16.0, text: "Meet InternPrangon. Smart choices, first steps. Over 380 verified companies hiring right now." },
+      { start: 16.8, end: 23.0, text: "Guaranteed paid stipends up to 25,000 taka a month. Apply in just one click." },
+      { start: 23.8, end: 30.0, text: "Real student reviews, zero ghosting, and contributor tiers that unlock recruiter spotlights." },
+      { start: 30.8, end: 36.8, text: "Your career launchpad starts today. Find your paid role at internprangon.vercel.app." }
+    ];
+
+    let spokenCues = new Set();
+
+    function triggerSpeechSynthesis(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      const voices = window.speechSynthesis.getVoices();
+      const naturalVoice = voices.find(v => v.name.includes("Natural") || v.name.includes("Google") || v.name.includes("Zira") || v.lang.startsWith("en"));
+      if (naturalVoice) utterance.voice = naturalVoice;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function syncAudioPlayback(time) {
+      const mode = audioModeSelect.value;
+      const targetAudio = (mode === 'music_only' || mode === 'live_voice') ? musicBedAudio : masterAudio;
+      const otherAudio = (targetAudio === masterAudio) ? musicBedAudio : masterAudio;
+
+      otherAudio.pause();
+
+      if (isPlaying) {
+        if (Math.abs(targetAudio.currentTime - time) > 0.25) {
+          targetAudio.currentTime = time;
+        }
+        if (targetAudio.paused && time < DURATION) {
+          targetAudio.play().catch(() => {});
+        }
+      } else {
+        targetAudio.pause();
+      }
+
+      if (mode === 'live_voice' && isPlaying) {
+        for (let cue of voiceoverCues) {
+          if (time >= cue.start && time <= cue.end) {
+            if (!spokenCues.has(cue.start)) {
+              spokenCues.add(cue.start);
+              triggerSpeechSynthesis(cue.text);
+            }
+          }
+        }
+      }
+
+      let activeCue = voiceoverCues.find(c => time >= c.start && time <= c.end);
+      if (activeCue) {
+        captionText.textContent = `"${activeCue.text}"`;
+        captionOverlay.classList.add('active');
+      } else {
+        captionOverlay.classList.remove('active');
+      }
+    }
+
+    toggleScriptBtn.addEventListener('click', () => {
+      scriptDrawer.classList.toggle('open');
+    });
+
+    // ── Particle System ──
+    const particles = [];
+    for (let i = 0; i < 70; i++) {
+      particles.push({
+        x: Math.random() * 1920,
+        y: Math.random() * 1080,
+        r: Math.random() * 2.5 + 1,
+        speedX: (Math.random() - 0.5) * 0.5,
+        speedY: (Math.random() - 0.5) * 0.5,
+        color: i % 2 === 0 ? 'rgba(99, 102, 241, ' : 'rgba(249, 115, 22, ',
+        alpha: Math.random() * 0.4 + 0.2
+      });
+    }
+
+    function drawBackgroundGlow(t) {
+      ctx.fillStyle = '#080C16';
+      ctx.fillRect(0, 0, 1920, 1080);
+
+      // Pulsing Indigo Aura
+      const g1 = ctx.createRadialGradient(350 + Math.sin(t * 1.2) * 40, 300, 10, 350, 300, 600);
+      g1.addColorStop(0, 'rgba(99, 102, 241, 0.22)');
+      g1.addColorStop(1, 'rgba(99, 102, 241, 0)');
+      ctx.fillStyle = g1;
+      ctx.fillRect(0, 0, 1920, 1080);
+
+      // Pulsing Sunset Orange Aura
+      const g2 = ctx.createRadialGradient(1550 - Math.cos(t * 1.0) * 50, 400, 10, 1550, 400, 550);
+      g2.addColorStop(0, 'rgba(249, 115, 22, 0.18)');
+      g2.addColorStop(1, 'rgba(249, 115, 22, 0)');
+      ctx.fillStyle = g2;
+      ctx.fillRect(0, 0, 1920, 1080);
+
+      for (let p of particles) {
+        p.x += p.speedX;
+        p.y += p.speedY;
+        if (p.x < 0) p.x = 1920;
+        if (p.x > 1920) p.x = 0;
+        if (p.y < 0) p.y = 1080;
+        if (p.y > 1080) p.y = 0;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + (p.alpha * (0.6 + 0.4 * Math.sin(t * 2.5 + p.r))) + ')';
+        ctx.fill();
+      }
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      if (w < 2 * r) r = w / 2;
+      if (h < 2 * r) r = h / 2;
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    // ═════════════════════════════════════════════════════════════════
+    // RENDER FRAME (37.0s TIMELINE)
+    // ═════════════════════════════════════════════════════════════════
+    function render(t) {
+      drawBackgroundGlow(t);
+
+      // ─────────────────────────────────────────────────────────────
+      // SCENE 1: The Hook (0.0s – 7.5s)
+      // ─────────────────────────────────────────────────────────────
+      if (t < 7.5) {
+        const progress = Math.min(1.0, t / 4.0);
+        const scale = 1.0 + progress * 0.04;
+        ctx.save();
+        ctx.translate(960, 540);
+        ctx.scale(scale, scale);
+
+        // Subtitle pill
+        ctx.font = '700 20px "JetBrains Mono"';
+        ctx.fillStyle = '#C4B5FD';
+        ctx.textAlign = 'center';
+        ctx.fillText('ALERT: 2026 REALITY CHECK', 0, -135);
+
+        // Headline
+        ctx.font = '900 68px "Plus Jakarta Sans"';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText('Still taking unpaid "exposure"', 0, -30);
+        ctx.fillText('internships in 2026? 💀', 0, 55);
+
+        // Red Slash Line (Begins at 2.4s, cuts right across -55px)
+        if (t > 2.4) {
+          const slashProgress = Math.min(1.0, (t - 2.4) / 0.5);
+          ctx.save();
+          ctx.strokeStyle = '#EF4444';
+          ctx.lineWidth = 11;
+          ctx.lineCap = 'round';
+          ctx.shadowColor = 'rgba(239, 68, 68, 0.85)';
+          ctx.shadowBlur = 18;
+          ctx.beginPath();
+          // -55 is the exact vertical center of the text
+          ctx.moveTo(-525, -55);
+          ctx.lineTo(-525 + 1050 * slashProgress, -55);
+          ctx.stroke();
+          ctx.restore();
+
+          // Expired Stamp Slams Down at 3.4s
+          if (t > 3.4) {
+            const stampAnim = Math.min(1.0, (t - 3.4) / 0.15);
+            const stampScale = 1.0 + (1.0 - stampAnim) * 0.4;
+            ctx.save();
+            ctx.translate(305, -95);
+            ctx.scale(stampScale, stampScale);
+            ctx.rotate(-0.06);
+            ctx.font = '900 48px "JetBrains Mono"';
+            ctx.fillStyle = '#EF4444';
+            ctx.strokeStyle = '#FEE2E2';
+            ctx.lineWidth = 2;
+            roundRect(ctx, -145, -35, 290, 70, 12);
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.28)';
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#EF4444';
+            ctx.fillText('EXPIRED.', 0, 15);
+            ctx.restore();
+          }
+        }
+
+        ctx.font = '500 28px "Plus Jakarta Sans"';
+        ctx.fillStyle = '#94A3B8';
+        ctx.fillText('Yeah, let\'s cancel that right now.', 0, 160);
+
+        ctx.restore();
+      }
+
+      // ─────────────────────────────────────────────────────────────
+      // SCENE 2: The Reveal & Search Hero (7.5s – 16.5s)
+      // ─────────────────────────────────────────────────────────────
+      else if (t >= 7.5 && t < 16.5) {
+        const localT = t - 7.5;
+        const fadeIn = Math.min(1.0, localT / 0.5);
+        ctx.save();
+        ctx.globalAlpha = fadeIn;
+
+        // Trust Badge
+        ctx.font = '700 18px "JetBrains Mono"';
+        ctx.textAlign = 'center';
+        roundRect(ctx, 710, 140, 500, 42, 21);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(99, 102, 241, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(740, 161, 6, 0, Math.PI * 2);
+        ctx.fillStyle = '#22C55E';
+        ctx.fill();
+
+        ctx.fillStyle = '#C4B5FD';
+        ctx.fillText('OVER 380+ VERIFIED COMPANIES HIRING', 960, 168);
+
+        // Title
+        ctx.font = '900 84px "Plus Jakarta Sans"';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText('Smart choices. ', 800, 280);
+
+        ctx.font = 'italic 700 84px "Fraunces"';
+        ctx.fillStyle = '#F97316';
+        ctx.fillText('First steps.', 1180, 280);
+
+        ctx.font = '500 26px "Plus Jakarta Sans"';
+        ctx.fillStyle = '#94A3B8';
+        ctx.fillText('Bangladesh\'s premier platform for paid, verified university internships.', 960, 350);
+
+        // Glassmorphic Search Bar
+        const barY = 440;
+        roundRect(ctx, 510, barY, 900, 85, 42);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(99, 102, 241, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.font = '28px sans-serif';
+        ctx.fillText('🔍', 560, barY + 54);
+
+        // Slower, smooth typing from 1.3s to 6.0s (real seconds: 8.8s to 13.5s)
+        const textToType = "Software Engineer Intern (Cloud) — BDT 25,000";
+        const charsToShow = Math.min(textToType.length, Math.floor((localT - 1.3) * 11));
+        const typedStr = charsToShow > 0 ? textToType.substring(0, charsToShow) : "";
+
+        ctx.font = '600 24px "Plus Jakarta Sans"';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#F8FAFC';
+        ctx.fillText(typedStr, 605, barY + 53);
+
+        if (Math.sin(t * 8) > 0 && charsToShow < textToType.length) {
+          ctx.fillStyle = '#F97316';
+          const textW = ctx.measureText(typedStr).width;
+          ctx.fillRect(610 + textW, barY + 30, 3, 30);
+        }
+
+        // Search Button - Clicks at localT = 6.5s (14.0s global)
+        const isSearchClicked = (localT > 6.5);
+        roundRect(ctx, 1260, barY + 12, 130, 61, 30);
+        ctx.fillStyle = isSearchClicked ? '#EA580C' : '#F97316';
+        ctx.fill();
+        ctx.font = '700 20px "Plus Jakarta Sans"';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center';
+        ctx.fillText(isSearchClicked ? '✓ Done' : 'Search', 1325, barY + 49);
+
+        // Stats pulse after click
+        if (localT > 6.8) {
+          ctx.font = '700 22px "JetBrains Mono"';
+          ctx.fillStyle = '#38BDF8';
+          ctx.fillText('1,200+ Active Roles Found  •  92% Placement Rate  •  Zero Unpaid Gigs', 960, 600);
+        }
+
+        ctx.restore();
+      }
+
+      // ─────────────────────────────────────────────────────────────
+      // SCENE 3: Highlight 1 — Real Money, Verified Roles (16.5s – 23.5s)
+      // ─────────────────────────────────────────────────────────────
+      else if (t >= 16.5 && t < 23.5) {
+        const localT = t - 16.5;
+        ctx.save();
+
+        ctx.textAlign = 'center';
+        ctx.font = '900 48px "Plus Jakarta Sans"';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText('Real Roles. Real Stipends. Zero Guesswork.', 960, 180);
+
+        ctx.font = '500 22px "Plus Jakarta Sans"';
+        ctx.fillStyle = '#94A3B8';
+        ctx.fillText('Transparent benchmarks verified directly by students and employers.', 960, 225);
+
+        const cards = [
+          { comp: "Brain Station 23", role: "Cloud & Backend Intern", stip: "BDT 22,000/mo", tag: "Node.js • AWS", loc: "Remote" },
+          { comp: "Pathao", role: "Mobile App Developer", stip: "BDT 25,000/mo", tag: "Flutter • Dart", loc: "Remote", active: true },
+          { comp: "bKash Limited", role: "Fintech Security Intern", stip: "BDT 24,000/mo", tag: "Cybersecurity", loc: "On-site" }
+        ];
+
+        cards.forEach((c, idx) => {
+          const cardX = 330 + idx * 440;
+          const slideOffset = Math.max(0, (0.5 - localT * 0.7 + idx * 0.15) * 200);
+          const cardY = 320 + slideOffset;
+
+          roundRect(ctx, cardX, cardY, 390, 480, 20);
+          ctx.fillStyle = c.active ? '#1E293B' : '#0F172A';
+          ctx.fill();
+          ctx.strokeStyle = c.active ? '#F97316' : 'rgba(255, 255, 255, 0.1)';
+          ctx.lineWidth = c.active ? 3 : 1;
+          ctx.stroke();
+
+          ctx.font = '700 22px "Plus Jakarta Sans"';
+          ctx.fillStyle = '#F8FAFC';
+          ctx.textAlign = 'left';
+          ctx.fillText(c.comp, cardX + 30, cardY + 60);
+
+          ctx.font = '500 16px "JetBrains Mono"';
+          ctx.fillStyle = '#38BDF8';
+          ctx.fillText(c.loc + ' • Verified Partner 🛡️', cardX + 30, cardY + 95);
+
+          ctx.font = '700 24px "Plus Jakarta Sans"';
+          ctx.fillStyle = '#E2E8F0';
+          ctx.fillText(c.role, cardX + 30, cardY + 160);
+
+          roundRect(ctx, cardX + 30, cardY + 200, 180, 34, 8);
+          ctx.fillStyle = 'rgba(99, 102, 241, 0.2)';
+          ctx.fill();
+          ctx.font = '600 15px "JetBrains Mono"';
+          ctx.fillStyle = '#C4B5FD';
+          ctx.fillText(c.tag, cardX + 42, cardY + 223);
+
+          // Stipend Box (Chimes at localT = 1.5s / 18.0s)
+          roundRect(ctx, cardX + 30, cardY + 280, 330, 65, 14);
+          ctx.fillStyle = 'rgba(34, 197, 94, 0.18)';
+          ctx.fill();
+          ctx.strokeStyle = '#22C55E';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.font = '800 26px "JetBrains Mono"';
+          ctx.fillStyle = '#4ADE80';
+          ctx.fillText(c.stip, cardX + 50, cardY + 322);
+
+          // Button Click at localT = 3.5s (20.0s global)
+          roundRect(ctx, cardX + 30, cardY + 380, 330, 55, 12);
+          if (c.active && localT > 3.5) {
+            ctx.fillStyle = '#22C55E';
+            ctx.fill();
+            ctx.font = '700 18px "Plus Jakarta Sans"';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.textAlign = 'center';
+            ctx.fillText('✓ Applied in 1-Click!', cardX + 195, cardY + 414);
+          } else {
+            ctx.fillStyle = c.active ? '#F97316' : '#334155';
+            ctx.fill();
+            ctx.font = '700 18px "Plus Jakarta Sans"';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.textAlign = 'center';
+            ctx.fillText(c.active ? 'Apply in 1-Click ⚡' : 'View Details', cardX + 195, cardY + 414);
+          }
+        });
+
+        // Toast at localT > 3.7s
+        if (localT > 3.7) {
+          roundRect(ctx, 760, 840, 400, 50, 25);
+          ctx.fillStyle = 'rgba(34, 197, 94, 0.95)';
+          ctx.fill();
+          ctx.font = '700 17px "Plus Jakarta Sans"';
+          ctx.fillStyle = '#FFFFFF';
+          ctx.textAlign = 'center';
+          ctx.fillText('🎉 Application delivered to ATS Pipeline!', 960, 871);
+        }
+
+        ctx.restore();
+      }
+
+      // ─────────────────────────────────────────────────────────────
+      // SCENE 4: Highlight 2 — Transparency & Contributor Tiers (23.5s – 30.5s)
+      // ─────────────────────────────────────────────────────────────
+      else if (t >= 23.5 && t < 30.5) {
+        const localT = t - 23.5;
+        ctx.save();
+
+        ctx.textAlign = 'center';
+        ctx.font = '900 48px "Plus Jakarta Sans"';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText('Honest Reviews & Recruiter Spotlights', 960, 180);
+
+        ctx.font = '500 22px "Plus Jakarta Sans"';
+        ctx.fillStyle = '#94A3B8';
+        ctx.fillText('Write peer reviews, earn contributor points, and get prioritized by top HR teams.', 960, 225);
+
+        // Left Side: Review Card
+        const revX = 260, revY = 320;
+        roundRect(ctx, revX, revY, 650, 460, 20);
+        ctx.fillStyle = '#1E293B';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.textAlign = 'left';
+        ctx.font = '700 26px "Plus Jakarta Sans"';
+        ctx.fillStyle = '#F8FAFC';
+        ctx.fillText('Tahmina Akter • BUET CSE \'26', revX + 40, revY + 65);
+
+        ctx.font = '600 16px "JetBrains Mono"';
+        ctx.fillStyle = '#38BDF8';
+        ctx.fillText('Software Engineer Intern @ Brain Station 23', revX + 40, revY + 105);
+
+        ctx.font = '24px sans-serif';
+        ctx.fillText('⭐⭐⭐⭐⭐ (5.0)', revX + 40, revY + 155);
+
+        ctx.font = '400 21px/1.6 "Plus Jakarta Sans"';
+        ctx.fillStyle = '#CBD5E1';
+        const quote = '"Applied to 4 verified companies on InternPrangon, got 3 interviews in 5 days. Transparent stipends saved me weeks of awkward negotiation."';
+        wrapText(ctx, quote, revX + 40, revY + 220, 570, 36);
+
+        roundRect(ctx, revX + 40, revY + 360, 200, 42, 10);
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.2)';
+        ctx.fill();
+        ctx.font = '700 16px "JetBrains Mono"';
+        ctx.fillStyle = '#4ADE80';
+        ctx.fillText('✓ Verified Intern', revX + 65, revY + 387);
+
+        // Right Side: Tiers Progression (Lights up from localT 1.0s to 3.7s)
+        const badgeX = 990, badgeY = 320;
+        roundRect(ctx, badgeX, badgeY, 670, 460, 20);
+        ctx.fillStyle = '#1E293B';
+        ctx.fill();
+        ctx.strokeStyle = '#F97316';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.font = '800 26px "Plus Jakarta Sans"';
+        ctx.fillStyle = '#F8FAFC';
+        ctx.fillText('Contributor Tier Progression', badgeX + 40, badgeY + 65);
+
+        const tiers = [
+          { name: "Newbie", pts: "0 pts", icon: "🌱" },
+          { name: "Explorer", pts: "200 pts", icon: "🔭" },
+          { name: "Insider", pts: "500 pts", icon: "💡" },
+          { name: "Veteran", pts: "800 pts", icon: "⚡" },
+          { name: "Elite", pts: "1000+ pts", icon: "🏆", glow: true }
+        ];
+
+        tiers.forEach((tr, i) => {
+          const ty = badgeY + 120 + i * 58;
+          roundRect(ctx, badgeX + 40, ty, 590, 46, 10);
+          const activeTier = (localT > 3.7 && tr.glow);
+          ctx.fillStyle = activeTier ? 'rgba(249, 115, 22, 0.3)' : 'rgba(255, 255, 255, 0.05)';
+          ctx.fill();
+          if (activeTier) {
+            ctx.strokeStyle = '#F97316';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+
+          ctx.font = '22px sans-serif';
+          ctx.fillText(tr.icon, badgeX + 55, ty + 32);
+
+          ctx.font = '700 18px "Plus Jakarta Sans"';
+          ctx.fillStyle = activeTier ? '#FB923C' : '#E2E8F0';
+          ctx.fillText(tr.name + ' Tier', badgeX + 105, ty + 30);
+
+          ctx.font = '600 15px "JetBrains Mono"';
+          ctx.fillStyle = '#94A3B8';
+          ctx.fillText(tr.pts, badgeX + 500, ty + 30);
+        });
+
+        // Spotlight Unlock Banner at localT = 3.7s (27.2s global)
+        if (localT > 3.7) {
+          roundRect(ctx, badgeX + 40, badgeY + 415, 590, 34, 8);
+          ctx.fillStyle = '#F97316';
+          ctx.fill();
+          ctx.font = '800 14px "JetBrains Mono"';
+          ctx.fillStyle = '#FFFFFF';
+          ctx.textAlign = 'center';
+          ctx.fillText('⚡ RECRUITER SPOTLIGHT UNLOCKED (TOP 5% PROFILES) ⚡', badgeX + 335, badgeY + 437);
+        }
+
+        ctx.restore();
+      }
+
+      // ─────────────────────────────────────────────────────────────
+      // SCENE 5: Outro / Call to Action (30.5s – 37.0s)
+      // ─────────────────────────────────────────────────────────────
+      else if (t >= 30.5) {
+        ctx.save();
+        ctx.textAlign = 'center';
+
+        ctx.font = '84px sans-serif';
+        ctx.fillText('🎓', 960, 260);
+
+        ctx.font = '900 84px "Plus Jakarta Sans"';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText('InternPrangon', 960, 370);
+
+        ctx.font = 'italic 700 48px "Fraunces"';
+        ctx.fillStyle = '#F97316';
+        ctx.fillText('Smart choices. First steps.', 960, 440);
+
+        ctx.font = '500 26px "Plus Jakarta Sans"';
+        ctx.fillStyle = '#94A3B8';
+        ctx.fillText('Your career launchpad starts today. Paid. Verified. Built for you.', 960, 510);
+
+        const btnW = 600, btnH = 80;
+        const btnX = 960 - btnW / 2, btnY = 580;
+
+        const aura = Math.sin(t * 4) * 8;
+        roundRect(ctx, btnX - aura, btnY - aura, btnW + aura * 2, btnH + aura * 2, 40);
+        ctx.fillStyle = 'rgba(249, 115, 22, 0.2)';
+        ctx.fill();
+
+        roundRect(ctx, btnX, btnY, btnW, btnH, 40);
+        ctx.fillStyle = '#F97316';
+        ctx.fill();
+
+        ctx.font = '800 32px "Plus Jakarta Sans"';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText('internprangon.vercel.app  🚀', 960, btnY + 52);
+
+        ctx.font = '700 20px "JetBrains Mono"';
+        ctx.fillStyle = '#38BDF8';
+        ctx.fillText('380+ Verified Companies  •  92% Placement  •  8,400+ Students', 960, 740);
+
+        ctx.restore();
+      }
+    }
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+      const words = text.split(' ');
+      let line = '';
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && n > 0) {
+          ctx.fillText(line, x, y);
+          line = words[n] + ' ';
+          y += lineHeight;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, x, y);
+    }
+
+    // ── Animation Loop ──
+    function loop(timestamp) {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const delta = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+
+      if (isPlaying) {
+        currentTime += delta;
+        syncAudioPlayback(currentTime);
+
+        if (currentTime >= DURATION) {
+          currentTime = DURATION;
+          pause();
+        }
+      }
+
+      render(currentTime);
+      updateUI();
+
+      if (isPlaying || currentTime < DURATION) {
+        animationFrameId = requestAnimationFrame(loop);
+      }
+    }
+
+    function updateUI() {
+      const progress = (currentTime / DURATION) * 100;
+      timelineFill.style.width = `${progress}%`;
+      const curSec = Math.floor(currentTime);
+      const totalSec = Math.floor(DURATION);
+      timeDisplay.textContent = `00:${curSec < 10 ? '0' : ''}${curSec} / 00:${totalSec}`;
+    }
+
+    function play() {
+      isPlaying = true;
+      lastTimestamp = 0;
+      playBtn.classList.remove('primary');
+      playIcon.textContent = '⏸';
+      playBtn.childNodes[2].textContent = ' Pause Video';
+      syncAudioPlayback(currentTime);
+      if (!animationFrameId) {
+        animationFrameId = requestAnimationFrame(loop);
+      }
+    }
+
+    function pause() {
+      isPlaying = false;
+      playBtn.classList.add('primary');
+      playIcon.textContent = '▶';
+      playBtn.childNodes[2].textContent = ' Play Video';
+      masterAudio.pause();
+      musicBedAudio.pause();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    }
+
+    playBtn.addEventListener('click', () => {
+      if (currentTime >= DURATION) {
+        currentTime = 0;
+        spokenCues.clear();
+      }
+      if (isPlaying) pause(); else play();
+    });
+
+    restartBtn.addEventListener('click', () => {
+      currentTime = 0;
+      spokenCues.clear();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      masterAudio.currentTime = 0;
+      musicBedAudio.currentTime = 0;
+      play();
+    });
+
+    audioModeSelect.addEventListener('change', () => {
+      spokenCues.clear();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      syncAudioPlayback(currentTime);
+    });
+
+    timelineBar.addEventListener('click', (e) => {
+      const rect = timelineBar.getBoundingClientRect();
+      const pos = (e.clientX - rect.left) / rect.width;
+      currentTime = Math.max(0, Math.min(DURATION, pos * DURATION));
+      spokenCues.clear();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      syncAudioPlayback(currentTime);
+      render(currentTime);
+      updateUI();
+    });
+
+    // ── Video Export Recorder (Canvas + Audio -> WebM) ──
+    recordBtn.addEventListener('click', async () => {
+      recordBtn.textContent = '⏺ Recording (0%)...';
+      recordBtn.style.background = '#EF4444';
+      currentTime = 0;
+      spokenCues.clear();
+      pause();
+
+      const canvasStream = canvas.captureStream(60);
+      let combinedStream = canvasStream;
+
+      try {
+        const audioEl = (audioModeSelect.value === 'music_only') ? musicBedAudio : masterAudio;
+        if (audioEl.captureStream) {
+          const audioStream = audioEl.captureStream();
+          combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...audioStream.getAudioTracks()]);
+        } else if (audioEl.mozCaptureStream) {
+          const audioStream = audioEl.mozCaptureStream();
+          combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...audioStream.getAudioTracks()]);
+        }
+      } catch (err) {}
+
+      const recordedChunks = [];
+      const mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9' });
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'internprangon-launch-37s.webm';
+        a.click();
+        URL.revokeObjectURL(url);
+        recordBtn.textContent = '⏺ Export Video (.webm)';
+        recordBtn.style.background = '';
+      };
+
+      mediaRecorder.start();
+      play();
+
+      const recordCheckInterval = setInterval(() => {
+        if (currentTime >= DURATION) {
+          clearInterval(recordCheckInterval);
+          mediaRecorder.stop();
+          pause();
+        } else {
+          const pct = Math.floor((currentTime / DURATION) * 100);
+          recordBtn.textContent = `⏺ Recording (${pct}%)...`;
+        }
+      }, 200);
+    });
+
+    // Initial poster render
+    render(0.0);
+    updateUI();
+  </script>
+</body>
+</html>
