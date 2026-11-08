@@ -8,7 +8,7 @@
 [![Deployment](https://img.shields.io/badge/Platform-Vercel-black?style=for-the-badge&logo=vercel&logoColor=white)](https://internprangon.vercel.app)
 [![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)](#)
 [![CSE470](https://img.shields.io/badge/Course-CSE470%20Software%20Engineering-blue?style=for-the-badge)](#)
-[![Launch Video](https://img.shields.io/badge/Launch%20Video-37s%20HD%20Demo-F97316?style=for-the-badge&logo=youtube&logoColor=white)](brag-output/internprangon-launch-37s.mp4)
+[![Launch Video](https://img.shields.io/badge/Launch%20Video-37s%20HD%20Demo-F97316?style=for-the-badge&logo=youtube&logoColor=white)](https://internprangon.vercel.app/internprangon-launch-37s.webm)
 
 > 🌐 **Live Website**: [https://internprangon.vercel.app](https://internprangon.vercel.app)
 >
@@ -19,17 +19,19 @@
 ## 🎬 Official Launch Video
 
 <div align="center">
-  <video src="brag-output/internprangon-launch-37s.mp4" poster="brag-output/brag.jpg" controls width="100%" style="border-radius: 14px; max-width: 880px; box-shadow: 0 15px 50px rgba(0,0,0,0.5);">
+  <video src="https://internprangon.vercel.app/internprangon-launch-37s.webm" poster="brag-output/brag.jpg" controls width="100%" style="border-radius: 14px; max-width: 880px; box-shadow: 0 15px 50px rgba(0,0,0,0.5);">
+    <source src="https://internprangon.vercel.app/internprangon-launch-37s.webm" type="video/webm">
     <source src="brag-output/internprangon-launch-37s.mp4" type="video/mp4">
     <source src="brag-output/internprangon-launch-37s.webm" type="video/webm">
-    <a href="brag-output/internprangon-launch-37s.mp4">
+    <a href="https://internprangon.vercel.app/internprangon-launch-37s.webm">
       <img src="brag-output/brag.jpg" alt="InternPrangon Launch Video" width="100%" style="border-radius: 14px;" />
     </a>
   </video>
   <p align="center">
+    🌐 <strong><a href="https://internprangon.vercel.app/internprangon-launch-37s.webm">Watch Live Video (Vercel Stream)</a></strong> &nbsp;•&nbsp; 
     🎥 <strong><a href="brag-output/internprangon-launch-37s.mp4">Direct Video Download (.mp4)</a></strong> &nbsp;•&nbsp; 
     🎬 <strong><a href="brag-output/internprangon-launch-37s.webm">WebM Format (.webm)</a></strong> &nbsp;•&nbsp; 
-    🌐 <strong><a href="brag-output/brag-player.html">Interactive Browser Player</a></strong> &nbsp;•&nbsp; 
+    🕹️ <strong><a href="brag-output/brag-player.html">Interactive Browser Player</a></strong> &nbsp;•&nbsp; 
     📱 <strong><a href="brag-output/brag-vertical.jpg">Mobile Reels Poster</a></strong>
   </p>
 </div>
@@ -39,6 +41,7 @@
 ## 🌐 Live Deployment
 
 - **Production URL**: [https://internprangon.vercel.app](https://internprangon.vercel.app)
+- **Launch Video Stream**: [https://internprangon.vercel.app/internprangon-launch-37s.webm](https://internprangon.vercel.app/internprangon-launch-37s.webm)
 - **API Status / Health Check**: [https://internprangon.vercel.app/api](https://internprangon.vercel.app/api)
 - **Hosting Platform**: Vercel (Multi-Service Architecture: Vite Frontend + Express Backend)
 - **Database**: MongoDB Atlas Cloud
