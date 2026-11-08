@@ -11,3 +11,4 @@ backend/uploads/resumes/
 tmp/
 output/
 .vscode/
+.agents/
